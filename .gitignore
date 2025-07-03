@@ -8,6 +8,9 @@ xcuserdata/
 ## Obj-C/Swift specific
 *.hmap
 
+# ignore xcconfig
+*.xcconfig
+
 ## App packaging
 *.ipa
 *.dSYM.zip
