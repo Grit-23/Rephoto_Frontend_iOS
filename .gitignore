@@ -11,6 +11,9 @@ xcuserdata/
 # ignore xcconfig
 *.xcconfig
 
+# ignore info.plist
+*.plist
+
 ## App packaging
 *.ipa
 *.dSYM.zip
