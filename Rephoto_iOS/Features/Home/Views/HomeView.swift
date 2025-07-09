@@ -65,14 +65,12 @@ struct HomeView: View {
                 .foregroundColor(.clear)
                 .frame(width: 320, height: 136)
                 .background(Color(red: 1, green: 0.99, blue: 0.99))
-
                 .cornerRadius(20)
                 .shadow(color: .black.opacity(0.25), radius: 2, x: 0, y: 4)
                 .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                .inset(by: 0.5)
-                .stroke(Color(red: 0.89, green: 0.89, blue: 0.89), lineWidth: 1)
-
+                    RoundedRectangle(cornerRadius: 20)
+                    .inset(by: 0.5)
+                    .stroke(Color(red: 0.89, green: 0.89, blue: 0.89), lineWidth: 1)
                 )
                 HStack(alignment: .top, spacing: 160){
                     VStack(alignment: .leading, spacing: 16){
@@ -81,7 +79,6 @@ struct HomeView: View {
                             .font(.title2)
                             .bold(true)
                     }
-                    
                     Text("54")
                         .bold()
                 }
