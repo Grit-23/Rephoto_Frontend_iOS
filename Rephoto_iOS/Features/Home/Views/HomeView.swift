@@ -20,21 +20,23 @@ struct HomeView: View {
     
     
     var body: some View {
-        VStack{
-            topbar
-            ScrollView{
-                if vm.isWarning {
-                    warningPhoto
+        NavigationStack{
+            VStack{
+                topbar
+                ScrollView{
+                    if vm.isWarning {
+                        warningPhoto
+                    }
+                    PhotoCell
                 }
-                PhotoCell
+                .sheet(isPresented: $vm.showSheet, content: {
+                    HomeSheetView(sheetDetent: $sheetDetent)
+                        .presentationDetents([.medium, .large], selection: $sheetDetent)
+                        .presentationDragIndicator(.visible)
+                })
             }
-            .sheet(isPresented: $vm.showSheet, content: {
-                HomeSheetView(sheetDetent: $sheetDetent)
-                    .presentationDetents([.medium, .large], selection: $sheetDetent)
-                    .presentationDragIndicator(.visible)
-            })
+            .padding(.horizontal)
         }
-        .padding(.horizontal)
     }
     
     var topbar: some View {
