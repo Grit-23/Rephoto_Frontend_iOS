@@ -50,6 +50,7 @@ struct HomeView: View {
             }
         }
         .tint(.black)
+        .padding(.horizontal, 8)
     }
     
     var warningPhoto: some View {
@@ -57,30 +58,28 @@ struct HomeView: View {
             
         } label: {
             ZStack{
-                Rectangle()
-                .foregroundColor(.clear)
-                .frame(width: 320, height: 136)
-                .background(Color(red: 1, green: 0.99, blue: 0.99))
-                .cornerRadius(20)
-                .shadow(color: .black.opacity(0.25), radius: 2, x: 0, y: 4)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                    .inset(by: 0.5)
-                    .stroke(Color(red: 0.89, green: 0.89, blue: 0.89), lineWidth: 1)
-                )
-                HStack(alignment: .top, spacing: 160){
-                    VStack(alignment: .leading, spacing: 16){
-                        Image(.warning)
-                        Text("민감한 사진")
-                            .font(.title2)
-                            .bold(true)
-                    }
+                RoundedRectangle(cornerRadius: 20)
+                    .foregroundColor(.clear)
+                    .frame(maxWidth: .infinity, idealHeight: 72)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(.white)
+                            .shadow(color: .gray, radius: 2, x: 0, y: 2)
+                    )
+                
+                HStack(spacing: 20){
+                    Image(.warning)
+                    Text("민감한 사진")
+                        .font(.title2)
+                        .bold(true)
+                    Spacer()
                     Text("54")
                         .bold()
                 }
                 .padding(.horizontal)
             }
             .tint(.black)
+            .padding(.horizontal, 1)
         }
         .padding(.top)
     }
@@ -100,15 +99,20 @@ struct HomeView: View {
                         ForEach(0..<demoPhotosURLs.count, id: \.self) { index in
                             LazyImage(url: demoPhotosURLs[index]) { state in
                                 if let image = state.image {
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
+                                    NavigationLink{
+                                        PhotoInfoView(image: image)
+                                    } label: {
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: side, height: side)
+                                            .clipped()
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    }
                                 } else {
                                     Color.gray
                                 }
                             }
-                            .frame(width: side, height: side)
-                            .clipped()
                         }
                     }
                 }
