@@ -6,36 +6,30 @@
 //
 
 import SwiftUI
+import Nuke
+import NukeUI
 
 struct HomeView: View {
     @Environment(\.dismiss) var dismiss
-    
     @State private var sheetDetent: PresentationDetent = .medium
-    
     @Bindable var vm : HomeViewModel
     
     init() {
         self.vm = .init()
     }
     
-    
     var body: some View {
         NavigationStack{
             VStack{
                 topbar
-                ScrollView{
-                    if vm.isWarning {
-                        warningPhoto
-                    }
-                    PhotoCell
-                }
-                .sheet(isPresented: $vm.showSheet, content: {
-                    HomeSheetView(sheetDetent: $sheetDetent)
-                        .presentationDetents([.medium, .large], selection: $sheetDetent)
-                        .presentationDragIndicator(.visible)
-                })
+                PhotoCell
             }
-            .padding(.horizontal)
+            .sheet(isPresented: $vm.showSheet, content: {
+                HomeSheetView(sheetDetent: $sheetDetent)
+                    .presentationDetents([.medium, .large], selection: $sheetDetent)
+                    .presentationDragIndicator(.visible)
+            })
+            .padding(.horizontal, 8)
         }
     }
     
@@ -92,8 +86,34 @@ struct HomeView: View {
     }
     
     var PhotoCell : some View {
-        VStack{
-            
+        VStack {
+            GeometryReader { geometry in
+                ScrollView{
+                    if vm.isWarning {
+                        warningPhoto
+                    }
+                    
+                    let side = (geometry.size.width - 8) / 3
+                    let item = GridItem(.fixed(side), spacing: 4)
+                    
+                    LazyVGrid(columns: Array(repeating: item, count: 3), spacing: 4) {
+                        ForEach(0..<demoPhotosURLs.count, id: \.self) { index in
+                            LazyImage(url: demoPhotosURLs[index]) { state in
+                                if let image = state.image {
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                } else {
+                                    Color.gray
+                                }
+                            }
+                            .frame(width: side, height: side)
+                            .clipped()
+                        }
+                    }
+                }
+                .scrollIndicators(.hidden)
+            }
         }
     }
 }
