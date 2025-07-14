@@ -26,7 +26,7 @@ struct RephotoTabView: View {
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
-        .tint(.color3)
+        .tint(.color6)
     }
 }
 
