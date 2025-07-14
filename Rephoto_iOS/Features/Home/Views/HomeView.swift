@@ -44,7 +44,7 @@ struct HomeView: View {
             Button(action: {
                 vm.showSheet.toggle()
             }) {
-                Image(systemName: "circle")
+                Image(systemName: "person.crop.circle")
                     .resizable()
                     .frame(maxWidth: 40, maxHeight: 40)
             }
@@ -58,11 +58,11 @@ struct HomeView: View {
             
         } label: {
             ZStack{
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: 40)
                     .foregroundColor(.clear)
                     .frame(maxWidth: .infinity, idealHeight: 72)
                     .background(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 40)
                             .fill(.white)
                             .shadow(color: .gray, radius: 2, x: 0, y: 2)
                     )
@@ -81,7 +81,6 @@ struct HomeView: View {
             .tint(.black)
             .padding(.horizontal, 1)
         }
-        .padding(.top)
     }
     
     var PhotoCell : some View {

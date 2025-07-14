@@ -28,7 +28,7 @@ struct HomeSheetView: View {
     
     var UserInfo: some View {
         HStack{
-            Image(systemName: "circle")
+            Image(systemName: "person.crop.circle")
                 .resizable()
                 .frame(width: 52, height: 52)
             
