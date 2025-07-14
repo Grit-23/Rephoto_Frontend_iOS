@@ -22,10 +22,10 @@ struct RephotoTabView: View {
                 NavigationStack {
                     SearchView()
                 }
+                .searchable(text: $searchText, prompt: "사진을 검색해보세요!")
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
-        .searchable(text: $searchText, prompt: "사진을 검색해보세요!")
         .tint(.color3)
     }
 }
