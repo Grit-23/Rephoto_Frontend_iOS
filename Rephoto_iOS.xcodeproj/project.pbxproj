@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0B2B3AA42E24D9E9004BB3DD /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = 0B2B3AA32E24D9E9004BB3DD /* Nuke */; };
-		0B2B3AA62E24D9E9004BB3DD /* NukeExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = 0B2B3AA52E24D9E9004BB3DD /* NukeExtensions */; };
-		0B2B3AA82E24D9E9004BB3DD /* NukeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0B2B3AA72E24D9E9004BB3DD /* NukeUI */; };
-		0B2B3AAA2E24D9E9004BB3DD /* NukeVideo in Frameworks */ = {isa = PBXBuildFile; productRef = 0B2B3AA92E24D9E9004BB3DD /* NukeVideo */; };
-		0B5126652E26637D00EAD658 /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0B5126642E26637D00EAD658 /* FactoryKit */; };
+		0B58CB852E269EA00074972F /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = 0B58CB842E269EA00074972F /* Nuke */; };
+		0B58CB872E269EA00074972F /* NukeExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = 0B58CB862E269EA00074972F /* NukeExtensions */; };
+		0B58CB892E269EA00074972F /* NukeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0B58CB882E269EA00074972F /* NukeUI */; };
+		0B58CB8B2E269EA00074972F /* NukeVideo in Frameworks */ = {isa = PBXBuildFile; productRef = 0B58CB8A2E269EA00074972F /* NukeVideo */; };
+		0B58CB8E2E269EAE0074972F /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0B58CB8D2E269EAE0074972F /* FactoryKit */; };
 		0B73BCF72E1970150085738E /* Colors.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0B73BCF62E1970150085738E /* Colors.xcassets */; };
 		0B73BD062E1976C80085738E /* CombineMoya in Frameworks */ = {isa = PBXBuildFile; productRef = 0B73BD052E1976C80085738E /* CombineMoya */; };
 		0B73BD082E1976C80085738E /* Moya in Frameworks */ = {isa = PBXBuildFile; productRef = 0B73BD072E1976C80085738E /* Moya */; };
@@ -45,13 +45,13 @@
 				0B73BD0C2E1976C80085738E /* RxMoya in Frameworks */,
 				0B73BD132E1977520085738E /* KakaoSDKUser in Frameworks */,
 				0B73BD0A2E1976C80085738E /* ReactiveMoya in Frameworks */,
-				0B2B3AA82E24D9E9004BB3DD /* NukeUI in Frameworks */,
-				0B5126652E26637D00EAD658 /* FactoryKit in Frameworks */,
+				0B58CB892E269EA00074972F /* NukeUI in Frameworks */,
+				0B58CB8E2E269EAE0074972F /* FactoryKit in Frameworks */,
 				0B73BD112E1977520085738E /* KakaoSDKCommon in Frameworks */,
 				0B73BD0F2E1977520085738E /* KakaoSDKAuth in Frameworks */,
-				0B2B3AA42E24D9E9004BB3DD /* Nuke in Frameworks */,
-				0B2B3AAA2E24D9E9004BB3DD /* NukeVideo in Frameworks */,
-				0B2B3AA62E24D9E9004BB3DD /* NukeExtensions in Frameworks */,
+				0B58CB852E269EA00074972F /* Nuke in Frameworks */,
+				0B58CB8B2E269EA00074972F /* NukeVideo in Frameworks */,
+				0B58CB872E269EA00074972F /* NukeExtensions in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,11 +102,11 @@
 				0B73BD0E2E1977520085738E /* KakaoSDKAuth */,
 				0B73BD102E1977520085738E /* KakaoSDKCommon */,
 				0B73BD122E1977520085738E /* KakaoSDKUser */,
-				0B2B3AA32E24D9E9004BB3DD /* Nuke */,
-				0B2B3AA52E24D9E9004BB3DD /* NukeExtensions */,
-				0B2B3AA72E24D9E9004BB3DD /* NukeUI */,
-				0B2B3AA92E24D9E9004BB3DD /* NukeVideo */,
-				0B5126642E26637D00EAD658 /* FactoryKit */,
+				0B58CB842E269EA00074972F /* Nuke */,
+				0B58CB862E269EA00074972F /* NukeExtensions */,
+				0B58CB882E269EA00074972F /* NukeUI */,
+				0B58CB8A2E269EA00074972F /* NukeVideo */,
+				0B58CB8D2E269EAE0074972F /* FactoryKit */,
 			);
 			productName = Rephoto_iOS;
 			productReference = 0BE71D522E1657D500E85407 /* Rephoto_iOS.app */;
@@ -139,8 +139,8 @@
 			packageReferences = (
 				0B73BD042E1976C80085738E /* XCRemoteSwiftPackageReference "Moya" */,
 				0B73BD0D2E1977520085738E /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
-				0B2B3AA22E24D9E9004BB3DD /* XCRemoteSwiftPackageReference "Nuke" */,
-				0B5126632E26637D00EAD658 /* XCRemoteSwiftPackageReference "Factory" */,
+				0B58CB832E269EA00074972F /* XCRemoteSwiftPackageReference "Nuke" */,
+				0B58CB8C2E269EAE0074972F /* XCRemoteSwiftPackageReference "Factory" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0BE71D532E1657D500E85407 /* Products */;
@@ -176,8 +176,6 @@
 /* Begin XCBuildConfiguration section */
 		0BE71D5B2E1657D700E85407 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReferenceAnchor = 0BE71D542E1657D500E85407 /* Rephoto_iOS */;
-			baseConfigurationReferenceRelativePath = Core/Utils/Secret.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -389,7 +387,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		0B2B3AA22E24D9E9004BB3DD /* XCRemoteSwiftPackageReference "Nuke" */ = {
+		0B58CB832E269EA00074972F /* XCRemoteSwiftPackageReference "Nuke" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/kean/Nuke";
 			requirement = {
@@ -397,7 +395,7 @@
 				minimumVersion = 12.8.0;
 			};
 		};
-		0B5126632E26637D00EAD658 /* XCRemoteSwiftPackageReference "Factory" */ = {
+		0B58CB8C2E269EAE0074972F /* XCRemoteSwiftPackageReference "Factory" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/hmlongco/Factory";
 			requirement = {
@@ -424,29 +422,29 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		0B2B3AA32E24D9E9004BB3DD /* Nuke */ = {
+		0B58CB842E269EA00074972F /* Nuke */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 0B2B3AA22E24D9E9004BB3DD /* XCRemoteSwiftPackageReference "Nuke" */;
+			package = 0B58CB832E269EA00074972F /* XCRemoteSwiftPackageReference "Nuke" */;
 			productName = Nuke;
 		};
-		0B2B3AA52E24D9E9004BB3DD /* NukeExtensions */ = {
+		0B58CB862E269EA00074972F /* NukeExtensions */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 0B2B3AA22E24D9E9004BB3DD /* XCRemoteSwiftPackageReference "Nuke" */;
+			package = 0B58CB832E269EA00074972F /* XCRemoteSwiftPackageReference "Nuke" */;
 			productName = NukeExtensions;
 		};
-		0B2B3AA72E24D9E9004BB3DD /* NukeUI */ = {
+		0B58CB882E269EA00074972F /* NukeUI */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 0B2B3AA22E24D9E9004BB3DD /* XCRemoteSwiftPackageReference "Nuke" */;
+			package = 0B58CB832E269EA00074972F /* XCRemoteSwiftPackageReference "Nuke" */;
 			productName = NukeUI;
 		};
-		0B2B3AA92E24D9E9004BB3DD /* NukeVideo */ = {
+		0B58CB8A2E269EA00074972F /* NukeVideo */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 0B2B3AA22E24D9E9004BB3DD /* XCRemoteSwiftPackageReference "Nuke" */;
+			package = 0B58CB832E269EA00074972F /* XCRemoteSwiftPackageReference "Nuke" */;
 			productName = NukeVideo;
 		};
-		0B5126642E26637D00EAD658 /* FactoryKit */ = {
+		0B58CB8D2E269EAE0074972F /* FactoryKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 0B5126632E26637D00EAD658 /* XCRemoteSwiftPackageReference "Factory" */;
+			package = 0B58CB8C2E269EAE0074972F /* XCRemoteSwiftPackageReference "Factory" */;
 			productName = FactoryKit;
 		};
 		0B73BD052E1976C80085738E /* CombineMoya */ = {
