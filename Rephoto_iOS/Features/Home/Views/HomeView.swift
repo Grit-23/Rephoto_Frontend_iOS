@@ -22,7 +22,7 @@ struct HomeView: View {
         NavigationStack{
             VStack{
                 topbar
-                PhotoCell
+                photoCell
             }
             .sheet(isPresented: $vm.showSheet, content: {
                 HomeSheetView(sheetDetent: $sheetDetent)
@@ -37,7 +37,7 @@ struct HomeView: View {
         HStack{
             Text("앨범")
                 .font(.largeTitle)
-                .bold(true)
+                .bold()
             
             Spacer()
             
@@ -68,7 +68,7 @@ struct HomeView: View {
                     )
                 
                 HStack(spacing: 20){
-                    Image(.warning)
+                    Image("warning")
                     Text("민감한 사진")
                         .font(.title2)
                         .bold(true)
@@ -83,7 +83,7 @@ struct HomeView: View {
         }
     }
     
-    var PhotoCell : some View {
+    var photoCell : some View {
         VStack {
             GeometryReader { geometry in
                 ScrollView{

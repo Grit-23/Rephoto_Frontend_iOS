@@ -15,10 +15,10 @@ struct HomeSheetView: View {
     var body: some View {
         NavigationStack{
             VStack{
-                UserInfo
+                userInfo
                 Divider()
                 
-                Components
+                components
                 
                 Spacer()
             }
@@ -26,7 +26,7 @@ struct HomeSheetView: View {
         }
     }
     
-    var UserInfo: some View {
+    var userInfo: some View {
         HStack{
             Image(systemName: "person.crop.circle")
                 .resizable()
@@ -53,7 +53,7 @@ struct HomeSheetView: View {
         .padding(.top)
     }
     
-    var Components: some View {
+    var components: some View {
         VStack{
             ForEach(HomeSheetCase.allCases, id: \.rawValue){ component in
                 NavigationLink {
