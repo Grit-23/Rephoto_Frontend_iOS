@@ -6,9 +6,16 @@
 //
 
 import SwiftUI
+import MapKit
 
 public struct MapView: View {
     public var body: some View {
-        Text("MapView")
+        VStack {
+            Map()
+        }
     }
+}
+
+#Preview {
+    MapView()
 }
