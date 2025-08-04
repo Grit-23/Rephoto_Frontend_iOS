@@ -12,7 +12,7 @@ struct SearchView: View {
     @StateObject private var vm = SearchViewModel()
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             GeometryReader { geo in
                 let side = geo.size.width / 2 - 16
                 let cols = Array(repeating: GridItem(.fixed(side), spacing: 8), count: 2)
