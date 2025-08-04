@@ -9,56 +9,63 @@ import SwiftUI
 import NukeUI
 
 struct SearchView: View {
-    @State private var textColor: Color = .white
-    @State private var searchText: String = ""
-    
+    @StateObject private var vm = SearchViewModel()
+
     var body: some View {
-        VStack(alignment: .leading) {
-            photoTag
-                .searchable(text: $searchText, prompt: Text("사진을 검색해보세요!"))
-        }
-    }
-    
-    var photoTag: some View {
-        GeometryReader { geometry in
-            let screenSize = geometry.size
-            let side = screenSize.width / 2 - 16
-            let item = GridItem(.fixed(side), spacing: 8)
-            
-            ScrollView{
-                LazyVGrid(columns: Array(repeating: item, count: 2), spacing: 8) {
-                    ForEach(0..<demoPhotosURLs.count, id: \.self) { index in
-                        LazyImage(url: demoPhotosURLs[index]) { state in
-                            if let image = state.image {
-                                NavigationLink{
-                                    
-                                } label: {
-                                    ZStack {
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: side, height: side)
-                                            .clipped()
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                                        Text("#tag")
-                                            .font(.title2)
-                                            .bold()
-                                            .foregroundStyle(textColor)
-                                            .frame(width: side/1.3, height: side/1.2, alignment: .bottomTrailing)
-                                        
+        NavigationView {
+            GeometryReader { geo in
+                let side = geo.size.width / 2 - 16
+                let cols = Array(repeating: GridItem(.fixed(side), spacing: 8), count: 2)
+
+                ScrollView {
+                    if vm.isLoading {
+                        ProgressView("검색 중…")
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding()
+                    } else if let error = vm.errorMessage {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                    } else if vm.items.isEmpty && !vm.query.isEmpty {
+                        Text("검색 결과가 없습니다.")
+                            .padding()
+                    }
+
+                    LazyVGrid(columns: cols, spacing: 8) {
+                        ForEach(vm.items) { item in
+                            LazyImage(url: item.imageUrl) { state in
+                                if let image = state.image {
+                                    NavigationLink {
+                                        // 상세 화면
+                                    } label: {
+                                        ZStack(alignment: .bottomTrailing) {
+                                            image
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: side, height: side)
+                                                .clipped()
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                                            Text("#\(item.tag)")
+                                                .font(.headline)
+                                                .bold()
+                                                .foregroundStyle(.white)
+                                                .padding(6)
+                                        }
                                     }
+                                } else {
+                                    Color.gray
+                                        .frame(width: side, height: side)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
                                 }
-                            } else {
-                                Color.gray
                             }
                         }
                     }
+                    .padding(8)
                 }
+                .searchable(text: $vm.query, prompt: "사진을 검색해보세요!")
             }
         }
     }
-}
-
-#Preview {
-    SearchView()
 }

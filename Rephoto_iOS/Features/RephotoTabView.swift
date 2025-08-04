@@ -11,12 +11,12 @@ struct RephotoTabView: View {
     
     var body : some View {
         TabView{
-            Tab("Home", image: "home") {
+            Tab("홈", image: "home") {
                 NavigationStack {
                     HomeView()
                 }
             }
-            Tab("Map", image: "map") {
+            Tab("지도", image: "map") {
                 NavigationStack {
                     MapView()
                 }
@@ -24,7 +24,7 @@ struct RephotoTabView: View {
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
                 NavigationStack {
                     SearchView()
-                        .navigationTitle("Search")
+                        .navigationTitle("검색")
                 }
             }
         }
