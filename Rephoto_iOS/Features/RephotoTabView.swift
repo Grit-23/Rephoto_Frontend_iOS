@@ -8,21 +8,24 @@
 import SwiftUI
 
 struct RephotoTabView: View {
-    @State private var searchText: String = ""
     
     var body : some View {
         TabView{
             Tab("Home", image: "home") {
-                HomeView()
+                NavigationStack {
+                    HomeView()
+                }
             }
             Tab("Map", image: "map") {
-                MapView()
+                NavigationStack {
+                    MapView()
+                }
             }
-            Tab(role: .search) {
+            Tab("Search", systemImage: "magnifyingglass", role: .search) {
                 NavigationStack {
                     SearchView()
+                        .navigationTitle("Search")
                 }
-                .searchable(text: $searchText, prompt: "사진을 검색해보세요!")
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
