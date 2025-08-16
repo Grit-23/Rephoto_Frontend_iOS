@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct Rephoto_iOSApp: App {
+    @StateObject private var loginViewModel = LoginViewModel()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(loginViewModel)
         }
     }
 }
