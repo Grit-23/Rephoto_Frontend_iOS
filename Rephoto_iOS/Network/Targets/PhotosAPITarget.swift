@@ -51,8 +51,10 @@ extension PhotosAPITarget: APITargetType {
         switch self {
         case let .s3Upload(fileData):
             let formData = MultipartFormData(provider: .data(fileData),
-                                             name: "file",
-                                             mimeType: "image/jpeg")
+                                             name: "file",                // ✅ 필수: 서버가 file 키를 찾음
+                                             fileName: "upload.jpg",      // ✅ 파일명 제공
+                                             mimeType: "image/jpeg"
+                                             )
             return .uploadMultipart([formData])
             
         case let .savePhotosBatch(request):
@@ -71,13 +73,12 @@ extension PhotosAPITarget: APITargetType {
         }
         
         switch self {
-        case .s3Upload:
-            // Content-Type 자동 설정 (Moya가 multipart/form-data 붙여줌)
-            break
         case .savePhotosBatch, .getPhoto, .deletePhoto, .getAllPhotos, .getWarningPhotos:
             headers["Content-Type"] = "application/json"
+        case .s3Upload:
+            break
         }
-        
         return headers
+    
     }
 }

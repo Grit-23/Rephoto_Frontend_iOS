@@ -61,6 +61,9 @@ struct HomeView: View {
                     .presentationDetents([.medium, .large], selection: $sheetDetent)
                     .presentationDragIndicator(.visible)
             })
+            .onChange(of: selectedPhotoItems, initial: false) { _, newItems in
+                vm.handlePickedItems(items: newItems)
+            }
         }
     }
     

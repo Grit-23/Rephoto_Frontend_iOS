@@ -92,7 +92,6 @@ class PhotoInfoViewModel {
     
     // 태그 추가
     func addTag(photoId: Int, tagName: String) {
-        let request = TagRequestDto(tagName: tagName)
         provider.request(.addTag(photoId: photoId, tagName: tagName)) { result in
             switch result {
             case .success(let response):

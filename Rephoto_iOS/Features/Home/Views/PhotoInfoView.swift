@@ -130,7 +130,7 @@ struct PhotoInfoView : View {
         isSensitive: false
     )
     
-    return NavigationStack {
+    NavigationStack {
         PhotoInfoView(photo: dummyPhoto)
     }
 }
