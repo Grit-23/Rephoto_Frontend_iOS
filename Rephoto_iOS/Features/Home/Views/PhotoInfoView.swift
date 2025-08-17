@@ -7,35 +7,43 @@
 
 import SwiftUI
 import NukeUI
-
 struct PhotoInfoView : View {
     let photo: HomeModel
+    
     @State private var vm = PhotoInfoViewModel()
     @State private var showDeleteConfirm = false
+    @State private var showTagEdit = false
+    @State private var selectedTag: TagResponseDto? = nil
+    @State private var newTagName: String = ""
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                LazyImage(url: photo.imageUrl) { state in
-                    if let image = state.image {
-                        image
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    } else {
-                        ProgressView()
-                            .frame(maxWidth: .infinity, maxHeight: 200)
-                    }
+        VStack(spacing: 20) {
+            LazyImage(url: photo.imageUrl) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal)
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: 300)
                 }
-                .padding()
-                
-                infoSection
-                buttons
             }
-            .padding()
+            infoSection
         }
-        .navigationTitle("사진 정보")
-        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .tint(.black)
+            }
+            
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showDeleteConfirm = true
@@ -49,6 +57,19 @@ struct PhotoInfoView : View {
             Button("삭제", role: .destructive) {
                 vm.deletePhoto(photoId: photo.photoId)
             }
+        }
+        .task {
+            vm.fetchTags(photoId: photo.photoId)   // ✅ 상세 태그 조회
+        }
+        .alert("태그 수정", isPresented: $showTagEdit) {
+            TextField("새 태그명", text: $newTagName)
+            Button("확인") {
+                if let tag = selectedTag {
+                    vm.updateTag(photoTagId: tag.photoTagId, newTagName: newTagName)
+                } else {
+                    vm.addTag(photoId: photo.photoId, tagName: newTagName)
+                }
+            }
             Button("취소", role: .cancel) { }
         }
         .onChange(of: vm.isDeleted) { _, newValue in
@@ -59,47 +80,36 @@ struct PhotoInfoView : View {
     }
     
     var infoSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("파일명: \(photo.fileName)")
-                .font(.headline)
-            Text("업로드 날짜: \(photo.createdAt.formatted(date: .abbreviated, time: .shortened))")
-            Text("위치: 위도 \(photo.latitude), 경도 \(photo.longitude)")
-            ForEach(photo.tags, id: \.self) { tag in
-                Text("태그 : \(tag)")
-            }
+        // ✅ 상세 태그가 있으면 그걸, 없으면 HomeModel의 문자열 태그를 보여줌
+        let displayTags: [TagResponseDto] =
+        vm.tags.isEmpty
+        ? photo.tags.enumerated().map { (idx, name) in
+            TagResponseDto(photoTagId: idx, tagId: idx, tagName: name, photoId: photo.photoId)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemGray6)))
-    }
-    
-    var buttons : some View {
-        HStack(spacing: 20){
-            Button {
-                // TODO: 태그 수정 기능
-            } label: {
-                Text("태그 수정")
+        : vm.tags
+        
+        return HStack {
+            ForEach(displayTags, id: \.photoTagId) { tag in
+                Text("#\(tag.tagName)")
+                    .font(.title3)
                     .bold()
-                    .foregroundStyle(.white)
-                    .frame(width: 140, height: 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.color6)
-                            .shadow(color: .gray, radius: 2, x: 0, y: 2)
-                    )
+                    .padding()
+                    .glassEffect()
+                    .onTapGesture {
+                        selectedTag = tag
+                        newTagName = tag.tagName
+                        showTagEdit = true
+                    }
             }
-            Button {
-                // TODO: 사진 공유 기능
-            } label: {
-                Text("사진 공유")
+            if displayTags.count < 3 {
+                Text("태그 추가")
+                    .font(.title3)
                     .bold()
-                    .foregroundStyle(.white)
-                    .frame(width: 140, height: 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.color6)
-                            .shadow(color: .gray, radius: 2, x: 0, y: 2)
-                    )
+                    .padding()
+                    .glassEffect()
+                    .onTapGesture {
+                        showTagEdit = true
+                    }
             }
         }
     }

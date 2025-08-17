@@ -11,11 +11,15 @@ import Observation
 
 @Observable
 class PhotoInfoViewModel {
-    private let provider = MoyaProvider<PhotosAPITarget>()
-    var isDeleted: Bool = false   // 삭제 완료 여부
+    private let photoProvider = MoyaProvider<PhotosAPITarget>()
+    private let provider = MoyaProvider<TagAPITarget>()
     
+    var isDeleted: Bool = false
+    var tags: [TagResponseDto] = []   // ✅ PhotoInfoView 전용 태그 리스트
+    
+    // 사진 삭제
     func deletePhoto(photoId: Int) {
-        provider.request(.deletePhoto(photoId: photoId)) { result in
+        photoProvider.request(.deletePhoto(photoId: photoId)) { result in
             switch result {
             case .success(let response):
                 if (200..<300).contains(response.statusCode) {
@@ -23,10 +27,85 @@ class PhotoInfoViewModel {
                         self.isDeleted = true
                     }
                 } else {
-                    print("삭제 실패 statusCode:", response.statusCode)
+                    print("❌ failed delete status code:", response.statusCode)
                 }
             case .failure(let error):
-                print("삭제 네트워크 에러:", error)
+                print("❌ network error:", error)
+            }
+        }
+    }
+    
+    // 태그 목록 조회
+    func fetchTags(photoId: Int) {
+        provider.request(.getTags(photoId: photoId)) { result in
+            switch result {
+            case .success(let response):
+                do {
+                    let dtos = try JSONDecoder().decode([TagResponseDto].self, from: response.data)
+                    DispatchQueue.main.async {
+                        self.tags = dtos
+                    }
+                } catch {
+                    print("❌ decode error:", error)
+                    if let raw = String(data: response.data, encoding: .utf8) {
+                        print("📄 raw response:", raw) // 실제 응답 확인
+                    }
+                }
+            case .failure(let error):
+                print("❌ network error:", error)
+            }
+        }
+    }
+
+    
+    // 태그 수정
+    func updateTag(photoTagId: Int, newTagName: String) {
+        guard let index = tags.firstIndex(where: { $0.photoTagId == photoTagId }) else { return }
+        let oldTag = tags[index]
+
+        // Optimistic UI
+        tags[index] = TagResponseDto(
+            photoTagId: oldTag.photoTagId,
+            tagId: oldTag.tagId,
+            tagName: newTagName,
+            photoId: oldTag.photoId
+        )
+
+        let request = TagRequestDto(tagName: newTagName)
+        provider.request(.updateTag(photoTagId: photoTagId, tagName: request.tagName)) { result in
+            switch result {
+            case .success(let response):
+                do {
+                    let dtos = try JSONDecoder().decode(TagResponseDto.self, from: response.data) // ✅ 배열 디코딩
+                    DispatchQueue.main.async {
+                        self.tags[index] = dtos   // 서버가 내려준 최신 리스트 전체로 교체
+                    }
+                } catch {
+                    print("❌ decode error:", error)
+                }
+            case .failure(let error):
+                print("❌ network error:", error)
+                DispatchQueue.main.async { self.tags[index] = oldTag }
+            }
+        }
+    }
+    
+    // 태그 추가
+    func addTag(photoId: Int, tagName: String) {
+        let request = TagRequestDto(tagName: tagName)
+        provider.request(.addTag(photoId: photoId, tagName: tagName)) { result in
+            switch result {
+            case .success(let response):
+                do {
+                    let dto = try JSONDecoder().decode(TagResponseDto.self, from: response.data) // ✅ 배열 디코딩
+                    DispatchQueue.main.async {
+                        self.tags.append(dto)
+                    }
+                } catch {
+                    print("❌ decode error:", error)
+                }
+            case .failure(let error):
+                print("❌ network error:", error)
             }
         }
     }

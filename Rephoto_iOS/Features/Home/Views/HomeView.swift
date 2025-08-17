@@ -32,6 +32,9 @@ struct HomeView: View {
                     photoCell
                 }
             }
+            .task {
+                vm.fetchPhotos()
+            }
             .navigationTitle("앨범")
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
@@ -100,29 +103,18 @@ struct HomeView: View {
         NavigationLink{
             
         } label: {
-            ZStack{
-                RoundedRectangle(cornerRadius: 40)
-                    .foregroundColor(.clear)
-                    .frame(height: 80)
-                    .background(
-                        RoundedRectangle(cornerRadius: 40)
-                            .fill(.white)
-                            .shadow(color: .gray, radius: 2, x: 0, y: 2)
-                    )
-                HStack(spacing: 20){
-                    Image("warning")
-                    Text("민감한 사진")
-                        .font(.title2)
-                        .bold(true)
-                    Spacer()
-                    Text("\(vm.isWarningsCount)")
-                        .bold()
-                }
-                .padding(.horizontal)
+            HStack(spacing: 20){
+                Image("warning")
+                Text("민감한 사진")
+                    .font(.title2)
+                    .bold(true)
+                Spacer()
+                Text("\(vm.isWarningsCount)")
+                    .bold()
             }
-            .tint(.black)
-            .padding(.horizontal, 1)
+            .padding()
         }
+        .glassEffect()
     }
 }
 
