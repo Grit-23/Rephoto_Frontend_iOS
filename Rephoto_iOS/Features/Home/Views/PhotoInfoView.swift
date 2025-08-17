@@ -90,28 +90,31 @@ struct PhotoInfoView : View {
         
         return HStack {
             ForEach(displayTags, id: \.photoTagId) { tag in
-                Text("#\(tag.tagName)")
-                    .font(.title3)
-                    .bold()
-                    .padding()
-                    .glassEffect()
-                    .onTapGesture {
-                        selectedTag = tag
-                        newTagName = tag.tagName
-                        showTagEdit = true
-                    }
+                Button {
+                    selectedTag = tag
+                    newTagName = tag.tagName
+                    showTagEdit = true
+                } label: {
+                    Text("#\(tag.tagName)")
+                        .font(.title3)
+                        .bold()
+                        .padding()
+                        .glassEffect()
+                }
             }
             if displayTags.count < 3 {
-                Text("태그 추가")
-                    .font(.title3)
-                    .bold()
-                    .padding()
-                    .glassEffect()
-                    .onTapGesture {
-                        showTagEdit = true
-                    }
+                Button {
+                    showTagEdit = true
+                } label: {
+                    Text("태그 추가")
+                        .font(.title3)
+                        .bold()
+                        .padding()
+                        .glassEffect()
+                }
             }
         }
+        .tint(.green)
     }
 }
 
