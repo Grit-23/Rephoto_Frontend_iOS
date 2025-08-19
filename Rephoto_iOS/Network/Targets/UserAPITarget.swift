@@ -17,6 +17,7 @@ enum UserAPITarget {
     case getUser
     case deleteUser
     case logout
+    case refreshToken(refreshToken: String)
 }
 
 extension UserAPITarget: APITargetType {
@@ -32,12 +33,14 @@ extension UserAPITarget: APITargetType {
             return "/kakao/login"
         case .logout:
             return "/logout"
+        case .refreshToken:
+            return "/auth/refresh"
         }
     }
     
     var method: Moya.Method {
         switch self {
-        case .join, .kakaologin, .login, .logout:
+        case .join, .kakaologin, .login, .logout, .refreshToken:
             return .post
         case .updateUser:
             return .put
@@ -76,6 +79,11 @@ extension UserAPITarget: APITargetType {
             return .requestParameters(parameters: parameters, encoding: JSONEncoding.default)
         case .getUser, .logout, .deleteUser:
             return .requestPlain
+        case .refreshToken(let refreshToken):
+            let parameters: [String: Any] = [
+                "Authorization": refreshToken
+            ]
+            return .requestParameters(parameters: parameters, encoding: JSONEncoding.default)
         }
     }
     
@@ -83,12 +91,12 @@ extension UserAPITarget: APITargetType {
         switch self {
         case .logout, .getUser, .deleteUser, .updateUser:
             return .bearer
-        default:
+        case .login, .join, .kakaologin, .refreshToken:
             return .none
         }
     }
 
-   var headers: [String : String]? {
-       ["Content-Type": "application/json"]
-   }
+    var headers: [String : String]? {
+        ["Content-Type": "application/json"]
+    }
 }
