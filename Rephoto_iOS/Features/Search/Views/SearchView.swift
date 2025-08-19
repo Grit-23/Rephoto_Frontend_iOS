@@ -27,32 +27,27 @@ struct SearchView: View {
                             .foregroundColor(.red)
                             .multilineTextAlignment(.center)
                             .padding()
-                    } else if vm.items.isEmpty && !vm.query.isEmpty {
+                    } else if vm.searchResults.isEmpty {
                         Text("검색 결과가 없습니다.")
                             .padding()
                     }
 
                     LazyVGrid(columns: cols, spacing: 8) {
-                        ForEach(vm.items) { item in
+                        ForEach(vm.searchResults) { item in
                             LazyImage(url: item.imageUrl) { state in
                                 if let image = state.image {
                                     NavigationLink {
-                                        // 상세 화면
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(maxWidth: .infinity)
                                     } label: {
-                                        ZStack(alignment: .bottomTrailing) {
-                                            image
-                                                .resizable()
-                                                .aspectRatio(contentMode: .fill)
-                                                .frame(width: side, height: side)
-                                                .clipped()
-                                                .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                                            Text("#\(item.tag)")
-                                                .font(.headline)
-                                                .bold()
-                                                .foregroundStyle(.white)
-                                                .padding(6)
-                                        }
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: side, height: side)
+                                            .clipped()
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
                                     }
                                 } else {
                                     Color.gray

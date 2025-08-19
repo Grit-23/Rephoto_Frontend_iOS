@@ -7,7 +7,8 @@
 
 import Foundation
 
-public struct SearchResults: Codable {
-    public var imageUrl: String
+public struct SearchResults: Codable, Identifiable {
+    public var imageUrl: URL
     public var photoId: Int
+    public var id: Int { photoId }
 }
