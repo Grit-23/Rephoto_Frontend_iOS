@@ -4,7 +4,7 @@ import Foundation
 
 public struct PhotoResponseDto: Codable {
     public let photoId: Int
-    public let imageUrl: String
+    public let imageUrl: URL
     public let latitude: Double
     public let longitude: Double
     /// ISO 8601 string
@@ -23,7 +23,7 @@ extension PhotoResponseDto {
     func toHomeModel() -> HomeModel {
         return HomeModel(
             photoId: photoId,
-            imageUrl: URL(string: imageUrl)!,
+            imageUrl: imageUrl,
             latitude: latitude,
             longitude: longitude,
             createdAt: ISO8601DateFormatter().date(from: createdAt) ?? Date(),

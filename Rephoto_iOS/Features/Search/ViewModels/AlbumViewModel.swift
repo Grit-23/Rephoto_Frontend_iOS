@@ -14,7 +14,7 @@ class AlbumViewModel {
     private let provider = MoyaProvider<AlbumAPITarget>()
 
     var albums: [AlbumResponseDto] = []
-    var albumInfo: [[PhotoResponseDto]] = []   // ← 빈 배열로 시작
+    var albumInfo: [[HomeModel]] = []   // ← 빈 배열로 시작
 
     // 앨범 리스트 호출
     func fetchAlbums() {
@@ -48,7 +48,8 @@ class AlbumViewModel {
                     DispatchQueue.main.async {
                         // 방어적 체크
                         if index < self.albumInfo.count {
-                            self.albumInfo[index] = dtos
+                            let mapped = dtos.map { $0.toHomeModel() }
+                            self.albumInfo[index] = mapped
                         }
                     }
                 } catch {

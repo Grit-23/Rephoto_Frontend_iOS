@@ -48,7 +48,7 @@ struct SearchView: View {
                 // 인덱스와 함께 순회 (앨범별 사진 배열을 인덱스로 대응)
                 ForEach(Array(albumVM.albums.enumerated()), id: \.element.id) { idx, album in
                     // 이 앨범의 첫 번째 사진 URL (없으면 nil)
-                    let thumbURLString = (idx < albumVM.albumInfo.count) ? albumVM.albumInfo[idx].first?.imageUrl : nil
+                    let thumbURL = (idx < albumVM.albumInfo.count) ? albumVM.albumInfo[idx].first?.imageUrl.absoluteString : nil
 
                     NavigationLink {
                         // 앨범 상세: 해당 앨범 인덱스의 사진만 보여줌
@@ -56,14 +56,14 @@ struct SearchView: View {
                             LazyVGrid(columns: cols, spacing: 8) {
                                 let photos = (idx < albumVM.albumInfo.count) ? albumVM.albumInfo[idx] : []
                                 ForEach(photos, id: \.photoId) { p in
-                                    photoTile(side: side, urlString: p.imageUrl)
+                                    photoTile(side: side, photo: p)
                                 }
                             }
                             .padding(8)
                         }
                     } label: {
                         // ⬇️ 썸네일을 배경으로 쓰는 앨범 카드
-                        albumCell(side: side, title: album.tagName, thumbURLString: thumbURLString)
+                        albumCell(side: side, title: album.tagName, thumbURLString: thumbURL)
                     }
                 }
             }
@@ -131,29 +131,22 @@ struct SearchView: View {
 
     // 상세/검색 타일 공용
     @ViewBuilder
-    private func photoTile(side: CGFloat, urlString: String) -> some View {
-        if let url = URL(string: urlString) {
-            LazyImage(url: url) { state in
-                if let image = state.image {
-                    NavigationLink {
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxWidth: .infinity)
-                    } label: {
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: side, height: side)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                } else {
-                    placeholder(side: side)
+    private func photoTile(side: CGFloat, photo: HomeModel) -> some View {
+        LazyImage(url: photo.imageUrl) { state in
+            if let image = state.image {
+                NavigationLink {
+                    PhotoInfoView(photo: photo)
+                } label: {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: side, height: side)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
+            } else {
+                placeholder(side: side)
             }
-        } else {
-            placeholder(side: side)
         }
     }
 
