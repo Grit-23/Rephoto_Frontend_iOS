@@ -30,7 +30,7 @@ struct HomeSheetView: View {
                 .resizable()
                 .frame(width: 52, height: 52)
             
-            Text("UserName")
+            Text("\(loginViewModel.name)")
                 .font(.largeTitle)
             
             Spacer()

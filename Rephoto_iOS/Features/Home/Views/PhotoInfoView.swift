@@ -14,6 +14,7 @@ struct PhotoInfoView : View {
     @State private var showDeleteConfirm = false
     @State private var showTagEdit = false
     @State private var selectedTag: TagResponseDto? = nil
+    @State private var isSheet: Bool = false
     @State private var newTagName: String = ""
     @Environment(\.dismiss) private var dismiss
     
@@ -35,6 +36,16 @@ struct PhotoInfoView : View {
             infoSection
         }
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    vm.getDescription(photoId: photo.photoId)
+                    self.isSheet.toggle()
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .tint(.black)
+            }
+            
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     
@@ -76,6 +87,20 @@ struct PhotoInfoView : View {
             if newValue {
                 dismiss()
             }
+        }
+        .sheet(isPresented: $isSheet) {
+            sheetView
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
+    }
+    
+    var sheetView: some View {
+        VStack(alignment: .leading) {
+            Text("파일이름: \(photo.fileName)")
+            Text("생성날짜: \(photo.createdAt)")
+            Text("위치: \(photo.latitude), \(photo.longitude)")
+            Text("설명: \(vm.description)")
         }
     }
     

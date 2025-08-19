@@ -13,9 +13,11 @@ import Observation
 class PhotoInfoViewModel {
     private let photoProvider = MoyaProvider<PhotosAPITarget>()
     private let provider = MoyaProvider<TagAPITarget>()
+    private let descriptionProvider = MoyaProvider<DescriptionAPITarget>()
     
     var isDeleted: Bool = false
     var tags: [TagResponseDto] = []   // ✅ PhotoInfoView 전용 태그 리스트
+    var description: String = ""
     
     // 사진 삭제
     func deletePhoto(photoId: Int) {
@@ -99,6 +101,24 @@ class PhotoInfoViewModel {
                     let dto = try JSONDecoder().decode(TagResponseDto.self, from: response.data) // ✅ 배열 디코딩
                     DispatchQueue.main.async {
                         self.tags.append(dto)
+                    }
+                } catch {
+                    print("❌ decode error:", error)
+                }
+            case .failure(let error):
+                print("❌ network error:", error)
+            }
+        }
+    }
+    
+    func getDescription(photoId: Int) {
+        descriptionProvider.request(.description(photoId: photoId)) { result in
+            switch result {
+            case .success(let response):
+                do {
+                    let text = try response.mapString().trimmingCharacters(in: .whitespacesAndNewlines)
+                    DispatchQueue.main.async {
+                        self.description = text
                     }
                 } catch {
                     print("❌ decode error:", error)
