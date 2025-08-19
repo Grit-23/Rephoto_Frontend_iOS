@@ -67,8 +67,8 @@ final class SearchViewModel: ObservableObject {
                 
                 switch result {
                 case .success(let response):
-                    print(response)
                     do {
+                        self.searchResults.removeAll()
                         let filtered = try response.filterSuccessfulStatusCodes()
                         let decoded = try JSONDecoder()
                             .decode(SearchResponseDto.self, from: filtered.data)
