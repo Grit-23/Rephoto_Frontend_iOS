@@ -36,5 +36,5 @@ struct SettingsView: View {
 }
 
 #Preview {
-    HomeSheetView(sheetDetent: .constant(.medium))
+    SettingsView(sheetDetent: .constant(.medium))
 }

@@ -17,6 +17,7 @@ final class SearchViewModel: ObservableObject {
     
     // MARK: - Output
     @Published var items: [CategoryItem] = []
+    @Published var searchResults: [SearchResults] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
@@ -67,16 +68,19 @@ final class SearchViewModel: ObservableObject {
                 switch result {
                 case .success(let response):
                     do {
+                        self.searchResults.removeAll()
                         let filtered = try response.filterSuccessfulStatusCodes()
                         let decoded = try JSONDecoder()
-                            .decode([CategoryItem].self, from: filtered.data)
-                        self.items = decoded
+                            .decode(SearchResponseDto.self, from: filtered.data)
+                        DispatchQueue.main.async {
+                            self.searchResults.append(contentsOf: decoded.searchResults)
+                        }
                     } catch {
-                        self.errorMessage = "디코딩 오류: \(error.localizedDescription)"
+                        self.errorMessage = "디코딩 오류: \(error)"
                     }
                     
                 case .failure(let error):
-                    self.errorMessage = "네트워크 오류: \(error.localizedDescription)"
+                    self.errorMessage = "네트워크 오류: \(error)"
                 }
             }
         }

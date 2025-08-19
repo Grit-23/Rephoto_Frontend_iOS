@@ -6,15 +6,13 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct RephotoTabView: View {
-    
     var body : some View {
         TabView{
             Tab("홈", image: "home") {
-                NavigationStack {
-                    HomeView()
-                }
+                HomeView()
             }
             Tab("지도", image: "map") {
                 NavigationStack {
@@ -22,14 +20,12 @@ struct RephotoTabView: View {
                 }
             }
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
-                NavigationStack {
-                    SearchView()
-                        .navigationTitle("검색")
-                }
+                SearchView()
+                    .navigationTitle("검색")
             }
         }
+        .tint(.green)
         .tabBarMinimizeBehavior(.onScrollDown)
-        .tint(.color6)
     }
 }
 
