@@ -14,8 +14,9 @@ struct HomeView: View {
     @State private var vm = HomeViewModel()
     @State private var sheetDetent: PresentationDetent = .medium
     @State private var showSheet: Bool = false
+    @State private var pickPhotos: Bool = false
     
-    @State private var selectedPhotoItems: [PhotosPickerItem] = []
+    @State private var selectedPhotoItems: [PhotoMetadata] = []
     
     var body: some View {
         NavigationStack{
@@ -39,11 +40,9 @@ struct HomeView: View {
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    PhotosPicker(
-                        selection: $selectedPhotoItems,
-                        matching: .images,
-                        photoLibrary: .shared()
-                    ) {
+                    Button {
+                        self.pickPhotos.toggle()
+                    } label: {
                         Image(systemName: "plus.circle.fill")
                     }
                 }
@@ -60,6 +59,9 @@ struct HomeView: View {
                 HomeSheetView(sheetDetent: $sheetDetent)
                     .presentationDetents([.medium, .large], selection: $sheetDetent)
                     .presentationDragIndicator(.visible)
+            })
+            .sheet(isPresented: $pickPhotos, content: {
+                PHCaptureImageView(photos: $selectedPhotoItems)
             })
             .onChange(of: selectedPhotoItems, initial: false) { _, newItems in
                 vm.handlePickedItems(items: newItems)
