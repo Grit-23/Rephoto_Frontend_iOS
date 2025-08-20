@@ -105,10 +105,56 @@ struct HomeView: View {
     }
     
     var warningPhoto: some View {
-        NavigationLink{
-            
+        NavigationLink {
+            GeometryReader { geometry in
+                let side = (geometry.size.width - 24) / 3
+                let item = GridItem(.fixed(side), spacing: 4)
+                
+                let sensitivePhotos = vm.images.filter { $0.isSensitive }
+                
+                if sensitivePhotos.isEmpty {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Text("사진이 없습니다.")
+                                .font(.title2)
+                                .foregroundStyle(.secondary)
+                                .bold()
+                            Spacer()
+                        }
+                        Spacer()
+                    }
+                } else {
+                    ScrollView {
+                        VStack {
+                            LazyVGrid(columns: Array(repeating: item, count: 3), spacing: 4) {
+                                ForEach(sensitivePhotos) { photo in
+                                    LazyImage(url: photo.imageUrl) { state in
+                                        if let image = state.image {
+                                            NavigationLink {
+                                                PhotoInfoView(photo: photo)
+                                            } label: {
+                                                image
+                                                    .resizable()
+                                                    .aspectRatio(contentMode: .fill)
+                                                    .frame(width: side, height: side)
+                                                    .clipped()
+                                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            }
+                                        } else {
+                                            Color.gray
+                                                .frame(width: side, height: side)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         } label: {
-            HStack(spacing: 20){
+            HStack(spacing: 20) {
                 Image("warning")
                 Text("민감한 사진")
                     .font(.title2)
