@@ -21,15 +21,22 @@ public struct PhotoResponseDto: Codable {
 // DTO -> Domain 변환 Extension
 extension PhotoResponseDto {
     func toHomeModel() -> HomeModel {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+        let parsedDate = formatter.date(from: createdAt) ?? Date()
+
         return HomeModel(
             photoId: photoId,
             imageUrl: imageUrl,
             latitude: latitude,
             longitude: longitude,
-            createdAt: ISO8601DateFormatter().date(from: createdAt) ?? Date(),
+            createdAt: parsedDate,
             fileName: fileName,
             tags: tags,
-            isSensitive: isPrivate // 서버의 private 필드를 isSensitive로 매핑
+            isSensitive: isPrivate
         )
     }
 }
