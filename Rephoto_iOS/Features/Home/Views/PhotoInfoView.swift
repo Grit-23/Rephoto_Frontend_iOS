@@ -102,6 +102,7 @@ struct PhotoInfoView : View {
             Text("위치: \(photo.latitude), \(photo.longitude)")
             Text("설명: \(vm.description)")
         }
+        .padding(.horizontal)
     }
     
     var infoSection: some View {

@@ -5,7 +5,6 @@
 //  Created by 김도연 on 8/19/25.
 //
 
-
 import Foundation
 import Moya
 import Alamofire
@@ -18,7 +17,7 @@ extension DescriptionAPITarget: APITargetType {
     var path: String {
         switch self {
         case .description(let photoId):
-            return "/description/\(photoId)"
+            return "/descriptions/\(photoId)"
         }
     }
     
