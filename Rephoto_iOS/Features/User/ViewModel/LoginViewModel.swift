@@ -16,7 +16,7 @@ final class LoginViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var isLoggedIn: Bool = false
     @Published var userInfo: UserInfoResponseDto?
-    @State var name: String = ""
+    @State var name: String = "리포토"
 
     /// 로그인(무인증) 전용
     private let plainProvider = MoyaProvider<UserAPITarget>()

@@ -17,6 +17,7 @@ struct SearchView: View {
         NavigationStack {
             ScrollView { content }
                 .navigationTitle("검색")
+                .toolbarTitleDisplayMode(.inlineLarge)
                 .searchable(text: $vm.query, prompt: "사진을 검색해보세요!")
         }
         .task { albumVM.fetchAlbums() }
@@ -29,7 +30,14 @@ struct SearchView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding()
         } else if vm.query.isEmpty {
-            albumView
+            if albumVM.albums.isEmpty {
+                Text("\n앨범이 없습니다. \n같은 태그를 가진 사진을 추가해보세요!")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .bold()
+            } else {
+                albumView
+            }
         } else if vm.searchResults.isEmpty {
             Text("검색 결과가 없습니다.")
                 .padding()

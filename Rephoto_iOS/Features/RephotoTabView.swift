@@ -21,7 +21,6 @@ struct RephotoTabView: View {
             }
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
                 SearchView()
-                    .navigationTitle("검색")
             }
         }
         .tint(.green)

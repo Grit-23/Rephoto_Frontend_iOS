@@ -31,7 +31,8 @@ struct HomeSheetView: View {
                 .frame(width: 52, height: 52)
             
             Text("\(loginViewModel.name)")
-                .font(.largeTitle)
+                .font(.title2)
+                .bold()
             
             Spacer()
             
