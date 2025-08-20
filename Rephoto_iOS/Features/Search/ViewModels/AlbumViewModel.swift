@@ -30,7 +30,7 @@ class AlbumViewModel {
                         self.getAlbumInfos()
                     }
                 } catch {
-                    print("❌ decode error:", error)
+                    self.albums.removeAll()
                 }
             case .failure(let error):
                 print("❌ network error:", error)

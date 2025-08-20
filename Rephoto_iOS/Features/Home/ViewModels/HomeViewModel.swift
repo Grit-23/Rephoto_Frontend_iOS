@@ -35,7 +35,7 @@ class HomeViewModel {
                     let mapped = dtos.map { $0.toHomeModel() }
                     DispatchQueue.main.async { self.images = mapped }
                 } catch {
-                    print("❌ decode error:", error)
+                    self.images.removeAll()
                 }
             case .failure(let error):
                 print("❌ network error:", error)
@@ -122,9 +122,6 @@ class HomeViewModel {
             switch result {
             case .success(let response):
                 print("📦 saveBatch Response: \(response.statusCode)")
-                if let json = try? JSONSerialization.jsonObject(with: response.data) {
-                    print("📦 Response JSON: \(json)")
-                }
             case .failure(let error):
                 print("❌ saveBatch Network Error:", error)
             }
