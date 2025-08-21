@@ -80,7 +80,7 @@ struct HomeView: View {
                         .padding(.top, 4)
                         .padding(.horizontal, 8)
                     LazyVGrid(columns: Array(repeating: item, count: 3), spacing: 4) {
-                        ForEach(vm.images) { photo in
+                        ForEach(vm.images.filter { $0.isSensitive == false }) { photo in
                             LazyImage(url: photo.imageUrl) { state in
                                 if let image = state.image {
                                     NavigationLink{
