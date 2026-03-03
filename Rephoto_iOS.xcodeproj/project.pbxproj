@@ -22,7 +22,7 @@
 		0BA0DA902F408A0D002D881B /* Exceptions for "Rephoto_iOS" folder in "Rephoto_iOS" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Resource/Config.xcconfig,
+				Core/Secrets/Config.xcconfig,
 			);
 			target = 0BE71D512E1657D500E85407 /* Rephoto_iOS */;
 		};
@@ -163,7 +163,7 @@
 		0BE71D5B2E1657D700E85407 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 0BE71D542E1657D500E85407 /* Rephoto_iOS */;
-			baseConfigurationReferenceRelativePath = Resource/Config.xcconfig;
+			baseConfigurationReferenceRelativePath = Core/Secrets/Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -230,7 +230,7 @@
 		0BE71D5C2E1657D700E85407 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 0BE71D542E1657D500E85407 /* Rephoto_iOS */;
-			baseConfigurationReferenceRelativePath = Resource/Config.xcconfig;
+			baseConfigurationReferenceRelativePath = Core/Secrets/Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -290,7 +290,7 @@
 		0BE71D5E2E1657D700E85407 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 0BE71D542E1657D500E85407 /* Rephoto_iOS */;
-			baseConfigurationReferenceRelativePath = Resource/Config.xcconfig;
+			baseConfigurationReferenceRelativePath = Core/Secrets/Config.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -329,7 +329,7 @@
 		0BE71D5F2E1657D700E85407 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 0BE71D542E1657D500E85407 /* Rephoto_iOS */;
-			baseConfigurationReferenceRelativePath = Resource/Config.xcconfig;
+			baseConfigurationReferenceRelativePath = Core/Secrets/Config.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
