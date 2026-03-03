@@ -12,20 +12,20 @@ struct ContentView: View {
     
     var body: some View {
         Group {
-            if loginViewModel.isLoggedIn {
+//            if loginViewModel.isLoggedIn {
                 RephotoTabView()
-            } else {
-                LoginView(onLoginSuccess: {
-                    loginViewModel.isLoggedIn = true
-                })
-            }
+//            } else {
+//                LoginView(onLoginSuccess: {
+//                    loginViewModel.isLoggedIn = true
+//                })
+//            }
         }
-        .task {
-            if let token = UserDefaults.standard.string(forKey: "accessToken"),
-               !token.isEmpty {
-                loginViewModel.isLoggedIn = true
-            }
-        }
+//        .task {
+//            if let token = UserDefaults.standard.string(forKey: "accessToken"),
+//               !token.isEmpty {
+//                loginViewModel.isLoggedIn = true
+//            }
+//        }
     }
 }
 
