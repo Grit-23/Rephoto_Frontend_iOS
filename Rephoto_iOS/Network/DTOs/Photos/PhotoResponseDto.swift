@@ -2,7 +2,7 @@
 // DTOs/Photos/PhotoResponseDto.swift
 import Foundation
 
-public struct PhotoResponseDto: Codable {
+public struct PhotoResponseDto: Codable, Equatable, Hashable {
     public let photoId: Int
     public let imageUrl: URL
     public let latitude: Double

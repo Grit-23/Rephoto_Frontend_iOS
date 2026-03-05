@@ -18,22 +18,9 @@
 		0BE71D522E1657D500E85407 /* Rephoto_iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rephoto_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		0BA0DA902F408A0D002D881B /* Exceptions for "Rephoto_iOS" folder in "Rephoto_iOS" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Core/Secrets/Config.xcconfig,
-			);
-			target = 0BE71D512E1657D500E85407 /* Rephoto_iOS */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0BE71D542E1657D500E85407 /* Rephoto_iOS */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				0BA0DA902F408A0D002D881B /* Exceptions for "Rephoto_iOS" folder in "Rephoto_iOS" target */,
-			);
 			path = Rephoto_iOS;
 			sourceTree = "<group>";
 		};
@@ -298,7 +285,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Rephoto-iOS-Info.plist";
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "사진권한";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -337,7 +324,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Rephoto-iOS-Info.plist";
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "사진권한";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
