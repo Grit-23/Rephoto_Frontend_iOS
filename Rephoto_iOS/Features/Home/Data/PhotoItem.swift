@@ -27,11 +27,11 @@ class PhotoItem {
         id: String,
         imageUrl: String,
         imageData: Data? = nil,
-        memo: String? = nil
+        createdAt: Date = Date()
     ) {
         self.id = id
         self.imageUrl = imageUrl
         self.imageData = imageData
-        self.createdAt = Date()
+        self.createdAt = createdAt
     }
 }
