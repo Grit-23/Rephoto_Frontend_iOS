@@ -13,9 +13,21 @@
 
 > 모든 테스트는 **현재 코드 방식만** 측정합니다. 리팩토링 후 코드가 바뀌면 같은 테스트의 결과가 달라지므로 자동으로 비교됩니다.
 
+### 실행 환경 기록
+
+벤치마크 결과를 비교할 때는 동일한 환경에서 실행해야 합니다. 테스트 실행 전 아래 항목을 기록해두세요.
+
+| 항목 | 값 |
+|---|---|
+| Device / Simulator | (예: iPhone 16 Pro Simulator) |
+| OS Version | (예: iOS 18.4) |
+| Xcode Version | (예: 16.4) |
+| Build Configuration | Debug |
+| 병렬 실행 | OFF (직렬) |
+
 ---
 
-## 테스트 파일 구성 (37개 테스트, 87개 metric)
+## 테스트 파일 구성 (39개 테스트)
 
 ### `MockDataFactory.swift`
 공용 Mock 데이터 생성 팩토리.
@@ -56,7 +68,9 @@
 | `test_mapToHomeModel_1000` | 1000개 |
 | `test_fullPipeline_decodeAndMap_100` | JSON → DTO → HomeModel 전체 파이프라인 100개 |
 | `test_fullPipeline_decodeAndMap_500` | 500개 |
-| `test_filterSensitivePhotos_1000` | isSensitive 필터링 |
+| `test_filterNonSensitivePhotos_1000` | 비민감 사진 필터링 |
+| `test_filterSensitivePhotos_1000` | 민감 사진 필터링 |
+| `test_countSensitivePhotos_1000` | 민감 사진 카운트 |
 
 ---
 

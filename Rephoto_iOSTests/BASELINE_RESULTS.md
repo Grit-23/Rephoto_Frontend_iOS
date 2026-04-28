@@ -324,28 +324,28 @@
 | `DecodingPerformanceTests/test_decodeSearchResponse_50()` | 0.000070 | 0.0 |
 | `ImageCompressionPerformanceTests/test_jpegCompression_quality100_4K()` | 1.046277 | 3.3 |
 | `ImageCompressionPerformanceTests/test_noCompression_originalData_4K()` | 0.000005 | 0.0 |
-| `MappingPerformanceTests/test_filterSensitivePhotos_1000()` | 0.000387 |  |
+| `MappingPerformanceTests/test_filterSensitivePhotos_1000()` | 0.000387 | N/A |
 | `MappingPerformanceTests/test_fullPipeline_decodeAndMap_100()` | 0.005101 | 0.0 |
 | `MappingPerformanceTests/test_fullPipeline_decodeAndMap_500()` | 0.027700 | 0.0 |
 | `MappingPerformanceTests/test_mapToHomeModel_100()` | 0.005152 | 0.0 |
 | `MappingPerformanceTests/test_mapToHomeModel_1000()` | 0.054061 | 0.0 |
 | `MappingPerformanceTests/test_mapToHomeModel_500()` | 0.027441 | 0.0 |
-| `MemoryPerformanceTests/test_memoryFootprint_homeModels_1000()` |  | 0.0 |
-| `MemoryPerformanceTests/test_memoryFootprint_searchResults_500()` |  | 0.0 |
+| `MemoryPerformanceTests/test_memoryFootprint_homeModels_1000()` | N/A | 0.0 |
+| `MemoryPerformanceTests/test_memoryFootprint_searchResults_500()` | N/A | 0.0 |
 | `MemoryPerformanceTests/test_memoryPeak_fullPipeline_1000()` | 0.060709 | 0.0 |
-| `PhotoInfoPerformanceTests/test_decodeTags_10()` | 0.000020 |  |
-| `PhotoInfoPerformanceTests/test_decodeTags_100()` | 0.000123 |  |
-| `PhotoInfoPerformanceTests/test_descriptionTrimming_1000()` | 0.000224 |  |
-| `PhotoInfoPerformanceTests/test_encodeTagRequest_1000()` | 0.000815 |  |
-| `PhotoInfoPerformanceTests/test_optimisticTagUpdate_in10()` | 0.000373 |  |
-| `PhotoInfoPerformanceTests/test_optimisticTagUpdate_in100()` | 0.004721 |  |
+| `PhotoInfoPerformanceTests/test_decodeTags_10()` | 0.000020 | N/A |
+| `PhotoInfoPerformanceTests/test_decodeTags_100()` | 0.000123 | N/A |
+| `PhotoInfoPerformanceTests/test_descriptionTrimming_1000()` | 0.000224 | N/A |
+| `PhotoInfoPerformanceTests/test_encodeTagRequest_1000()` | 0.000815 | N/A |
+| `PhotoInfoPerformanceTests/test_optimisticTagUpdate_in10()` | 0.000373 | N/A |
+| `PhotoInfoPerformanceTests/test_optimisticTagUpdate_in100()` | 0.004721 | N/A |
 | `PhotoInfoPerformanceTests/test_tagAppend_1000()` | 0.000149 | 0.0 |
 | `PhotoLoadingPerformanceTests/test_dataContentsOf_4K()` | 0.000179 | 3.3 |
 | `PhotoLoadingPerformanceTests/test_fileCopy_10photos()` | 0.002550 | 0.0 |
 | `PhotoLoadingPerformanceTests/test_loadAndParseEXIF_10photos()` | 0.002938 | 0.0 |
 | `PhotoLoadingPerformanceTests/test_sequentialLoad_10photos()` | 0.000684 | 0.0 |
 | `TokenPerformanceTests/test_tokenRefreshCycle_500()` | 0.300955 | 131.1 |
-| `TokenPerformanceTests/test_tokenStore_clear_1000()` | 1.545915 |  |
-| `TokenPerformanceTests/test_tokenStore_hasTokens_check_1000()` | 0.000849 |  |
-| `TokenPerformanceTests/test_tokenStore_read_1000()` | 0.000902 |  |
-| `TokenPerformanceTests/test_tokenStore_save_1000()` | 0.493205 |  |
+| `TokenPerformanceTests/test_tokenStore_clear_1000()` | 1.545915 | N/A |
+| `TokenPerformanceTests/test_tokenStore_hasTokens_check_1000()` | 0.000849 | N/A |
+| `TokenPerformanceTests/test_tokenStore_read_1000()` | 0.000902 | N/A |
+| `TokenPerformanceTests/test_tokenStore_save_1000()` | 0.493205 | N/A |
