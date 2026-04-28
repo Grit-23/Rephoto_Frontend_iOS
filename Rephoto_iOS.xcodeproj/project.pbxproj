@@ -25,6 +25,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0B68FCF22FA12B44006ADAC4 /* Rephoto_iOS.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = file; path = Rephoto_iOS.xctestplan; sourceTree = "<group>"; };
 		0B88F6202FA0E1E0001E9851 /* Rephoto_iOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Rephoto_iOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0BE71D522E1657D500E85407 /* Rephoto_iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rephoto_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -81,6 +82,7 @@
 		0BE71D492E1657D500E85407 = {
 			isa = PBXGroup;
 			children = (
+				0B68FCF22FA12B44006ADAC4 /* Rephoto_iOS.xctestplan */,
 				0BE71D542E1657D500E85407 /* Rephoto_iOS */,
 				0B88F6212FA0E1E0001E9851 /* Rephoto_iOSTests */,
 				0BE71D532E1657D500E85407 /* Products */,

@@ -1,0 +1,30 @@
+{
+  "configurations" : [
+    {
+      "id" : "70BCBDBC-3BE0-410D-AA1E-E14C6AADB199",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:Rephoto_iOS.xcodeproj",
+      "identifier" : "0BE71D512E1657D500E85407",
+      "name" : "Rephoto_iOS"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Rephoto_iOS.xcodeproj",
+        "identifier" : "0B88F61F2FA0E1E0001E9851",
+        "name" : "Rephoto_iOSTests"
+      }
+    }
+  ],
+  "version" : 1
+}
