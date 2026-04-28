@@ -30,5 +30,4 @@ struct RephotoTabView: View {
 
 #Preview {
     RephotoTabView()
-        .environmentObject(LoginViewModel())
 }
