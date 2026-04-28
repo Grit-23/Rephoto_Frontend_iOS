@@ -8,6 +8,7 @@
 
 import XCTest
 import UIKit
+import ImageIO
 @testable import Rephoto_iOS
 
 final class PhotoLoadingPerformanceTests: XCTestCase {
@@ -27,17 +28,67 @@ final class PhotoLoadingPerformanceTests: XCTestCase {
         let image = renderer.image { ctx in
             UIColor.blue.setFill()
             ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
-            for _ in 0..<100 {
-                UIColor(red: .random(in: 0...1), green: .random(in: 0...1),
-                        blue: .random(in: 0...1), alpha: 0.5).setFill()
-                ctx.fill(CGRect(x: Int.random(in: 0..<width), y: Int.random(in: 0..<height),
-                                width: Int.random(in: 10...100), height: Int.random(in: 10...100)))
+            for i in 0..<100 {
+                let rect = CGRect(
+                    x: (i * 37) % width,
+                    y: (i * 53) % height,
+                    width: 10 + ((i * 7) % 91),
+                    height: 10 + ((i * 11) % 91)
+                )
+                UIColor(
+                    red: CGFloat((i * 17) % 255) / 255.0,
+                    green: CGFloat((i * 29) % 255) / 255.0,
+                    blue: CGFloat((i * 43) % 255) / 255.0,
+                    alpha: 0.5
+                ).setFill()
+                ctx.fill(rect)
             }
         }
         let data = image.jpegData(compressionQuality: quality)!
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("perf_\(UUID().uuidString).jpg")
         try! data.write(to: url)
+        tempFiles.append(url)
+        return url
+    }
+
+    /// EXIF/GPS 메타데이터가 포함된 JPEG 생성
+    private func makeTempJPEGWithEXIF(width: Int, height: Int) -> URL {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height))
+        let image = renderer.image { ctx in
+            UIColor.blue.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        }
+        let imageData = image.jpegData(compressionQuality: 0.8)!
+
+        let source = CGImageSourceCreateWithData(imageData as CFData, nil)!
+        let uti = CGImageSourceGetType(source)!
+        let mutableData = NSMutableData()
+        let destination = CGImageDestinationCreateWithData(mutableData, uti, 1, nil)!
+
+        let exifDict: [String: Any] = [
+            kCGImagePropertyExifDateTimeOriginal as String: "2025:07:15 12:00:00",
+            kCGImagePropertyExifLensMake as String: "TestLens",
+            kCGImagePropertyExifISOSpeedRatings as String: [100],
+            kCGImagePropertyExifFNumber as String: 2.8
+        ]
+        let gpsDict: [String: Any] = [
+            kCGImagePropertyGPSLatitude as String: 37.5665,
+            kCGImagePropertyGPSLatitudeRef as String: "N",
+            kCGImagePropertyGPSLongitude as String: 126.9780,
+            kCGImagePropertyGPSLongitudeRef as String: "E"
+        ]
+        let properties: [String: Any] = [
+            kCGImagePropertyExifDictionary as String: exifDict,
+            kCGImagePropertyGPSDictionary as String: gpsDict
+        ]
+
+        CGImageDestinationAddImageFromSource(destination, source, 0, properties as CFDictionary)
+        CGImageDestinationFinalize(destination)
+
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("perf_exif_\(UUID().uuidString).jpg")
+        try! (mutableData as Data).write(to: url)
         tempFiles.append(url)
         return url
     }
@@ -76,8 +127,13 @@ final class PhotoLoadingPerformanceTests: XCTestCase {
             for source in sources {
                 let dest = FileManager.default.temporaryDirectory
                     .appendingPathComponent("copy_\(UUID().uuidString).jpg")
-                try? FileManager.default.copyItem(at: source, to: dest)
-                try? FileManager.default.removeItem(at: dest)
+                do {
+                    try FileManager.default.copyItem(at: source, to: dest)
+                    try FileManager.default.removeItem(at: dest)
+                } catch {
+                    XCTFail("File copy/remove failed: \(error)")
+                    break
+                }
             }
         }
     }
@@ -86,7 +142,7 @@ final class PhotoLoadingPerformanceTests: XCTestCase {
 
     /// 파일 읽기 → EXIF 파싱 10장 순차 (현재 전체 플로우)
     func test_loadAndParseEXIF_10photos() {
-        let urls = (0..<10).map { _ in makeTempJPEG(width: 4000, height: 3000) }
+        let urls = (0..<10).map { _ in makeTempJPEGWithEXIF(width: 4000, height: 3000) }
 
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
             for url in urls {

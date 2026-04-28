@@ -25,15 +25,19 @@ final class ImageCompressionPerformanceTests: XCTestCase {
                                             start: .zero,
                                             end: CGPoint(x: width, y: height),
                                             options: [])
-            for _ in 0..<200 {
-                let rect = CGRect(x: Int.random(in: 0..<width),
-                                  y: Int.random(in: 0..<height),
-                                  width: Int.random(in: 5...50),
-                                  height: Int.random(in: 5...50))
-                UIColor(red: .random(in: 0...1),
-                        green: .random(in: 0...1),
-                        blue: .random(in: 0...1),
-                        alpha: 0.5).setFill()
+            for i in 0..<200 {
+                let rect = CGRect(
+                    x: (i * 37) % width,
+                    y: (i * 53) % height,
+                    width: 5 + ((i * 7) % 46),
+                    height: 5 + ((i * 11) % 46)
+                )
+                UIColor(
+                    red: CGFloat((i * 17) % 255) / 255.0,
+                    green: CGFloat((i * 29) % 255) / 255.0,
+                    blue: CGFloat((i * 43) % 255) / 255.0,
+                    alpha: 0.5
+                ).setFill()
                 ctx.fill(rect)
             }
         }

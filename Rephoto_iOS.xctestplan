@@ -18,7 +18,7 @@
   },
   "testTargets" : [
     {
-      "parallelizable" : true,
+      "parallelizable" : false,
       "target" : {
         "containerPath" : "container:Rephoto_iOS.xcodeproj",
         "identifier" : "0B88F61F2FA0E1E0001E9851",

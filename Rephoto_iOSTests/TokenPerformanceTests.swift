@@ -22,12 +22,12 @@ final class TokenPerformanceTests: XCTestCase {
     /// 토큰 저장 1000회 (현재 방식: UserDefaults)
     func test_tokenStore_save_1000() {
         let store = TokenStore.shared
+        let tokenPairs = (0..<1000).map {
+            TokenPair(accessToken: "access-token-\($0)", refreshToken: "refresh-token-\($0)")
+        }
         measure(metrics: [XCTClockMetric()]) {
-            for i in 0..<1000 {
-                store.save(TokenPair(
-                    accessToken: "access-token-\(i)",
-                    refreshToken: "refresh-token-\(i)"
-                ))
+            for pair in tokenPairs {
+                store.save(pair)
             }
         }
     }

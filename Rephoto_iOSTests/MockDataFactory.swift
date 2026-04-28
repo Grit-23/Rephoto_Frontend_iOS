@@ -17,8 +17,8 @@ enum MockDataFactory {
         [
             "photoId": id,
             "imageUrl": "https://example.com/photos/photo_\(id).jpg",
-            "latitude": 37.5665 + Double.random(in: -0.05...0.05),
-            "longitude": 126.9780 + Double.random(in: -0.05...0.05),
+            "latitude": 37.5665 + (Double((id % 11) - 5) * 0.01),
+            "longitude": 126.9780 + (Double((id % 11) - 5) * 0.01),
             "createdAt": "2025-07-\(String(format: "%02d", (id % 28) + 1))T12:00:00",
             "fileName": "IMG_\(id).jpg",
             "tags": ["풍경", "서울", "여행"],
@@ -28,6 +28,7 @@ enum MockDataFactory {
 
     /// N개의 사진 JSON Data
     static func photosJSONData(count: Int) -> Data {
+        guard count > 0 else { return Data("[]".utf8) }
         let array = (1...count).map { photoJSON(id: $0) }
         return try! JSONSerialization.data(withJSONObject: array)
     }
@@ -35,6 +36,10 @@ enum MockDataFactory {
     // MARK: - Search JSON
 
     static func searchResponseJSON(resultCount: Int) -> Data {
+        guard resultCount > 0 else {
+            let response: [String: Any] = ["query": "테스트 검색어", "searchResults": []]
+            return try! JSONSerialization.data(withJSONObject: response)
+        }
         let results: [[String: Any]] = (1...resultCount).map { i in
             [
                 "imageUrl": "https://example.com/photos/search_\(i).jpg",
@@ -51,6 +56,7 @@ enum MockDataFactory {
     // MARK: - Album JSON
 
     static func albumListJSON(count: Int) -> Data {
+        guard count > 0 else { return Data("[]".utf8) }
         let albums: [[String: Any]] = (1...count).map { i in
             [
                 "userId": 1,
