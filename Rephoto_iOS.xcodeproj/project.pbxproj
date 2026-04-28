@@ -14,19 +14,56 @@
 		0B58CB8B2E269EA00074972F /* NukeVideo in Frameworks */ = {isa = PBXBuildFile; productRef = 0B58CB8A2E269EA00074972F /* NukeVideo */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		0B88F6242FA0E1E0001E9851 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0BE71D4A2E1657D500E85407 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0BE71D512E1657D500E85407;
+			remoteInfo = Rephoto_iOS;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		0B68FCF22FA12B44006ADAC4 /* Rephoto_iOS.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = file; path = Rephoto_iOS.xctestplan; sourceTree = "<group>"; };
+		0B88F6202FA0E1E0001E9851 /* Rephoto_iOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Rephoto_iOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0BE71D522E1657D500E85407 /* Rephoto_iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rephoto_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0B88F6562FA10905001E9851 /* Exceptions for "Rephoto_iOS" folder in "Rephoto_iOS" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Resource/Config.xcconfig,
+			);
+			target = 0BE71D512E1657D500E85407 /* Rephoto_iOS */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		0B88F6212FA0E1E0001E9851 /* Rephoto_iOSTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Rephoto_iOSTests;
+			sourceTree = "<group>";
+		};
 		0BE71D542E1657D500E85407 /* Rephoto_iOS */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0B88F6562FA10905001E9851 /* Exceptions for "Rephoto_iOS" folder in "Rephoto_iOS" target */,
+			);
 			path = Rephoto_iOS;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		0B88F61D2FA0E1E0001E9851 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		0BE71D4F2E1657D500E85407 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -45,7 +82,9 @@
 		0BE71D492E1657D500E85407 = {
 			isa = PBXGroup;
 			children = (
+				0B68FCF22FA12B44006ADAC4 /* Rephoto_iOS.xctestplan */,
 				0BE71D542E1657D500E85407 /* Rephoto_iOS */,
+				0B88F6212FA0E1E0001E9851 /* Rephoto_iOSTests */,
 				0BE71D532E1657D500E85407 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +93,7 @@
 			isa = PBXGroup;
 			children = (
 				0BE71D522E1657D500E85407 /* Rephoto_iOS.app */,
+				0B88F6202FA0E1E0001E9851 /* Rephoto_iOSTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,6 +101,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		0B88F61F2FA0E1E0001E9851 /* Rephoto_iOSTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0B88F6282FA0E1E0001E9851 /* Build configuration list for PBXNativeTarget "Rephoto_iOSTests" */;
+			buildPhases = (
+				0B88F61C2FA0E1E0001E9851 /* Sources */,
+				0B88F61D2FA0E1E0001E9851 /* Frameworks */,
+				0B88F61E2FA0E1E0001E9851 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0B88F6252FA0E1E0001E9851 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0B88F6212FA0E1E0001E9851 /* Rephoto_iOSTests */,
+			);
+			name = Rephoto_iOSTests;
+			packageProductDependencies = (
+			);
+			productName = Rephoto_iOSTests;
+			productReference = 0B88F6202FA0E1E0001E9851 /* Rephoto_iOSTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		0BE71D512E1657D500E85407 /* Rephoto_iOS */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0BE71D5D2E1657D700E85407 /* Build configuration list for PBXNativeTarget "Rephoto_iOS" */;
@@ -95,9 +158,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 2600;
+				LastSwiftUpdateCheck = 2640;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
+					0B88F61F2FA0E1E0001E9851 = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 0BE71D512E1657D500E85407;
+					};
 					0BE71D512E1657D500E85407 = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -122,11 +189,19 @@
 			projectRoot = "";
 			targets = (
 				0BE71D512E1657D500E85407 /* Rephoto_iOS */,
+				0B88F61F2FA0E1E0001E9851 /* Rephoto_iOSTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		0B88F61E2FA0E1E0001E9851 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		0BE71D502E1657D500E85407 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -137,6 +212,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		0B88F61C2FA0E1E0001E9851 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		0BE71D4E2E1657D500E85407 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -146,7 +228,63 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		0B88F6252FA0E1E0001E9851 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0BE71D512E1657D500E85407 /* Rephoto_iOS */;
+			targetProxy = 0B88F6242FA0E1E0001E9851 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		0B88F6262FA0E1E0001E9851 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 0BE71D542E1657D500E85407 /* Rephoto_iOS */;
+			baseConfigurationReferenceRelativePath = Resource/Config.xcconfig;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9NLDD768V4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.dodle.Rephoto-iOSTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Rephoto_iOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Rephoto_iOS";
+			};
+			name = Debug;
+		};
+		0B88F6272FA0E1E0001E9851 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 0BE71D542E1657D500E85407 /* Rephoto_iOS */;
+			baseConfigurationReferenceRelativePath = Resource/Config.xcconfig;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9NLDD768V4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.dodle.Rephoto-iOSTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Rephoto_iOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Rephoto_iOS";
+			};
+			name = Release;
+		};
 		0BE71D5B2E1657D700E85407 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 0BE71D542E1657D500E85407 /* Rephoto_iOS */;
@@ -355,6 +493,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		0B88F6282FA0E1E0001E9851 /* Build configuration list for PBXNativeTarget "Rephoto_iOSTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0B88F6262FA0E1E0001E9851 /* Debug */,
+				0B88F6272FA0E1E0001E9851 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		0BE71D4D2E1657D500E85407 /* Build configuration list for PBXProject "Rephoto_iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
