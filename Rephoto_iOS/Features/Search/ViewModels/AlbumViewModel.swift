@@ -8,10 +8,12 @@
 import SwiftUI
 import Moya
 import Observation
+import Factory
 
 @Observable
 class AlbumViewModel {
-    private let provider = MoyaProvider<AlbumAPITarget>()
+    @ObservationIgnored
+    @Injected(\.albumProvider) private var provider
 
     var albums: [AlbumResponseDto] = []
     var albumInfo: [[HomeModel]] = []   // ← 빈 배열로 시작

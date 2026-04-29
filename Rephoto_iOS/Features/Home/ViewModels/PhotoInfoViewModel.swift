@@ -8,12 +8,16 @@
 import SwiftUI
 import Moya
 import Observation
+import Factory
 
 @Observable
 class PhotoInfoViewModel {
-    private let photoProvider = MoyaProvider<PhotosAPITarget>()
-    private let provider = MoyaProvider<TagAPITarget>()
-    private let descriptionProvider = MoyaProvider<DescriptionAPITarget>()
+    @ObservationIgnored
+    @Injected(\.photosProvider) private var photoProvider
+    @ObservationIgnored
+    @Injected(\.tagProvider) private var provider
+    @ObservationIgnored
+    @Injected(\.descriptionProvider) private var descriptionProvider
     
     var isDeleted: Bool = false
     var tags: [TagResponseDto] = []   // ✅ PhotoInfoView 전용 태그 리스트
