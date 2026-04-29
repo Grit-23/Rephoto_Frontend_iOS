@@ -11,15 +11,17 @@ import Moya
 import PhotosUI
 import Photos
 import UIKit
+import Factory
 
 @Observable
 class HomeViewModel {
     var images: [HomeModel] = []
     var imageUrl: String = ""
-    
+
     var isWarningsCount: Int { images.count(where: { $0.isSensitive }) }
-    
-    private let provider = MoyaProvider<PhotosAPITarget>()
+
+    @ObservationIgnored
+    @Injected(\.photosProvider) private var provider
     
     init() {
         fetchPhotos()

@@ -9,21 +9,22 @@
 import Foundation
 import Combine
 import Moya
+import Factory
 
 @MainActor
 final class SearchViewModel: ObservableObject {
     // MARK: - Input
     @Published var query: String = ""
-    
+
     // MARK: - Output
     @Published var items: [CategoryItem] = []
     @Published var searchResults: [SearchResults] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    
+
     // MARK: - Private
     private var cancellables = Set<AnyCancellable>()
-    private let provider = MoyaProvider<SearchAPITarget>()
+    @Injected(\.searchProvider) private var provider
     
     /// 현재 in-flight Moya 요청 토큰
     private var currentRequest: Moya.Cancellable?

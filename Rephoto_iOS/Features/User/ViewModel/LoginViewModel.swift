@@ -8,6 +8,7 @@
 import SwiftUI
 import Combine
 import Moya
+import Factory
 
 final class LoginViewModel: ObservableObject {
     @Published var loginId: String = ""
@@ -19,9 +20,9 @@ final class LoginViewModel: ObservableObject {
     @State var name: String = "리포토"
 
     /// 로그인(무인증) 전용
-    private let plainProvider = MoyaProvider<UserAPITarget>()
+    @Injected(\.plainUserProvider) private var plainProvider
     /// 인증요청(만료 시 자동 리프레시 & 재시도)
-    private let authedProvider = AuthedProvider()
+    @Injected(\.authedProvider) private var authedProvider
 
     init() {
         // 앱 시작 시 토큰이 남아있다면 로그인 유지
