@@ -14,11 +14,6 @@ struct RephotoTabView: View {
             Tab("홈", image: "home") {
                 HomeView()
             }
-            Tab("지도", image: "map") {
-                NavigationStack {
-                    MapView()
-                }
-            }
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
                 SearchView()
             }
