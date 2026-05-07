@@ -167,27 +167,29 @@
 
 ## MemoryPerformanceTests
 
+> 재측정일: 2026-05-07 — 객체 retain 방식으로 수정 후 재측정 (이전 측정은 measure 블록 내 할당/해제로 Memory Physical이 항상 0.0이었음)
+
 ### `test_memoryFootprint_homeModels_1000()`
 
 | Metric | 평균 | 단위 | 측정값 (5회) |
 |---|---|---|---|
-| Memory Peak Physical | **49088.8** | kB | 49088.8, 49088.8, 49088.8, 49088.8, 49088.8 |
-| Memory Physical | **0.0** | kB | 0.0, 0.0, 0.0, 0.0, 0.0 |
+| Memory Peak Physical | **39317.3** | kB | 39930.0, 39471.3, 39061.7, 39061.7, 39061.7 |
+| Memory Physical | **-59.0** | kB | 81.9, -376.8, 0.0, -16.4, 16.4 |
 
 ### `test_memoryFootprint_searchResults_500()`
 
 | Metric | 평균 | 단위 | 측정값 (5회) |
 |---|---|---|---|
-| Memory Peak Physical | **49088.8** | kB | 49088.8, 49088.8, 49088.8, 49088.8, 49088.8 |
-| Memory Physical | **0.0** | kB | 0.0, 0.0, 0.0, 0.0, 0.0 |
+| Memory Peak Physical | **40913.1** | kB | 40913.1, 40913.1, 40913.1, 40913.1, 40913.1 |
+| Memory Physical | **3.3** | kB | 16.4, 0.0, 0.0, 0.0, 0.0 |
 
 ### `test_memoryPeak_fullPipeline_1000()`
 
 | Metric | 평균 | 단위 | 측정값 (5회) |
 |---|---|---|---|
-| Clock Monotonic Time | **0.060709** | s | 0.061687, 0.059630, 0.060669, 0.061280, 0.060278 |
-| Memory Peak Physical | **49092.0** | kB | 49088.8, 49088.8, 49088.8, 49088.8, 49105.2 |
-| Memory Physical | **0.0** | kB | 0.0, 0.0, 0.0, 0.0, 0.0 |
+| Clock Monotonic Time | **0.065328** | s | 0.061985, 0.063404, 0.064062, 0.070460, 0.066730 |
+| Memory Peak Physical | **41142.5** | kB | 41289.9, 41175.2, 41076.9, 41076.9, 41093.3 |
+| Memory Physical | **19.7** | kB | 180.2, -98.3, 0.0, 0.0, 16.4 |
 
 
 ## PhotoInfoPerformanceTests
@@ -330,9 +332,9 @@
 | `MappingPerformanceTests/test_mapToHomeModel_100()` | 0.005152 | 0.0 |
 | `MappingPerformanceTests/test_mapToHomeModel_1000()` | 0.054061 | 0.0 |
 | `MappingPerformanceTests/test_mapToHomeModel_500()` | 0.027441 | 0.0 |
-| `MemoryPerformanceTests/test_memoryFootprint_homeModels_1000()` | N/A | 0.0 |
-| `MemoryPerformanceTests/test_memoryFootprint_searchResults_500()` | N/A | 0.0 |
-| `MemoryPerformanceTests/test_memoryPeak_fullPipeline_1000()` | 0.060709 | 0.0 |
+| `MemoryPerformanceTests/test_memoryFootprint_homeModels_1000()` | N/A | Peak: 39317.3 |
+| `MemoryPerformanceTests/test_memoryFootprint_searchResults_500()` | N/A | Peak: 40913.1 |
+| `MemoryPerformanceTests/test_memoryPeak_fullPipeline_1000()` | 0.065328 | Peak: 41142.5 |
 | `PhotoInfoPerformanceTests/test_decodeTags_10()` | 0.000020 | N/A |
 | `PhotoInfoPerformanceTests/test_decodeTags_100()` | 0.000123 | N/A |
 | `PhotoInfoPerformanceTests/test_descriptionTrimming_1000()` | 0.000224 | N/A |
