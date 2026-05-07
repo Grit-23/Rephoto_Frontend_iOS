@@ -10,13 +10,24 @@ import XCTest
 
 final class MemoryPerformanceTests: XCTestCase {
 
+    // measure 블록 종료 후에도 객체를 retain하여 메모리 delta 측정
+    private var retainedModels: [HomeModel] = []
+    private var retainedSearchResult: SearchResponseDto?
+    private var retainedDtos: [PhotoResponseDto] = []
+
+    override func tearDown() {
+        retainedModels = []
+        retainedSearchResult = nil
+        retainedDtos = []
+        super.tearDown()
+    }
+
     /// HomeModel 배열 대량 생성 시 메모리 사용량
     func test_memoryFootprint_homeModels_1000() {
         measure(metrics: [XCTMemoryMetric()]) {
             let dtos = MockDataFactory.photoResponseDTOs(count: 1000)
-            let models = dtos.map { $0.toHomeModel() }
-            // 메모리에 유지되도록 강제
-            XCTAssertEqual(models.count, 1000)
+            retainedModels = dtos.map { $0.toHomeModel() }
+            XCTAssertEqual(retainedModels.count, 1000)
         }
     }
 
@@ -24,8 +35,8 @@ final class MemoryPerformanceTests: XCTestCase {
     func test_memoryFootprint_searchResults_500() {
         let data = MockDataFactory.searchResponseJSON(resultCount: 500)
         measure(metrics: [XCTMemoryMetric()]) {
-            let decoded = try? JSONDecoder().decode(SearchResponseDto.self, from: data)
-            XCTAssertEqual(decoded?.searchResults.count, 500)
+            retainedSearchResult = try? JSONDecoder().decode(SearchResponseDto.self, from: data)
+            XCTAssertEqual(retainedSearchResult?.searchResults.count, 500)
         }
     }
 
@@ -34,9 +45,9 @@ final class MemoryPerformanceTests: XCTestCase {
         let data = MockDataFactory.photosJSONData(count: 1000)
         measure(metrics: [XCTMemoryMetric(), XCTClockMetric()]) {
             // 레거시에서는 DTO 배열과 Model 배열이 동시에 메모리에 존재
-            let dtos = try! JSONDecoder().decode([PhotoResponseDto].self, from: data)
-            let models = dtos.map { $0.toHomeModel() }
-            XCTAssertEqual(models.count, 1000)
+            retainedDtos = try! JSONDecoder().decode([PhotoResponseDto].self, from: data)
+            retainedModels = retainedDtos.map { $0.toHomeModel() }
+            XCTAssertEqual(retainedModels.count, 1000)
         }
     }
 }
