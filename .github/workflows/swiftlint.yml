@@ -40,6 +40,6 @@ jobs:
           xcodebuild build \
             -project Rephoto_iOS.xcodeproj \
             -scheme Rephoto_iOS \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO
