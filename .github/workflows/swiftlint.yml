@@ -36,10 +36,10 @@ jobs:
           echo 'BASE_URL = https:/$()/placeholder.com' > Rephoto_iOS/Resource/Config.xcconfig
 
       - name: Build
-        run: |                                                                  
+        run: |
           xcodebuild build \
             -project Rephoto_iOS.xcodeproj \
             -scheme Rephoto_iOS \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \               
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO
