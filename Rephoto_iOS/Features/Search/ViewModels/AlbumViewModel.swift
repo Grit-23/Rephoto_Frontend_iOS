@@ -47,10 +47,9 @@ class AlbumViewModel {
             case .success(let response):
                 do {
                     let dtos = try JSONDecoder().decode([PhotoResponseDTO].self, from: response.data)
+                    let mapped = try dtos.map { try $0.toDomain() }
                     DispatchQueue.main.async {
-                        // 방어적 체크
                         if index < self.albumInfo.count {
-                            let mapped = try dtos.map { try $0.toDomain() }
                             self.albumInfo[index] = mapped
                         }
                     }

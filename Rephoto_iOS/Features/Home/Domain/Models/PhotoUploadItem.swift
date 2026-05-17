@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct PhotoUploadItem: Sendable {
+struct PhotoUploadItem: Sendable, Equatable {
     let latitude: Double
     let longitude: Double
     let imageUrl: String
