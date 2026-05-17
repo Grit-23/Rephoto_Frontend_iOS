@@ -18,9 +18,9 @@ final class CacheHashPerformanceTests: XCTestCase {
 
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
             // 현재 fetchPhotos(): 전체 디코딩 + 전체 매핑 + 배열 교체
-            let dtos = try! JSONDecoder().decode([PhotoResponseDto].self, from: data)
-            let models = dtos.map { $0.toHomeModel() }
-            var images: [HomeModel] = []
+            let dtos = try! JSONDecoder().decode([PhotoResponseDTO].self, from: data)
+            let models = dtos.map { $0.toDomain() }
+            var images: [Photo] = []
             images = models  // 전체 교체
             XCTAssertEqual(images.count, 1000)
         }
@@ -31,9 +31,9 @@ final class CacheHashPerformanceTests: XCTestCase {
         let data = MockDataFactory.photosJSONData(count: 500)
 
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-            let dtos = try! JSONDecoder().decode([PhotoResponseDto].self, from: data)
-            let models = dtos.map { $0.toHomeModel() }
-            var images: [HomeModel] = []
+            let dtos = try! JSONDecoder().decode([PhotoResponseDTO].self, from: data)
+            let models = dtos.map { $0.toDomain() }
+            var images: [Photo] = []
             images = models
             XCTAssertEqual(images.count, 500)
         }

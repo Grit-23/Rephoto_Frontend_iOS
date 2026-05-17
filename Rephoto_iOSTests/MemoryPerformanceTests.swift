@@ -11,9 +11,9 @@ import XCTest
 final class MemoryPerformanceTests: XCTestCase {
 
     // measure 블록 종료 후에도 객체를 retain하여 메모리 delta 측정
-    private var retainedModels: [HomeModel] = []
+    private var retainedModels: [Photo] = []
     private var retainedSearchResult: SearchResponseDto?
-    private var retainedDtos: [PhotoResponseDto] = []
+    private var retainedDtos: [PhotoResponseDTO] = []
 
     override func tearDown() {
         retainedModels = []
@@ -22,11 +22,11 @@ final class MemoryPerformanceTests: XCTestCase {
         super.tearDown()
     }
 
-    /// HomeModel 배열 대량 생성 시 메모리 사용량
+    /// Photo 배열 대량 생성 시 메모리 사용량
     func test_memoryFootprint_homeModels_1000() {
         measure(metrics: [XCTMemoryMetric()]) {
             let dtos = MockDataFactory.photoResponseDTOs(count: 1000)
-            retainedModels = dtos.map { $0.toHomeModel() }
+            retainedModels = dtos.map { $0.toDomain() }
             XCTAssertEqual(retainedModels.count, 1000)
         }
     }
@@ -45,8 +45,8 @@ final class MemoryPerformanceTests: XCTestCase {
         let data = MockDataFactory.photosJSONData(count: 1000)
         measure(metrics: [XCTMemoryMetric(), XCTClockMetric()]) {
             // 레거시에서는 DTO 배열과 Model 배열이 동시에 메모리에 존재
-            retainedDtos = try! JSONDecoder().decode([PhotoResponseDto].self, from: data)
-            retainedModels = retainedDtos.map { $0.toHomeModel() }
+            retainedDtos = try! JSONDecoder().decode([PhotoResponseDTO].self, from: data)
+            retainedModels = retainedDtos.map { $0.toDomain() }
             XCTAssertEqual(retainedModels.count, 1000)
         }
     }

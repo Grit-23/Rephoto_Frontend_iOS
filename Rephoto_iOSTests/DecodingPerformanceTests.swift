@@ -21,30 +21,30 @@ final class DecodingPerformanceTests: XCTestCase {
         }
     }
 
-    // MARK: - PhotoResponseDto 디코딩
+    // MARK: - PhotoResponseDTO 디코딩
 
     /// 사진 10개 디코딩 성능
     func test_decodePhotos_10() throws {
         let data = MockDataFactory.photosJSONData(count: 10)
-        measureDecode([PhotoResponseDto].self, from: data)
+        measureDecode([PhotoResponseDTO].self, from: data)
     }
 
     /// 사진 100개 디코딩 성능
     func test_decodePhotos_100() throws {
         let data = MockDataFactory.photosJSONData(count: 100)
-        measureDecode([PhotoResponseDto].self, from: data)
+        measureDecode([PhotoResponseDTO].self, from: data)
     }
 
     /// 사진 500개 디코딩 성능 (대량 데이터)
     func test_decodePhotos_500() throws {
         let data = MockDataFactory.photosJSONData(count: 500)
-        measureDecode([PhotoResponseDto].self, from: data)
+        measureDecode([PhotoResponseDTO].self, from: data)
     }
 
     /// 사진 1000개 디코딩 성능 (스트레스 테스트)
     func test_decodePhotos_1000() throws {
         let data = MockDataFactory.photosJSONData(count: 1000)
-        measureDecode([PhotoResponseDto].self, from: data)
+        measureDecode([PhotoResponseDTO].self, from: data)
     }
 
     // MARK: - SearchResponseDto 디코딩

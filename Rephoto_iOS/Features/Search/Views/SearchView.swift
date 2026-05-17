@@ -139,7 +139,7 @@ struct SearchView: View {
 
     // 상세/검색 타일 공용
     @ViewBuilder
-    private func photoTile(side: CGFloat, photo: HomeModel) -> some View {
+    private func photoTile(side: CGFloat, photo: Photo) -> some View {
         LazyImage(url: photo.imageUrl) { state in
             if let image = state.image {
                 NavigationLink {
