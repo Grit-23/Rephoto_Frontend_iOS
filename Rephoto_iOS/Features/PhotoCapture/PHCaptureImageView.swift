@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 import ImageIO
 
 struct PHCaptureImageView: UIViewControllerRepresentable {
-    @Binding var photos: [PhotoMetadata]
+    @Binding var photos: [PhotoUploadItem]
 
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var configuration = PHPickerConfiguration(photoLibrary: PHPhotoLibrary.shared())
@@ -73,7 +73,7 @@ struct PHCaptureImageView: UIViewControllerRepresentable {
                         let destURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
                         try? FileManager.default.copyItem(at: url, to: destURL)
 
-                        let photoDTO = PhotoMetadata(
+                        let photoDTO = PhotoUploadItem(
                             latitude: latitude,
                             longitude: longitude,
                             imageUrl: destURL.absoluteString,

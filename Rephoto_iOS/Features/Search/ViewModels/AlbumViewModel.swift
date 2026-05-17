@@ -16,7 +16,7 @@ class AlbumViewModel {
     @Injected(\.albumProvider) private var provider
 
     var albums: [AlbumResponseDto] = []
-    var albumInfo: [[HomeModel]] = []   // ← 빈 배열로 시작
+    var albumInfo: [[Photo]] = []   // ← 빈 배열로 시작
 
     // 앨범 리스트 호출
     func fetchAlbums() {
@@ -46,11 +46,10 @@ class AlbumViewModel {
             switch result {
             case .success(let response):
                 do {
-                    let dtos = try JSONDecoder().decode([PhotoResponseDto].self, from: response.data)
+                    let dtos = try JSONDecoder().decode([PhotoResponseDTO].self, from: response.data)
+                    let mapped = try dtos.map { try $0.toDomain() }
                     DispatchQueue.main.async {
-                        // 방어적 체크
                         if index < self.albumInfo.count {
-                            let mapped = dtos.map { $0.toHomeModel() }
                             self.albumInfo[index] = mapped
                         }
                     }

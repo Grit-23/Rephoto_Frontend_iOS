@@ -8,10 +8,12 @@
 import SwiftUI
 import NukeUI
 import Observation
+import Factory
 
 struct SearchView: View {
     @StateObject private var vm = SearchViewModel()
     @State private var albumVM = AlbumViewModel()
+    @Injected(\.homeUseCaseProvider) private var homeProvider
 
     var body: some View {
         NavigationStack {
@@ -139,11 +141,11 @@ struct SearchView: View {
 
     // 상세/검색 타일 공용
     @ViewBuilder
-    private func photoTile(side: CGFloat, photo: HomeModel) -> some View {
+    private func photoTile(side: CGFloat, photo: Photo) -> some View {
         LazyImage(url: photo.imageUrl) { state in
             if let image = state.image {
                 NavigationLink {
-                    PhotoInfoView(photo: photo)
+                    PhotoInfoView(photo: photo, provider: homeProvider)
                 } label: {
                     image
                         .resizable()

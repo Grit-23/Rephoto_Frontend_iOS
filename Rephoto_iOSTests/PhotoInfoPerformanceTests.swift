@@ -26,7 +26,7 @@ final class PhotoInfoPerformanceTests: XCTestCase {
     }
 
     private func makeTagRequestJSON(tagName: String) -> Data {
-        let request = TagRequestDto(tagName: tagName)
+        let request = TagRequestDTO(tagName: tagName)
         return try! JSONEncoder().encode(request)
     }
 
@@ -36,7 +36,7 @@ final class PhotoInfoPerformanceTests: XCTestCase {
     func test_decodeTags_10() {
         let data = makeTagsJSON(count: 10)
         measure(metrics: [XCTClockMetric()]) {
-            _ = try? JSONDecoder().decode([TagResponseDto].self, from: data)
+            _ = try? JSONDecoder().decode([TagResponseDTO].self, from: data)
         }
     }
 
@@ -44,7 +44,7 @@ final class PhotoInfoPerformanceTests: XCTestCase {
     func test_decodeTags_100() {
         let data = makeTagsJSON(count: 100)
         measure(metrics: [XCTClockMetric()]) {
-            _ = try? JSONDecoder().decode([TagResponseDto].self, from: data)
+            _ = try? JSONDecoder().decode([TagResponseDTO].self, from: data)
         }
     }
 
@@ -55,7 +55,7 @@ final class PhotoInfoPerformanceTests: XCTestCase {
         measure(metrics: [XCTClockMetric()]) {
             let encoder = JSONEncoder()
             for i in 0..<1000 {
-                let request = TagRequestDto(tagName: "새태그_\(i)")
+                let request = TagRequestDTO(tagName: "새태그_\(i)")
                 _ = try! encoder.encode(request)
             }
         }
@@ -66,13 +66,13 @@ final class PhotoInfoPerformanceTests: XCTestCase {
     /// firstIndex(where:)로 태그 찾기 + 교체 (10개 중)
     func test_optimisticTagUpdate_in10() {
         let data = makeTagsJSON(count: 10)
-        var tags = try! JSONDecoder().decode([TagResponseDto].self, from: data)
+        var tags = try! JSONDecoder().decode([TagResponseDTO].self, from: data)
 
         measure(metrics: [XCTClockMetric()]) {
             for _ in 0..<1000 {
                 let targetId = tags[tags.count / 2].photoTagId
                 if let index = tags.firstIndex(where: { $0.photoTagId == targetId }) {
-                    tags[index] = TagResponseDto(
+                    tags[index] = TagResponseDTO(
                         photoTagId: tags[index].photoTagId,
                         tagId: tags[index].tagId,
                         tagName: "수정됨",
@@ -86,13 +86,13 @@ final class PhotoInfoPerformanceTests: XCTestCase {
     /// firstIndex(where:)로 태그 찾기 + 교체 (100개 중)
     func test_optimisticTagUpdate_in100() {
         let data = makeTagsJSON(count: 100)
-        var tags = try! JSONDecoder().decode([TagResponseDto].self, from: data)
+        var tags = try! JSONDecoder().decode([TagResponseDTO].self, from: data)
 
         measure(metrics: [XCTClockMetric()]) {
             for _ in 0..<1000 {
                 let targetId = tags[tags.count - 1].photoTagId  // 최악: 마지막 요소
                 if let index = tags.firstIndex(where: { $0.photoTagId == targetId }) {
-                    tags[index] = TagResponseDto(
+                    tags[index] = TagResponseDTO(
                         photoTagId: tags[index].photoTagId,
                         tagId: tags[index].tagId,
                         tagName: "수정됨",
@@ -108,9 +108,9 @@ final class PhotoInfoPerformanceTests: XCTestCase {
     /// 태그 추가 (append) 1000회
     func test_tagAppend_1000() {
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-            var tags: [TagResponseDto] = []
+            var tags: [TagResponseDTO] = []
             for i in 0..<1000 {
-                tags.append(TagResponseDto(
+                tags.append(TagResponseDTO(
                     photoTagId: i, tagId: i * 10,
                     tagName: "태그_\(i)", photoId: 42
                 ))

@@ -1,8 +1,11 @@
-
-// DTOs/Album/Album.swift
 import Foundation
 
-public struct Album: Codable, Equatable {
-    public let user: User
-    public let tag: Tag
+struct AlbumTagDTO: Codable, Equatable {
+    let tagId: Int
+    let tagName: String
+}
+
+struct Album: Codable, Equatable {
+    let user: User
+    let tag: AlbumTagDTO
 }

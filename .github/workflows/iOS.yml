@@ -1,0 +1,27 @@
+name: iOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Config.xcconfig placeholder
+        run: |
+          echo 'BASE_URL = https:/$()/placeholder.com' > Rephoto_iOS/Resource/Config.xcconfig
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project Rephoto_iOS.xcodeproj \
+            -scheme Rephoto_iOS \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO

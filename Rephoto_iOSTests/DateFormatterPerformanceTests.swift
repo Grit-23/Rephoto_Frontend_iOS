@@ -3,7 +3,7 @@
 //  Rephoto_iOSTests
 //
 //  DateFormatter 성능 벤치마크
-//  현재 코드: toHomeModel()에서 매번 DateFormatter를 새로 생성
+//  현재 코드: toDomain()에서 매번 DateFormatter를 새로 생성
 //
 
 import XCTest
@@ -11,7 +11,7 @@ import XCTest
 
 final class DateFormatterPerformanceTests: XCTestCase {
 
-    /// 현재 방식: 매번 DateFormatter를 새로 생성 (toHomeModel 내부 로직)
+    /// 현재 방식: 매번 DateFormatter를 새로 생성 (toDomain 내부 로직)
     func test_dateFormatter_createEveryTime_1000() {
         let dateStrings = (1...1000).map {
             "2025-07-\(String(format: "%02d", ($0 % 28) + 1))T12:00:00"

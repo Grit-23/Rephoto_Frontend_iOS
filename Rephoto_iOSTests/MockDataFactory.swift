@@ -69,8 +69,8 @@ enum MockDataFactory {
 
     // MARK: - Pre-decoded DTOs
 
-    static func photoResponseDTOs(count: Int) -> [PhotoResponseDto] {
+    static func photoResponseDTOs(count: Int) -> [PhotoResponseDTO] {
         let data = photosJSONData(count: count)
-        return try! JSONDecoder().decode([PhotoResponseDto].self, from: data)
+        return try! JSONDecoder().decode([PhotoResponseDTO].self, from: data)
     }
 }
