@@ -26,7 +26,7 @@ final class MemoryPerformanceTests: XCTestCase {
     func test_memoryFootprint_homeModels_1000() {
         measure(metrics: [XCTMemoryMetric()]) {
             let dtos = MockDataFactory.photoResponseDTOs(count: 1000)
-            retainedModels = dtos.map { $0.toDomain() }
+            retainedModels = dtos.map { try! $0.toDomain() }
             XCTAssertEqual(retainedModels.count, 1000)
         }
     }
@@ -46,7 +46,7 @@ final class MemoryPerformanceTests: XCTestCase {
         measure(metrics: [XCTMemoryMetric(), XCTClockMetric()]) {
             // 레거시에서는 DTO 배열과 Model 배열이 동시에 메모리에 존재
             retainedDtos = try! JSONDecoder().decode([PhotoResponseDTO].self, from: data)
-            retainedModels = retainedDtos.map { $0.toDomain() }
+            retainedModels = retainedDtos.map { try! $0.toDomain() }
             XCTAssertEqual(retainedModels.count, 1000)
         }
     }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct PhotoTag: Identifiable {
+struct PhotoTag: Identifiable, Sendable {
     let id: Int
     let photoTagId: Int
     let tagId: Int

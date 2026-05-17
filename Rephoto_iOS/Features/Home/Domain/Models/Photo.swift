@@ -7,8 +7,8 @@
 
 import Foundation
 
-struct Photo: Identifiable, Hashable {
-    let id: UUID
+struct Photo: Identifiable, Hashable, Sendable {
+    var id: Int { photoId }
     let photoId: Int
     let imageUrl: URL
     let latitude: Double
@@ -17,26 +17,4 @@ struct Photo: Identifiable, Hashable {
     let fileName: String
     let tags: [String]
     let isSensitive: Bool
-
-    init(
-        id: UUID = UUID(),
-        photoId: Int,
-        imageUrl: URL,
-        latitude: Double,
-        longitude: Double,
-        createdAt: Date,
-        fileName: String,
-        tags: [String],
-        isSensitive: Bool
-    ) {
-        self.id = id
-        self.photoId = photoId
-        self.imageUrl = imageUrl
-        self.latitude = latitude
-        self.longitude = longitude
-        self.createdAt = createdAt
-        self.fileName = fileName
-        self.tags = tags
-        self.isSensitive = isSensitive
-    }
 }

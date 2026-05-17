@@ -40,7 +40,7 @@ final class HomeViewModel {
     }
 
     @MainActor
-    func uploadPhotos(items: [PhotoMetadataDTO]) async {
+    func uploadPhotos(items: [PhotoUploadItem]) async {
         isLoading = true
         errorMessage = nil
         do {

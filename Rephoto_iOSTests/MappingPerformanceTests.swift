@@ -17,7 +17,7 @@ final class MappingPerformanceTests: XCTestCase {
     func test_mapToPhoto_100() throws {
         let dtos = MockDataFactory.photoResponseDTOs(count: 100)
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-            _ = dtos.map { $0.toDomain() }
+            _ = dtos.map { try! $0.toDomain() }
         }
     }
 
@@ -25,7 +25,7 @@ final class MappingPerformanceTests: XCTestCase {
     func test_mapToPhoto_500() throws {
         let dtos = MockDataFactory.photoResponseDTOs(count: 500)
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-            _ = dtos.map { $0.toDomain() }
+            _ = dtos.map { try! $0.toDomain() }
         }
     }
 
@@ -33,7 +33,7 @@ final class MappingPerformanceTests: XCTestCase {
     func test_mapToPhoto_1000() throws {
         let dtos = MockDataFactory.photoResponseDTOs(count: 1000)
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-            _ = dtos.map { $0.toDomain() }
+            _ = dtos.map { try! $0.toDomain() }
         }
     }
 
@@ -46,7 +46,7 @@ final class MappingPerformanceTests: XCTestCase {
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
             do {
                 let dtos = try decoder.decode([PhotoResponseDTO].self, from: data)
-                _ = dtos.map { $0.toDomain() }
+                _ = dtos.map { try! $0.toDomain() }
             } catch {
                 XCTFail("Decode failed: \(error)")
             }
@@ -59,7 +59,7 @@ final class MappingPerformanceTests: XCTestCase {
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
             do {
                 let dtos = try decoder.decode([PhotoResponseDTO].self, from: data)
-                _ = dtos.map { $0.toDomain() }
+                _ = dtos.map { try! $0.toDomain() }
             } catch {
                 XCTFail("Decode failed: \(error)")
             }
@@ -71,7 +71,7 @@ final class MappingPerformanceTests: XCTestCase {
     /// Photo 배열에서 비민감 사진 필터링
     func test_filterNonSensitivePhotos_1000() throws {
         let dtos = MockDataFactory.photoResponseDTOs(count: 1000)
-        let models = dtos.map { $0.toDomain() }
+        let models = dtos.map { try! $0.toDomain() }
         measure(metrics: [XCTClockMetric()]) {
             _ = models.filter { $0.isSensitive == false }
         }
@@ -80,7 +80,7 @@ final class MappingPerformanceTests: XCTestCase {
     /// Photo 배열에서 민감한 사진 필터링
     func test_filterSensitivePhotos_1000() throws {
         let dtos = MockDataFactory.photoResponseDTOs(count: 1000)
-        let models = dtos.map { $0.toDomain() }
+        let models = dtos.map { try! $0.toDomain() }
         measure(metrics: [XCTClockMetric()]) {
             _ = models.filter { $0.isSensitive }
         }
@@ -89,7 +89,7 @@ final class MappingPerformanceTests: XCTestCase {
     /// Photo 배열에서 민감한 사진 카운트
     func test_countSensitivePhotos_1000() throws {
         let dtos = MockDataFactory.photoResponseDTOs(count: 1000)
-        let models = dtos.map { $0.toDomain() }
+        let models = dtos.map { try! $0.toDomain() }
         measure(metrics: [XCTClockMetric()]) {
             _ = models.count(where: { $0.isSensitive })
         }

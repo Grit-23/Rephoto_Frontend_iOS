@@ -1,6 +1,6 @@
 import Foundation
 
-enum RepositoryError: LocalizedError {
+enum RepositoryError: LocalizedError, Sendable {
     case httpError(Int)
     case decodingFailed
     case unknown

@@ -20,21 +20,32 @@ final class PhotoRepository: PhotoRepositoryProtocol {
     func getAllPhotos() async throws -> [Photo] {
         let response = try await provider.request(.getAllPhotos)
         let dtos = try decoder.decode([PhotoResponseDTO].self, from: response.data)
-        return dtos.map { $0.toDomain() }
+        return try dtos.map { try $0.toDomain() }
     }
 
     func deletePhoto(photoId: Int) async throws {
         _ = try await provider.request(.deletePhoto(photoId: photoId))
     }
 
-    func uploadToS3(file: Data) async throws -> String {
-        let response = try await provider.request(.s3Upload(file: file))
-        let dto = try decoder.decode(S3UploadResponseDTO.self, from: response.data)
-        return dto.imageUrl
-    }
+    func uploadPhotos(items: [PhotoUploadItem]) async throws {
+        var uploaded: [PhotoMetadataDTO] = []
 
-    func savePhotosBatch(photos: [PhotoMetadataDTO]) async throws {
-        let request = PhotoBatchRequestDTO(photos: photos)
+        for item in items {
+            guard let fileData = try? Data(contentsOf: URL(string: item.imageUrl)!) else { continue }
+            let response = try await provider.request(.s3Upload(file: fileData))
+            let dto = try decoder.decode(S3UploadResponseDTO.self, from: response.data)
+            let meta = PhotoMetadataDTO(
+                latitude: item.latitude,
+                longitude: item.longitude,
+                imageUrl: dto.imageUrl,
+                createdAt: item.createdAt,
+                fileName: item.fileName
+            )
+            uploaded.append(meta)
+        }
+
+        guard !uploaded.isEmpty else { return }
+        let request = PhotoBatchRequestDTO(photos: uploaded)
         _ = try await provider.request(.savePhotosBatch(request: request))
     }
 }

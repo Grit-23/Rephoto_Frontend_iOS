@@ -10,6 +10,5 @@ import Foundation
 protocol PhotoRepositoryProtocol {
     func getAllPhotos() async throws -> [Photo]
     func deletePhoto(photoId: Int) async throws
-    func uploadToS3(file: Data) async throws -> String
-    func savePhotosBatch(photos: [PhotoMetadataDTO]) async throws
+    func uploadPhotos(items: [PhotoUploadItem]) async throws
 }

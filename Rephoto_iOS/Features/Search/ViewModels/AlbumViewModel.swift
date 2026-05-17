@@ -50,7 +50,7 @@ class AlbumViewModel {
                     DispatchQueue.main.async {
                         // 방어적 체크
                         if index < self.albumInfo.count {
-                            let mapped = dtos.map { $0.toDomain() }
+                            let mapped = try dtos.map { try $0.toDomain() }
                             self.albumInfo[index] = mapped
                         }
                     }

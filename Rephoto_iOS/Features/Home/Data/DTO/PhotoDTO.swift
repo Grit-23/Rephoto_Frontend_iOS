@@ -17,10 +17,13 @@ struct PhotoResponseDTO: Decodable {
     let tags: [String]
     let isSensitive: Bool
 
-    func toDomain() -> Photo {
-        let formatter = ISO8601DateFormatter()
-        let date = formatter.date(from: createdAt) ?? Date()
-        let url = URL(string: imageUrl) ?? URL(string: "https://placeholder.com")!
+    func toDomain() throws -> Photo {
+        guard let url = URL(string: imageUrl) else {
+            throw RepositoryError.decodingFailed
+        }
+        guard let date = ISO8601DateFormatter().date(from: createdAt) else {
+            throw RepositoryError.decodingFailed
+        }
 
         return Photo(
             photoId: photoId,

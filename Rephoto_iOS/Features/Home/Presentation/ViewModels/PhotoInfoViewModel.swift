@@ -22,6 +22,7 @@ final class PhotoInfoViewModel {
 
     @MainActor
     func deletePhoto(photoId: Int) async {
+        errorMessage = nil
         do {
             try await provider.makeDeletePhotoUseCase().execute(photoId: photoId)
             isDeleted = true
@@ -32,6 +33,7 @@ final class PhotoInfoViewModel {
 
     @MainActor
     func fetchTags(photoId: Int) async {
+        errorMessage = nil
         do {
             tags = try await provider.makeGetTagsUseCase().execute(photoId: photoId)
         } catch {
@@ -41,6 +43,7 @@ final class PhotoInfoViewModel {
 
     @MainActor
     func addTag(photoId: Int, tagName: String) async {
+        errorMessage = nil
         do {
             let newTag = try await provider.makeAddTagUseCase().execute(photoId: photoId, tagName: tagName)
             tags.append(newTag)
@@ -51,6 +54,7 @@ final class PhotoInfoViewModel {
 
     @MainActor
     func updateTag(photoTagId: Int, newTagName: String) async {
+        errorMessage = nil
         do {
             let updated = try await provider.makeUpdateTagUseCase().execute(photoTagId: photoTagId, tagName: newTagName)
             if let index = tags.firstIndex(where: { $0.photoTagId == photoTagId }) {
@@ -63,6 +67,7 @@ final class PhotoInfoViewModel {
 
     @MainActor
     func getDescription(photoId: Int) async {
+        errorMessage = nil
         do {
             description = try await provider.makeGetDescriptionUseCase().execute(photoId: photoId)
         } catch {

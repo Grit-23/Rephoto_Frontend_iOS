@@ -8,5 +8,5 @@
 import Foundation
 
 protocol UploadPhotosUseCaseProtocol {
-    func execute(items: [PhotoMetadataDTO]) async throws
+    func execute(items: [PhotoUploadItem]) async throws
 }

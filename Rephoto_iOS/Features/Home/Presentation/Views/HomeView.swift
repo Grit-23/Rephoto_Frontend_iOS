@@ -12,7 +12,7 @@ struct HomeView: View {
     @State var vm: HomeViewModel
     @State private var showPhotoPicker = false
     @State private var showUserSheet = false
-    @State private var selectedPhotoItems: [PhotoMetadataDTO] = []
+    @State private var selectedPhotoItems: [PhotoUploadItem] = []
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
 
@@ -66,6 +66,16 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showUserSheet) {
                 HomeSheetView()
+            }
+            .sheet(isPresented: $showPhotoPicker) {
+                PHCaptureImageView(photos: $selectedPhotoItems)
+            }
+            .onChange(of: selectedPhotoItems) { _, items in
+                guard !items.isEmpty else { return }
+                Task {
+                    await vm.uploadPhotos(items: items)
+                    selectedPhotoItems = []
+                }
             }
         }
     }

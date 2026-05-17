@@ -59,7 +59,7 @@ extension PhotosAPITarget: APITargetType {
     }
 
     var headers: [String: String]? {
-        var headers = ["Content-Type": "application/json"]
+        var headers: [String: String] = [:]
 
         if let accessToken = UserDefaults.standard.string(forKey: "accessToken"), !accessToken.isEmpty {
             headers["Authorization"] = "Bearer \(accessToken)"
@@ -67,9 +67,9 @@ extension PhotosAPITarget: APITargetType {
 
         switch self {
         case .s3Upload:
-            headers["Content-Type"] = "multipart/form-data"
+            break // Moya가 multipart boundary 포함하여 자동 설정
         default:
-            break
+            headers["Content-Type"] = "application/json"
         }
 
         return headers

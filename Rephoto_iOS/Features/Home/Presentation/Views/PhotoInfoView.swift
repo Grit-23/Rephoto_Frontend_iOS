@@ -13,6 +13,7 @@ struct PhotoInfoView: View {
     @State private var vm: PhotoInfoViewModel
     @State private var showDeleteConfirmation = false
     @State private var showInfoSheet = false
+    @State private var showAddTag = false
     @State private var newTagName = ""
     @Environment(\.dismiss) private var dismiss
 
@@ -51,7 +52,7 @@ struct PhotoInfoView: View {
 
                         if vm.tags.count < 3 {
                             Button {
-                                // Add tag action
+                                showAddTag = true
                             } label: {
                                 Image(systemName: "plus.circle")
                                     .foregroundStyle(.secondary)
@@ -98,6 +99,16 @@ struct PhotoInfoView: View {
         }
         .onChange(of: vm.isDeleted) { _, isDeleted in
             if isDeleted { dismiss() }
+        }
+        .alert("태그 추가", isPresented: $showAddTag) {
+            TextField("태그 이름", text: $newTagName)
+            Button("추가") {
+                let name = newTagName.trimmingCharacters(in: .whitespaces)
+                guard !name.isEmpty else { return }
+                Task { await vm.addTag(photoId: photo.photoId, tagName: name) }
+                newTagName = ""
+            }
+            Button("취소", role: .cancel) { newTagName = "" }
         }
     }
 }
@@ -188,22 +199,22 @@ private struct FlowLayout: Layout {
     private func arrangeSubviews(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, positions: [CGPoint]) {
         let maxWidth = proposal.width ?? .infinity
         var positions: [CGPoint] = []
-        var x: CGFloat = 0
-        var y: CGFloat = 0
+        var currentX: CGFloat = 0
+        var currentY: CGFloat = 0
         var rowHeight: CGFloat = 0
 
         for subview in subviews {
             let size = subview.sizeThatFits(.unspecified)
-            if x + size.width > maxWidth, x > 0 {
-                x = 0
-                y += rowHeight + spacing
+            if currentX + size.width > maxWidth, currentX > 0 {
+                currentX = 0
+                currentY += rowHeight + spacing
                 rowHeight = 0
             }
-            positions.append(CGPoint(x: x, y: y))
+            positions.append(CGPoint(x: currentX, y: currentY))
             rowHeight = max(rowHeight, size.height)
-            x += size.width + spacing
+            currentX += size.width + spacing
         }
 
-        return (CGSize(width: maxWidth, height: y + rowHeight), positions)
+        return (CGSize(width: maxWidth, height: currentY + rowHeight), positions)
     }
 }
