@@ -1,10 +1,3 @@
-//
-//  AppContainer.swift
-//  Rephoto_iOS
-//
-//  Created by 김도연 on 4/29/26.
-//
-
 import Factory
 import Moya
 
@@ -32,9 +25,9 @@ extension Container: @retroactive AutoRegistering {
         }.singleton
     }
 
-    // MARK: - Providers
+    // MARK: - Providers (internal)
 
-    var photosProvider: Factory<MoyaProvider<PhotosAPITarget>> {
+    private var photosProvider: Factory<MoyaProvider<PhotosAPITarget>> {
         self {
             MoyaProvider<PhotosAPITarget>(plugins: [self.authPlugin.resolve()])
         }.singleton
@@ -52,13 +45,13 @@ extension Container: @retroactive AutoRegistering {
         }.singleton
     }
 
-    var tagProvider: Factory<MoyaProvider<TagAPITarget>> {
+    private var tagProvider: Factory<MoyaProvider<TagAPITarget>> {
         self {
             MoyaProvider<TagAPITarget>(plugins: [self.authPlugin.resolve()])
         }.singleton
     }
 
-    var descriptionProvider: Factory<MoyaProvider<DescriptionAPITarget>> {
+    private var descriptionProvider: Factory<MoyaProvider<DescriptionAPITarget>> {
         self {
             MoyaProvider<DescriptionAPITarget>(plugins: [self.authPlugin.resolve()])
         }.singleton
@@ -67,6 +60,32 @@ extension Container: @retroactive AutoRegistering {
     /// 인증 불필요한 요청용 (로그인 등)
     var plainUserProvider: Factory<MoyaProvider<UserAPITarget>> {
         self { MoyaProvider<UserAPITarget>() }.singleton
+    }
+
+    // MARK: - Repositories (private)
+
+    private var photoRepository: Factory<PhotoRepositoryProtocol> {
+        self { PhotoRepository(provider: self.photosProvider.resolve()) }.singleton
+    }
+
+    private var tagRepository: Factory<TagRepositoryProtocol> {
+        self { TagRepository(provider: self.tagProvider.resolve()) }.singleton
+    }
+
+    private var descriptionRepository: Factory<DescriptionRepositoryProtocol> {
+        self { DescriptionRepository(provider: self.descriptionProvider.resolve()) }.singleton
+    }
+
+    // MARK: - UseCaseProviders
+
+    var homeUseCaseProvider: Factory<HomeUseCaseProviderProtocol> {
+        self {
+            HomeUseCaseProvider(
+                photoRepository: self.photoRepository.resolve(),
+                tagRepository: self.tagRepository.resolve(),
+                descriptionRepository: self.descriptionRepository.resolve()
+            )
+        }
     }
 
     // MARK: - AutoRegistering
