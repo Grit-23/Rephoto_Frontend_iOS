@@ -84,6 +84,16 @@ extension Container: @retroactive AutoRegistering {
         self { AlbumRepository(provider: self.albumProvider.resolve()) }.singleton
     }
 
+    private var userRepository: Factory<UserRepositoryProtocol> {
+        self {
+            UserRepository(
+                plainProvider: self.plainUserProvider.resolve(),
+                authedProvider: self.authedProvider.resolve(),
+                tokenStore: self.tokenStore.resolve()
+            )
+        }.singleton
+    }
+
     // MARK: - UseCaseProviders
 
     var homeUseCaseProvider: Factory<HomeUseCaseProviderProtocol> {
@@ -102,6 +112,12 @@ extension Container: @retroactive AutoRegistering {
                 albumRepository: self.albumRepository.resolve(),
                 searchRepository: self.searchRepository.resolve()
             )
+        }
+    }
+
+    var userUseCaseProvider: Factory<UserUseCaseProviderProtocol> {
+        self {
+            UserUseCaseProvider(userRepository: self.userRepository.resolve())
         }
     }
 
