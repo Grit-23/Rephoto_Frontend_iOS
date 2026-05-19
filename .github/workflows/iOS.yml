@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create Config.xcconfig placeholder
         run: |
@@ -25,7 +25,7 @@ jobs:
       - name: Cache SPM dependencies
         uses: actions/cache@v4
         with:
-          path: ~/Library/Developer/Xcode/DerivedData/SourcePackages
+          path: .spm-cache
           key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
           restore-keys: ${{ runner.os }}-spm-
 
@@ -36,4 +36,5 @@ jobs:
             -scheme Rephoto_iOS \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             -configuration Debug \
+            -clonedSourcePackagesDirPath .spm-cache \
             CODE_SIGNING_ALLOWED=NO
