@@ -8,28 +8,25 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var loginViewModel: LoginViewModel
-    
+    @State private var loginVM: LoginViewModel
+
+    init(userProvider: UserUseCaseProviderProtocol) {
+        self._loginVM = State(initialValue: LoginViewModel(provider: userProvider))
+    }
+
     var body: some View {
         Group {
-            if loginViewModel.isLoggedIn {
+            if loginVM.isLoggedIn {
                 RephotoTabView()
             } else {
-                LoginView(onLoginSuccess: {
-                    loginViewModel.isLoggedIn = true
-                })
-            }
-        }
-        .task {
-            if let token = UserDefaults.standard.string(forKey: "accessToken"),
-               !token.isEmpty {
-                loginViewModel.isLoggedIn = true
+                LoginView(loginVM: loginVM)
             }
         }
     }
 }
 
+#if DEBUG
 #Preview {
-    ContentView()
-        .environmentObject(LoginViewModel())
+    ContentView(userProvider: MockUserUseCaseProvider())
 }
+#endif

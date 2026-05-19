@@ -6,15 +6,15 @@
 //
 
 import SwiftUI
+import Factory
 
 @main
 struct Rephoto_iOSApp: App {
-    @StateObject private var loginViewModel = LoginViewModel()
-    
+    @Injected(\.userUseCaseProvider) private var userProvider
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(loginViewModel)
+            ContentView(userProvider: userProvider)
         }
     }
 }
