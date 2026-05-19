@@ -33,13 +33,13 @@ extension Container: @retroactive AutoRegistering {
         }.singleton
     }
 
-    var searchProvider: Factory<MoyaProvider<SearchAPITarget>> {
+    private var searchProvider: Factory<MoyaProvider<SearchAPITarget>> {
         self {
             MoyaProvider<SearchAPITarget>(plugins: [self.authPlugin.resolve()])
         }.singleton
     }
 
-    var albumProvider: Factory<MoyaProvider<AlbumAPITarget>> {
+    private var albumProvider: Factory<MoyaProvider<AlbumAPITarget>> {
         self {
             MoyaProvider<AlbumAPITarget>(plugins: [self.authPlugin.resolve()])
         }.singleton
@@ -75,6 +75,14 @@ extension Container: @retroactive AutoRegistering {
     private var descriptionRepository: Factory<DescriptionRepositoryProtocol> {
         self { DescriptionRepository(provider: self.descriptionProvider.resolve()) }.singleton
     }
+    
+    private var searchRepository: Factory<SearchRepositoryProtocol> {
+        self { SearchRepository(provider: self.searchProvider.resolve()) }.singleton
+    }
+    
+    private var albumRepository: Factory<AlbumRepositoryProtocol> {
+        self { AlbumRepository(provider: self.albumProvider.resolve()) }.singleton
+    }
 
     // MARK: - UseCaseProviders
 
@@ -84,6 +92,15 @@ extension Container: @retroactive AutoRegistering {
                 photoRepository: self.photoRepository.resolve(),
                 tagRepository: self.tagRepository.resolve(),
                 descriptionRepository: self.descriptionRepository.resolve()
+            )
+        }
+    }
+    
+    var searchUseCaseProvider: Factory<SearchUseCaseProviderProtocol> {
+        self {
+            SearchUseCaseProvider(
+                albumRepository: self.albumRepository.resolve(),
+                searchRepository: self.searchRepository.resolve()
             )
         }
     }

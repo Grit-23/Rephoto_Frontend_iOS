@@ -11,6 +11,7 @@ import Factory
 
 struct RephotoTabView: View {
     @Injected(\.homeUseCaseProvider) private var homeProvider
+    @Injected(\.searchUseCaseProvider) private var searchProvider
 
     var body : some View {
         TabView{
@@ -18,7 +19,7 @@ struct RephotoTabView: View {
                 HomeView(provider: homeProvider)
             }
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
-                SearchView()
+                SearchView(provider: searchProvider)
             }
         }
         .tint(.green)
