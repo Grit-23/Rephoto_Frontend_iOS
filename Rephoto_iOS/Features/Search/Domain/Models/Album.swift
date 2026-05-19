@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Album: Identifiable {
+struct Album: Identifiable, Sendable {
     let tagId: Int
     let tagName: String
     var id: Int { tagId }

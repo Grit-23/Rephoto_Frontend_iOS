@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct SearchResult: Identifiable {
+struct SearchResult: Identifiable, Sendable {
     let imageUrl: URL
     let photoId: Int
     var id: Int { photoId }

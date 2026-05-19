@@ -44,7 +44,11 @@ struct SearchView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding()
         } else if searchVM.query.isEmpty {
-            if albumVM.albums.isEmpty {
+            if albumVM.isLoading {
+                ProgressView("앨범 불러오는 중…")
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding()
+            } else if albumVM.albums.isEmpty {
                 Text("\n앨범이 없습니다. \n같은 태그를 가진 사진을 추가해보세요!")
                     .font(.title2)
                     .foregroundStyle(.secondary)

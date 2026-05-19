@@ -27,6 +27,7 @@ class SearchViewModel {
         do {
             searchResults = try await provider.searchPhotos().execute(query: query)
         } catch {
+            searchResults = []
             errorMessage = error.localizedDescription
         }
         isLoading = false

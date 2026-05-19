@@ -23,6 +23,11 @@ struct AlbumDetailView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity)
                     .padding()
+            } else if let errorMessage = albumVM.errorMessage {
+                Text(errorMessage)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
             } else {
                 photoGrid
             }
