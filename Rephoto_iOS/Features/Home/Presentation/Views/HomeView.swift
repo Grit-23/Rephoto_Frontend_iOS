@@ -6,13 +6,13 @@
 //
 
 import SwiftUI
+import PhotosUI
 import NukeUI
 
 struct HomeView: View {
     @State var vm: HomeViewModel
-    @State private var showPhotoPicker = false
     @State private var showUserSheet = false
-    @State private var selectedPhotoItems: [PhotoUploadItem] = []
+    @State private var selectedPickerItems: [PhotosPickerItem] = []
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
 
@@ -54,9 +54,10 @@ struct HomeView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showPhotoPicker = true
-                    } label: {
+                    PhotosPicker(
+                        selection: $selectedPickerItems,
+                        matching: .images
+                    ) {
                         Image(systemName: "plus")
                     }
                 }
@@ -67,14 +68,11 @@ struct HomeView: View {
             .sheet(isPresented: $showUserSheet) {
                 HomeSheetView()
             }
-            .sheet(isPresented: $showPhotoPicker) {
-                PHCaptureImageView(photos: $selectedPhotoItems)
-            }
-            .onChange(of: selectedPhotoItems) { _, items in
+            .onChange(of: selectedPickerItems) { _, items in
                 guard !items.isEmpty else { return }
                 Task {
-                    await vm.uploadPhotos(items: items)
-                    selectedPhotoItems = []
+                    await vm.handlePickedPhotos(items)
+                    selectedPickerItems = []
                 }
             }
         }

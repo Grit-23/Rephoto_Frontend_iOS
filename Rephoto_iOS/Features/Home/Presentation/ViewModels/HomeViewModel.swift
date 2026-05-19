@@ -5,7 +5,8 @@
 //  Created by 김도연 on 5/17/26.
 //
 
-import Foundation
+import SwiftUI
+import PhotosUI
 
 @Observable
 final class HomeViewModel {
@@ -40,9 +41,28 @@ final class HomeViewModel {
     }
 
     @MainActor
-    func uploadPhotos(items: [PhotoUploadItem]) async {
+    func handlePickedPhotos(_ pickerItems: [PhotosPickerItem]) async {
         isLoading = true
         errorMessage = nil
+
+        let items = await withTaskGroup(of: PhotoUploadItem?.self, returning: [PhotoUploadItem].self) { group in
+            for pickerItem in pickerItems {
+                group.addTask {
+                    await PhotoMetadataExtractor.extract(from: pickerItem)
+                }
+            }
+            var results: [PhotoUploadItem] = []
+            for await item in group {
+                if let item { results.append(item) }
+            }
+            return results
+        }
+
+        guard !items.isEmpty else {
+            isLoading = false
+            return
+        }
+
         do {
             try await provider.makeUploadPhotosUseCase().execute(items: items)
             await fetchPhotos()
