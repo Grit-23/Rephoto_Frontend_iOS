@@ -78,3 +78,9 @@ struct HomeView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Home") {
+    HomeView(provider: MockHomeUseCaseProvider())
+}
+#endif
