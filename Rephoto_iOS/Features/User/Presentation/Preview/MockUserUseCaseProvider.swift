@@ -12,7 +12,7 @@ final class MockUserUseCaseProvider: UserUseCaseProviderProtocol {
     func login() -> LoginUseCaseProtocol { MockLoginUseCase() }
     func fetchUser() -> FetchUserUseCaseProtocol { MockFetchUserUseCase() }
     func logout() -> LogoutUseCaseProtocol { MockLogoutUseCase() }
-    var hasTokens: Bool { false }
+    func hasTokens() async -> Bool { false }
     func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void) {}
 }
 

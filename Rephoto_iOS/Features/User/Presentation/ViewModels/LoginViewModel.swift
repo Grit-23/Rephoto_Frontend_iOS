@@ -23,10 +23,6 @@ final class LoginViewModel {
     init(provider: UserUseCaseProviderProtocol) {
         self.provider = provider
 
-        if provider.hasTokens {
-            isLoggedIn = true
-        }
-
         provider.setOnRefreshFailed { [weak self] in
             Task { @MainActor in
                 self?.forceLogout()
@@ -35,7 +31,8 @@ final class LoginViewModel {
     }
 
     func onAppear() async {
-        if provider.hasTokens {
+        if await provider.hasTokens() {
+            isLoggedIn = true
             await fetchUser()
         }
     }
