@@ -9,16 +9,16 @@ import Foundation
 import Moya
 
 final class DescriptionRepository: DescriptionRepositoryProtocol {
-    private let provider: MoyaProvider<DescriptionAPITarget>
+    private let adapter: MoyaNetworkAdapter
     private let decoder: JSONDecoder
 
-    init(provider: MoyaProvider<DescriptionAPITarget>, decoder: JSONDecoder = JSONDecoder()) {
-        self.provider = provider
+    init(adapter: MoyaNetworkAdapter, decoder: JSONDecoder = JSONDecoder()) {
+        self.adapter = adapter
         self.decoder = decoder
     }
 
     func getDescription(photoId: Int) async throws -> String {
-        let response = try await provider.request(.getDescription(photoId: photoId))
+        let response = try await adapter.request(DescriptionAPITarget.getDescription(photoId: photoId))
         let dto = try decoder.decode(DescriptionResponseDTO.self, from: response.data)
         return dto.description
     }

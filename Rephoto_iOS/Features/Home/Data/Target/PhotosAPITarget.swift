@@ -7,7 +7,7 @@
 
 import Foundation
 import Moya
-import Alamofire
+internal import Alamofire
 
 enum PhotosAPITarget {
     case getAllPhotos
@@ -59,19 +59,11 @@ extension PhotosAPITarget: APITargetType {
     }
 
     var headers: [String: String]? {
-        var headers: [String: String] = [:]
-
-        if let accessToken = UserDefaults.standard.string(forKey: "accessToken"), !accessToken.isEmpty {
-            headers["Authorization"] = "Bearer \(accessToken)"
-        }
-
         switch self {
         case .s3Upload:
-            break // Moya가 multipart boundary 포함하여 자동 설정
+            return nil // MoyaNetworkAdapter가 multipart boundary 자동 설정
         default:
-            headers["Content-Type"] = "application/json"
+            return ["Content-Type": "application/json"]
         }
-
-        return headers
     }
 }
