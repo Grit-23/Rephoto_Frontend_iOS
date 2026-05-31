@@ -105,9 +105,14 @@ extension NetworkClient {
             do {
                 _ = try await refreshToken()
                 return try await performRequest(urlRequest, retryCount: retryCount + 1)
-            } catch {
+            } catch is NetworkError {
                 onRefreshFailed?()
                 throw NetworkError.unauthorized
+            } catch is TokenRefreshError {
+                onRefreshFailed?()
+                throw NetworkError.unauthorized
+            } catch {
+                throw error
             }
         }
 

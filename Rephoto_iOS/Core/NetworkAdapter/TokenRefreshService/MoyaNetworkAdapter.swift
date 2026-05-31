@@ -88,8 +88,8 @@ extension MoyaNetworkAdapter {
 extension MoyaNetworkAdapter {
 
     private func buildURLRequest<T: TargetType>(_ target: T) throws -> URLRequest {
-        // 1. URL 구성 (baseURL + path)
-        let url = target.baseURL.appending(path: target.path)
+        // 1. URL 구성 (주입된 baseURL + path)
+        let url = baseURL.appending(path: target.path)
 
         // 2. URLRequest 생성
         var request = URLRequest(url: url)

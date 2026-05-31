@@ -30,7 +30,12 @@ public actor KeychainTokenStore: TokenStore {
 
     public func save(accessToken: String, refreshToken: String) async throws {
         try saveToKeychain(key: accessTokenKey, value: accessToken)
-        try saveToKeychain(key: refreshTokenKey, value: refreshToken)
+        do {
+            try saveToKeychain(key: refreshTokenKey, value: refreshToken)
+        } catch {
+            deleteFromKeychain(key: accessTokenKey)
+            throw error
+        }
     }
 
     public func clear() async throws {
