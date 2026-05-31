@@ -11,6 +11,6 @@ protocol UserRepositoryProtocol {
     func login(loginId: String, password: String) async throws
     func fetchUser() async throws -> UserInfo
     func logout() async throws
-    var hasTokens: Bool { get }
+    func hasTokens() async -> Bool
     func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void)
 }

@@ -7,7 +7,7 @@
 
 import Foundation
 import Moya
-import Alamofire
+internal import Alamofire
 
 enum UserAPITarget {
     case join(loginId: String, password: String, username: String)

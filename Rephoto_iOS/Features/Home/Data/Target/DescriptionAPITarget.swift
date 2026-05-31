@@ -7,7 +7,7 @@
 
 import Foundation
 import Moya
-import Alamofire
+internal import Alamofire
 
 enum DescriptionAPITarget {
     case getDescription(photoId: Int)

@@ -7,7 +7,7 @@
 
 import Foundation
 import Moya
-import Alamofire
+internal import Alamofire
 
 enum AlbumAPITarget {
     case getAlbumList

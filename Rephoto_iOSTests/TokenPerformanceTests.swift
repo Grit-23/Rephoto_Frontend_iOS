@@ -3,8 +3,7 @@
 //  Rephoto_iOSTests
 //
 //  Token 관리 성능 벤치마크
-//  리팩토링 항목 #2: Token 관리 로직 수정
-//  현재: UserDefaults에 직접 저장 → Keychain 또는 메모리 캐시로 변경 시 비교용
+//  리팩토링 항목 #2: Keychain + Actor 기반 토큰 관리
 //
 
 import XCTest
@@ -12,73 +11,93 @@ import XCTest
 
 final class TokenPerformanceTests: XCTestCase {
 
-    override func tearDown() {
-        TokenStore.shared.clear()
-        super.tearDown()
+    private var store: KeychainTokenStore!
+
+    override func setUp() {
+        super.setUp()
+        store = KeychainTokenStore(service: "com.rephoto.tests")
     }
 
-    // MARK: - UserDefaults 토큰 쓰기 성능
+    override func tearDown() async throws {
+        try? await store.clear()
+        try await super.tearDown()
+    }
 
-    /// 토큰 저장 1000회 (현재 방식: UserDefaults)
-    func test_tokenStore_save_1000() {
-        let store = TokenStore.shared
-        let tokenPairs = (0..<1000).map {
-            TokenPair(accessToken: "access-token-\($0)", refreshToken: "refresh-token-\($0)")
-        }
+    // MARK: - Keychain 토큰 쓰기 성능
+
+    /// 토큰 저장 1000회 (Keychain)
+    func test_tokenStore_save_1000() async throws {
         measure(metrics: [XCTClockMetric()]) {
-            for pair in tokenPairs {
-                store.save(pair)
+            let exp = expectation(description: "save")
+            Task {
+                for i in 0..<1000 {
+                    try await self.store.save(
+                        accessToken: "access-token-\(i)",
+                        refreshToken: "refresh-token-\(i)"
+                    )
+                }
+                exp.fulfill()
             }
+            wait(for: [exp], timeout: 30)
         }
     }
 
-    // MARK: - UserDefaults 토큰 읽기 성능
+    // MARK: - Keychain 토큰 읽기 성능
 
     /// 토큰 읽기 1000회
-    func test_tokenStore_read_1000() {
-        let store = TokenStore.shared
-        store.save(TokenPair(accessToken: "test-access", refreshToken: "test-refresh"))
+    func test_tokenStore_read_1000() async throws {
+        try await store.save(accessToken: "test-access", refreshToken: "test-refresh")
 
         measure(metrics: [XCTClockMetric()]) {
-            for _ in 0..<1000 {
-                _ = store.accessToken
-                _ = store.refreshToken
+            let exp = expectation(description: "read")
+            Task {
+                for _ in 0..<1000 {
+                    _ = await self.store.getAccessToken()
+                    _ = await self.store.getRefreshToken()
+                }
+                exp.fulfill()
             }
+            wait(for: [exp], timeout: 30)
         }
     }
 
     /// hasTokens 체크 1000회 (매 API 호출마다 발생)
-    func test_tokenStore_hasTokens_check_1000() {
-        let store = TokenStore.shared
-        store.save(TokenPair(accessToken: "a", refreshToken: "r"))
+    func test_tokenStore_hasTokens_check_1000() async throws {
+        try await store.save(accessToken: "a", refreshToken: "r")
 
         measure(metrics: [XCTClockMetric()]) {
-            for _ in 0..<1000 {
-                _ = store.hasTokens
+            let exp = expectation(description: "hasTokens")
+            Task {
+                for _ in 0..<1000 {
+                    _ = await self.store.getAccessToken() != nil
+                }
+                exp.fulfill()
             }
+            wait(for: [exp], timeout: 30)
         }
     }
 
     // MARK: - 토큰 갱신 시나리오 (저장→읽기→덮어쓰기 사이클)
 
     /// 실제 리프레시 플로우 시뮬레이션: 읽기 → 만료 확인 → 새 토큰 저장
-    func test_tokenRefreshCycle_500() {
-        let store = TokenStore.shared
-        store.save(TokenPair(accessToken: "initial-access", refreshToken: "initial-refresh"))
+    func test_tokenRefreshCycle_500() async throws {
+        try await store.save(accessToken: "initial-access", refreshToken: "initial-refresh")
 
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-            for i in 0..<500 {
-                // 1. 현재 토큰 읽기
-                let _ = store.accessToken
-                let _ = store.refreshToken
-                // 2. hasTokens 확인
-                let _ = store.hasTokens
-                // 3. 새 토큰 저장 (리프레시 성공 시)
-                store.save(TokenPair(
-                    accessToken: "refreshed-access-\(i)",
-                    refreshToken: "refreshed-refresh-\(i)"
-                ))
+            let exp = expectation(description: "refresh")
+            Task {
+                for i in 0..<500 {
+                    _ = await self.store.getAccessToken()
+                    _ = await self.store.getRefreshToken()
+                    _ = await self.store.getAccessToken() != nil
+                    try await self.store.save(
+                        accessToken: "refreshed-access-\(i)",
+                        refreshToken: "refreshed-refresh-\(i)"
+                    )
+                }
+                exp.fulfill()
             }
+            wait(for: [exp], timeout: 60)
         }
     }
 
@@ -86,13 +105,16 @@ final class TokenPerformanceTests: XCTestCase {
 
     /// 토큰 삭제 1000회 (로그아웃 시나리오)
     func test_tokenStore_clear_1000() {
-        let store = TokenStore.shared
-
         measure(metrics: [XCTClockMetric()]) {
-            for i in 0..<1000 {
-                store.save(TokenPair(accessToken: "a-\(i)", refreshToken: "r-\(i)"))
-                store.clear()
+            let exp = expectation(description: "clear")
+            Task {
+                for i in 0..<1000 {
+                    try await self.store.save(accessToken: "a-\(i)", refreshToken: "r-\(i)")
+                    try await self.store.clear()
+                }
+                exp.fulfill()
             }
+            wait(for: [exp], timeout: 30)
         }
     }
 }

@@ -9,7 +9,7 @@ protocol UserUseCaseProviderProtocol {
     func login() -> LoginUseCaseProtocol
     func fetchUser() -> FetchUserUseCaseProtocol
     func logout() -> LogoutUseCaseProtocol
-    var hasTokens: Bool { get }
+    func hasTokens() async -> Bool
     func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void)
 }
 
@@ -32,8 +32,8 @@ final class UserUseCaseProvider: UserUseCaseProviderProtocol {
         LogoutUseCase(repository: userRepository)
     }
 
-    var hasTokens: Bool {
-        userRepository.hasTokens
+    func hasTokens() async -> Bool {
+        await userRepository.hasTokens()
     }
 
     func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void) {

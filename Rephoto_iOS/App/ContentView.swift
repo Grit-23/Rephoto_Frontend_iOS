@@ -16,11 +16,17 @@ struct ContentView: View {
 
     var body: some View {
         Group {
+            #if DEBUG
+            if true {
+                RephotoTabView()
+            }
+            #else
             if loginVM.isLoggedIn {
                 RephotoTabView()
             } else {
                 LoginView(loginVM: loginVM)
             }
+            #endif
         }
     }
 }

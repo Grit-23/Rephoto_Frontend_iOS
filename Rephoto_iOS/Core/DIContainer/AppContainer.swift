@@ -1,95 +1,54 @@
 import Factory
-import Moya
+import Foundation
 
 extension Container: @retroactive AutoRegistering {
 
-    // MARK: - Token
+    // MARK: - Network Infrastructure
 
-    private var tokenStore: Factory<TokenStore> {
-        self { TokenStore.shared }.singleton
-    }
-
-    // MARK: - Auth
-
-    private var authPlugin: Factory<AuthPlugin> {
+    private var networkClient: Factory<NetworkClient> {
         self {
-            let store = self.tokenStore.resolve()
-            return AuthPlugin(tokenStore: store)
-        }
-    }
-
-    var authedProvider: Factory<AuthedProvider> {
-        self {
-            let store = self.tokenStore.resolve()
-            return AuthedProvider(tokenStore: store)
+            let baseURL = URL(string: Config.baseURL)!
+            return AuthSystemFactory.makeNetworkClient(baseURL: baseURL)
         }.singleton
     }
 
-    // MARK: - Providers (internal)
-
-    private var photosProvider: Factory<MoyaProvider<PhotosAPITarget>> {
+    private var adapter: Factory<MoyaNetworkAdapter> {
         self {
-            MoyaProvider<PhotosAPITarget>(plugins: [self.authPlugin.resolve()])
+            let baseURL = URL(string: Config.baseURL)!
+            return MoyaNetworkAdapter(
+                networkClient: self.networkClient.resolve(),
+                baseURL: baseURL
+            )
         }.singleton
     }
 
-    private var searchProvider: Factory<MoyaProvider<SearchAPITarget>> {
-        self {
-            MoyaProvider<SearchAPITarget>(plugins: [self.authPlugin.resolve()])
-        }.singleton
-    }
-
-    private var albumProvider: Factory<MoyaProvider<AlbumAPITarget>> {
-        self {
-            MoyaProvider<AlbumAPITarget>(plugins: [self.authPlugin.resolve()])
-        }.singleton
-    }
-
-    private var tagProvider: Factory<MoyaProvider<TagAPITarget>> {
-        self {
-            MoyaProvider<TagAPITarget>(plugins: [self.authPlugin.resolve()])
-        }.singleton
-    }
-
-    private var descriptionProvider: Factory<MoyaProvider<DescriptionAPITarget>> {
-        self {
-            MoyaProvider<DescriptionAPITarget>(plugins: [self.authPlugin.resolve()])
-        }.singleton
-    }
-
-    /// 인증 불필요한 요청용 (로그인 등)
-    var plainUserProvider: Factory<MoyaProvider<UserAPITarget>> {
-        self { MoyaProvider<UserAPITarget>() }.singleton
-    }
-
-    // MARK: - Repositories (private)
+    // MARK: - Repositories
 
     private var photoRepository: Factory<PhotoRepositoryProtocol> {
-        self { PhotoRepository(provider: self.photosProvider.resolve()) }.singleton
+        self { PhotoRepository(adapter: self.adapter.resolve()) }.singleton
     }
 
     private var tagRepository: Factory<TagRepositoryProtocol> {
-        self { TagRepository(provider: self.tagProvider.resolve()) }.singleton
+        self { TagRepository(adapter: self.adapter.resolve()) }.singleton
     }
 
     private var descriptionRepository: Factory<DescriptionRepositoryProtocol> {
-        self { DescriptionRepository(provider: self.descriptionProvider.resolve()) }.singleton
+        self { DescriptionRepository(adapter: self.adapter.resolve()) }.singleton
     }
-    
+
     private var searchRepository: Factory<SearchRepositoryProtocol> {
-        self { SearchRepository(provider: self.searchProvider.resolve()) }.singleton
+        self { SearchRepository(adapter: self.adapter.resolve()) }.singleton
     }
-    
+
     private var albumRepository: Factory<AlbumRepositoryProtocol> {
-        self { AlbumRepository(provider: self.albumProvider.resolve()) }.singleton
+        self { AlbumRepository(adapter: self.adapter.resolve()) }.singleton
     }
 
     private var userRepository: Factory<UserRepositoryProtocol> {
         self {
             UserRepository(
-                plainProvider: self.plainUserProvider.resolve(),
-                authedProvider: self.authedProvider.resolve(),
-                tokenStore: self.tokenStore.resolve()
+                adapter: self.adapter.resolve(),
+                networkClient: self.networkClient.resolve()
             )
         }.singleton
     }
@@ -105,7 +64,7 @@ extension Container: @retroactive AutoRegistering {
             )
         }
     }
-    
+
     var searchUseCaseProvider: Factory<SearchUseCaseProviderProtocol> {
         self {
             SearchUseCaseProvider(
@@ -124,9 +83,10 @@ extension Container: @retroactive AutoRegistering {
     // MARK: - AutoRegistering
 
     public func autoRegister() {
-        authedProvider.register {
-            let store = self.tokenStore.resolve()
-            return AuthedProvider(tokenStore: store)
-        }
+        #if DEBUG
+        homeUseCaseProvider.register { MockHomeUseCaseProvider() }
+        searchUseCaseProvider.register { MockSearchUseCaseProvider() }
+        userUseCaseProvider.register { MockUserUseCaseProvider() }
+        #endif
     }
 }

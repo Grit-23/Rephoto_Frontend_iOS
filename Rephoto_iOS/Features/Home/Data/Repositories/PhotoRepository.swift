@@ -9,22 +9,22 @@ import Foundation
 import Moya
 
 final class PhotoRepository: PhotoRepositoryProtocol {
-    private let provider: MoyaProvider<PhotosAPITarget>
+    private let adapter: MoyaNetworkAdapter
     private let decoder: JSONDecoder
 
-    init(provider: MoyaProvider<PhotosAPITarget>, decoder: JSONDecoder = JSONDecoder()) {
-        self.provider = provider
+    init(adapter: MoyaNetworkAdapter, decoder: JSONDecoder = JSONDecoder()) {
+        self.adapter = adapter
         self.decoder = decoder
     }
 
     func getAllPhotos() async throws -> [Photo] {
-        let response = try await provider.request(.getAllPhotos)
+        let response = try await adapter.request(PhotosAPITarget.getAllPhotos)
         let dtos = try decoder.decode([PhotoResponseDTO].self, from: response.data)
         return try dtos.map { try $0.toDomain() }
     }
 
     func deletePhoto(photoId: Int) async throws {
-        _ = try await provider.request(.deletePhoto(photoId: photoId))
+        _ = try await adapter.request(PhotosAPITarget.deletePhoto(photoId: photoId))
     }
 
     func uploadPhotos(items: [PhotoUploadItem]) async throws {
@@ -32,7 +32,7 @@ final class PhotoRepository: PhotoRepositoryProtocol {
 
         for item in items {
             guard let fileData = try? Data(contentsOf: URL(string: item.imageUrl)!) else { continue }
-            let response = try await provider.request(.s3Upload(file: fileData))
+            let response = try await adapter.request(PhotosAPITarget.s3Upload(file: fileData))
             let dto = try decoder.decode(S3UploadResponseDTO.self, from: response.data)
             let meta = PhotoMetadataDTO(
                 latitude: item.latitude,
@@ -46,6 +46,6 @@ final class PhotoRepository: PhotoRepositoryProtocol {
 
         guard !uploaded.isEmpty else { return }
         let request = PhotoBatchRequestDTO(photos: uploaded)
-        _ = try await provider.request(.savePhotosBatch(request: request))
+        _ = try await adapter.request(PhotosAPITarget.savePhotosBatch(request: request))
     }
 }
