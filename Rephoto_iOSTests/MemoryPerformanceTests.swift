@@ -12,7 +12,7 @@ final class MemoryPerformanceTests: XCTestCase {
 
     // measure 블록 종료 후에도 객체를 retain하여 메모리 delta 측정
     private var retainedModels: [Photo] = []
-    private var retainedSearchResult: SearchResponseDto?
+    private var retainedSearchResult: SearchResponseDTO?
     private var retainedDtos: [PhotoResponseDTO] = []
 
     override func tearDown() {
@@ -35,7 +35,7 @@ final class MemoryPerformanceTests: XCTestCase {
     func test_memoryFootprint_searchResults_500() {
         let data = MockDataFactory.searchResponseJSON(resultCount: 500)
         measure(metrics: [XCTMemoryMetric()]) {
-            retainedSearchResult = try? JSONDecoder().decode(SearchResponseDto.self, from: data)
+            retainedSearchResult = try? JSONDecoder().decode(SearchResponseDTO.self, from: data)
             XCTAssertEqual(retainedSearchResult?.searchResults.count, 500)
         }
     }

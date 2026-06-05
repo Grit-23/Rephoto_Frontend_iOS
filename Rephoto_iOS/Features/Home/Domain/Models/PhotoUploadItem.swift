@@ -10,7 +10,7 @@ import Foundation
 struct PhotoUploadItem: Sendable, Equatable {
     let latitude: Double
     let longitude: Double
-    let imageUrl: String
+    let imageUrl: URL
     let createdAt: String
     let fileName: String
 }

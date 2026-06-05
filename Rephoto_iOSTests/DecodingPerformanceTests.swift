@@ -52,13 +52,13 @@ final class DecodingPerformanceTests: XCTestCase {
     /// 검색 결과 50개 디코딩 성능
     func test_decodeSearchResponse_50() throws {
         let data = MockDataFactory.searchResponseJSON(resultCount: 50)
-        measureDecode(SearchResponseDto.self, from: data)
+        measureDecode(SearchResponseDTO.self, from: data)
     }
 
     /// 검색 결과 200개 디코딩 성능
     func test_decodeSearchResponse_200() throws {
         let data = MockDataFactory.searchResponseJSON(resultCount: 200)
-        measureDecode(SearchResponseDto.self, from: data)
+        measureDecode(SearchResponseDTO.self, from: data)
     }
 
     // MARK: - AlbumResponseDto 디코딩
@@ -66,6 +66,6 @@ final class DecodingPerformanceTests: XCTestCase {
     /// 앨범 리스트 20개 디코딩 성능
     func test_decodeAlbumList_20() throws {
         let data = MockDataFactory.albumListJSON(count: 20)
-        measureDecode([AlbumResponseDto].self, from: data)
+        measureDecode([AlbumResponseDTO].self, from: data)
     }
 }

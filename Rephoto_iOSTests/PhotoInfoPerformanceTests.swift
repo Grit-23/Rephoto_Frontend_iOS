@@ -26,7 +26,7 @@ final class PhotoInfoPerformanceTests: XCTestCase {
     }
 
     private func makeTagRequestJSON(tagName: String) -> Data {
-        let request = TagRequestDTO(tagName: tagName)
+        let request = UpdateTagRequestDTO(tagName: tagName)
         return try! JSONEncoder().encode(request)
     }
 
@@ -55,7 +55,7 @@ final class PhotoInfoPerformanceTests: XCTestCase {
         measure(metrics: [XCTClockMetric()]) {
             let encoder = JSONEncoder()
             for i in 0..<1000 {
-                let request = TagRequestDTO(tagName: "새태그_\(i)")
+                let request = UpdateTagRequestDTO(tagName: "새태그_\(i)")
                 _ = try! encoder.encode(request)
             }
         }
