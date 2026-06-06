@@ -31,15 +31,19 @@ struct PhotoMetadataExtractor {
         // 파일 이름
         let fileName = item.itemIdentifier ?? UUID().uuidString
 
-        // 임시 파일 저장
+        // 임시 파일 저장 (실패 시 업로드 불가하므로 nil 반환)
         let destURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(fileName).jpg")
-        try? data.write(to: destURL)
+        do {
+            try data.write(to: destURL)
+        } catch {
+            return nil
+        }
 
         return PhotoUploadItem(
             latitude: latitude,
             longitude: longitude,
-            imageUrl: destURL.absoluteString,
+            imageUrl: destURL,
             createdAt: DateFormatter.serverISO.string(from: createdAt),
             fileName: destURL.lastPathComponent
         )

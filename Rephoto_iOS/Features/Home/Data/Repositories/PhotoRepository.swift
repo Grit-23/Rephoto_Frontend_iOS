@@ -28,23 +28,33 @@ final class PhotoRepository: PhotoRepositoryProtocol {
     }
 
     func uploadPhotos(items: [PhotoUploadItem]) async throws {
-        var uploaded: [PhotoMetadataDTO] = []
+        guard !items.isEmpty else { return }
 
-        for item in items {
-            guard let fileData = try? Data(contentsOf: URL(string: item.imageUrl)!) else { continue }
-            let response = try await adapter.request(PhotosAPITarget.s3Upload(file: fileData))
-            let dto = try decoder.decode(S3UploadResponseDTO.self, from: response.data)
-            let meta = PhotoMetadataDTO(
-                latitude: item.latitude,
-                longitude: item.longitude,
-                imageUrl: dto.imageUrl,
-                createdAt: item.createdAt,
-                fileName: item.fileName
-            )
-            uploaded.append(meta)
+        let adapter = self.adapter
+
+        let uploaded = try await withThrowingTaskGroup(of: PhotoMetadataDTO.self) { group in
+            for item in items {
+                group.addTask {
+                    let fileData = try Data(contentsOf: item.imageUrl)
+                    let response = try await adapter.request(PhotosAPITarget.s3Upload(file: fileData))
+                    let dto = try JSONDecoder().decode(S3UploadResponseDTO.self, from: response.data)
+                    return PhotoMetadataDTO(
+                        latitude: item.latitude,
+                        longitude: item.longitude,
+                        imageUrl: dto.imageUrl,
+                        createdAt: item.createdAt,
+                        fileName: item.fileName
+                    )
+                }
+            }
+
+            var results: [PhotoMetadataDTO] = []
+            for try await dto in group {
+                results.append(dto)
+            }
+            return results
         }
 
-        guard !uploaded.isEmpty else { return }
         let request = PhotoBatchRequestDTO(photos: uploaded)
         _ = try await adapter.request(PhotosAPITarget.savePhotosBatch(request: request))
     }

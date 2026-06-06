@@ -19,10 +19,10 @@ enum MockDataFactory {
             "imageUrl": "https://example.com/photos/photo_\(id).jpg",
             "latitude": 37.5665 + (Double((id % 11) - 5) * 0.01),
             "longitude": 126.9780 + (Double((id % 11) - 5) * 0.01),
-            "createdAt": "2025-07-\(String(format: "%02d", (id % 28) + 1))T12:00:00",
+            "createdAt": "2025-07-\(String(format: "%02d", (id % 28) + 1))T12:00:00Z",
             "fileName": "IMG_\(id).jpg",
             "tags": ["풍경", "서울", "여행"],
-            "private": id % 5 == 0
+            "isSensitive": id % 5 == 0
         ]
     }
 
