@@ -35,8 +35,12 @@ final class MemoryPerformanceTests: XCTestCase {
     func test_memoryFootprint_searchResults_500() {
         let data = MockDataFactory.searchResponseJSON(resultCount: 500)
         measure(metrics: [XCTMemoryMetric()]) {
-            retainedSearchResult = try? JSONDecoder().decode(SearchResponseDTO.self, from: data)
-            XCTAssertEqual(retainedSearchResult?.searchResults.count, 500)
+            do {
+                retainedSearchResult = try JSONDecoder().decode(SearchResponseDTO.self, from: data)
+                XCTAssertEqual(retainedSearchResult?.searchResults.count, 500)
+            } catch {
+                XCTFail("Decode failed: \(error)")
+            }
         }
     }
 
