@@ -20,7 +20,7 @@ jobs:
 
       - name: Create Config.xcconfig placeholder
         run: |
-          echo 'BASE_URL = https:/$()/placeholder.com' > Rephoto_iOS/Resource/Config.xcconfig
+          echo 'BASE_URL = https:/$()/placeholder.com' > Rephoto_iOS/Core/Config/Config.xcconfig
 
       - name: Cache SPM dependencies
         uses: actions/cache@v5
