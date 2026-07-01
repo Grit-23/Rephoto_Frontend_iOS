@@ -31,7 +31,10 @@ struct PhotoMetadataExtractor {
         let longitude = gps?["Longitude"] as? Double ?? 0.0
 
         // 파일 이름
-        let fileName = item.itemIdentifier ?? UUID().uuidString
+        // itemIdentifier는 "UUID/L0/001"처럼 슬래시를 포함할 수 있어, 그대로 쓰면
+        // appendingPathComponent가 하위 경로로 해석해 임시 파일 저장이 실패한다.
+        let rawName = item.itemIdentifier ?? UUID().uuidString
+        let fileName = rawName.replacingOccurrences(of: "/", with: "_")
 
         // 업로드 전 다운샘플 + JPEG 압축 (원본 그대로 올리던 것을 ImageIO로 교체)
         // 위치/촬영시간은 위에서 EXIF로 이미 추출했으므로, 압축본에 메타가 빠져도 무방
