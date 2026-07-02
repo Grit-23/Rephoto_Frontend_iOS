@@ -18,7 +18,6 @@ struct LoginView: View {
                 textField
                 buttons
                 Spacer()
-                kakaoLogin
             }
             .padding(.horizontal, 20)
             .alert(isPresented: .constant(loginVM.errorMessage != nil)) {
@@ -91,26 +90,6 @@ struct LoginView: View {
                     .underline()
             }
         }
-    }
-
-    // MARK: - Kakao Login
-
-    private var kakaoLogin: some View {
-        Button {
-            // TODO: 카카오 로그인
-        } label: {
-            Text("카카오로 로그인")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay(alignment: .leading) {
-                    Image(.kakao)
-                        .padding(.leading, 4)
-                }
-        }
-        .frame(height: 48)
-        .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.capsule)
-        .tint(.yellow)
-        .foregroundStyle(.black)
     }
 }
 
