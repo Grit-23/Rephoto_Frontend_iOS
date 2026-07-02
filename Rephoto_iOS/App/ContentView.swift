@@ -6,13 +6,10 @@
 //
 
 import SwiftUI
+import Factory
 
 struct ContentView: View {
-    @State private var session: SessionStore
-
-    init(userProvider: UserUseCaseProviderProtocol) {
-        self._session = State(initialValue: SessionStore(provider: userProvider))
-    }
+    @Injected(\.sessionStore) private var session
 
     var body: some View {
         Group {
@@ -28,6 +25,6 @@ struct ContentView: View {
 
 #if DEBUG
 #Preview {
-    ContentView(userProvider: MockUserUseCaseProvider())
+    ContentView()
 }
 #endif

@@ -6,15 +6,12 @@
 //
 
 import SwiftUI
-import Factory
 
 @main
 struct Rephoto_iOSApp: App {
-    @Injected(\.userUseCaseProvider) private var userProvider
-
     var body: some Scene {
         WindowGroup {
-            ContentView(userProvider: userProvider)
+            ContentView()
         }
     }
 }

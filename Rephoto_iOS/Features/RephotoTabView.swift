@@ -10,6 +10,7 @@ import PhotosUI
 import Factory
 
 struct RephotoTabView: View {
+    @Injected(\.sessionStore) private var session
     @Injected(\.homeUseCaseProvider) private var homeProvider
     @Injected(\.searchUseCaseProvider) private var searchProvider
 
@@ -24,6 +25,8 @@ struct RephotoTabView: View {
         }
         .tint(.green)
         .tabBarMinimizeBehavior(.onScrollDown)
+        // 하위 탭(프로필/로그아웃 UI 등)이 @Environment(SessionStore.self)로 세션에 접근
+        .environment(session)
     }
 }
 
