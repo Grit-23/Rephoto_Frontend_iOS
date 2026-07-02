@@ -8,7 +8,11 @@
 import SwiftUI
 
 struct LoginView: View {
-    @Bindable var loginVM: LoginViewModel
+    @State private var loginVM: LoginViewModel
+
+    init(session: SessionStore) {
+        self._loginVM = State(initialValue: LoginViewModel(session: session))
+    }
 
     var body: some View {
         ZStack {
@@ -26,7 +30,6 @@ struct LoginView: View {
                 Text(message)
             }
         }
-        .task { await loginVM.onAppear() }
     }
 
     // MARK: - Title
@@ -91,6 +94,6 @@ struct LoginView: View {
 
 #if DEBUG
 #Preview("Login") {
-    LoginView(loginVM: LoginViewModel(provider: MockUserUseCaseProvider()))
+    LoginView(session: SessionStore(provider: MockUserUseCaseProvider()))
 }
 #endif

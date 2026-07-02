@@ -8,20 +8,21 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var loginVM: LoginViewModel
+    @State private var session: SessionStore
 
     init(userProvider: UserUseCaseProviderProtocol) {
-        self._loginVM = State(initialValue: LoginViewModel(provider: userProvider))
+        self._session = State(initialValue: SessionStore(provider: userProvider))
     }
 
     var body: some View {
         Group {
-            if loginVM.isLoggedIn {
+            if session.isLoggedIn {
                 RephotoTabView()
             } else {
-                LoginView(loginVM: loginVM)
+                LoginView(session: session)
             }
         }
+        .task { await session.restore() }
     }
 }
 
