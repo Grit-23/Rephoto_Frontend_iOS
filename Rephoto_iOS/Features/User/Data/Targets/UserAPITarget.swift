@@ -12,7 +12,6 @@ internal import Alamofire
 enum UserAPITarget {
     case join(loginId: String, password: String, username: String)
     case login(loginId: String, password: String)
-    case kakaologin(accessToken: String)
     case updateUser(username: String, password: String)
     case getUser
     case deleteUser
@@ -29,8 +28,6 @@ extension UserAPITarget: APITargetType {
             return "/login"
         case .getUser, .updateUser, .deleteUser:
             return "/users"
-        case .kakaologin:
-            return "/kakao/login"
         case .logout:
             return "/logout"
         case .refreshToken:
@@ -40,7 +37,7 @@ extension UserAPITarget: APITargetType {
     
     var method: Moya.Method {
         switch self {
-        case .join, .kakaologin, .login, .logout, .refreshToken:
+        case .join, .login, .logout, .refreshToken:
             return .post
         case .updateUser:
             return .put
@@ -66,11 +63,6 @@ extension UserAPITarget: APITargetType {
                 "password": password
             ]
             return .requestParameters(parameters: parameters, encoding: JSONEncoding.default)
-        case .kakaologin(let accessToken):
-            let parameters: [String: Any] = [
-                "accessToken": accessToken
-            ]
-            return .requestParameters(parameters: parameters, encoding: JSONEncoding.default)
         case .updateUser(let username, let password):
             let parameters: [String: Any] = [
                 "username": username,
@@ -91,7 +83,7 @@ extension UserAPITarget: APITargetType {
         switch self {
         case .logout, .getUser, .deleteUser, .updateUser:
             return .bearer
-        case .login, .join, .kakaologin, .refreshToken:
+        case .login, .join, .refreshToken:
             return .none
         }
     }

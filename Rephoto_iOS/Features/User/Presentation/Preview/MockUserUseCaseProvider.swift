@@ -18,8 +18,18 @@ final class MockUserUseCaseProvider: UserUseCaseProviderProtocol {
 
 // MARK: - Mock UseCases
 
+enum MockLoginError: LocalizedError {
+    case invalidCredentials
+    var errorDescription: String? { "아이디 또는 비밀번호가 올바르지 않습니다." }
+}
+
 private struct MockLoginUseCase: LoginUseCaseProtocol {
-    func execute(loginId: String, password: String) async throws {}
+    func execute(loginId: String, password: String) async throws {
+        try await Task.sleep(for: .seconds(1))   // 네트워크 지연 흉내
+        guard loginId == "test", password == "1234" else {
+            throw MockLoginError.invalidCredentials
+        }
+    }
 }
 
 private struct MockFetchUserUseCase: FetchUserUseCaseProtocol {

@@ -14,7 +14,7 @@ struct DefaultAuthenticationPolicy: AuthenticationPolicy, Sendable {
     nonisolated func requireAuthentication(_ request: URLRequest) -> Bool {
         guard let path = request.url?.path else { return true }
 
-        let publicPaths = ["/login", "/join", "/kakao/login", "/auth/refresh"]
+        let publicPaths = ["/login", "/join", "/auth/refresh"]
         return !publicPaths.contains(where: { path.hasSuffix($0) })
     }
 
