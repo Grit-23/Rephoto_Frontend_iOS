@@ -11,23 +11,19 @@ struct LoginView: View {
     @Bindable var loginVM: LoginViewModel
 
     var body: some View {
-        NavigationStack {
+        ZStack {
+            Color.base.ignoresSafeArea(edges: .all)
+            
             VStack(alignment: .leading, spacing: 60) {
-                title
-                Spacer()
+                header
                 textField
                 buttons
-                Spacer()
             }
-            .padding(.horizontal, 20)
-            .alert(isPresented: .constant(loginVM.errorMessage != nil)) {
-                Alert(
-                    title: Text("오류"),
-                    message: Text(loginVM.errorMessage ?? ""),
-                    dismissButton: .default(Text("확인")) {
-                        loginVM.errorMessage = nil
-                    }
-                )
+            .padding(.horizontal)
+            .alert("오류", isPresented: $loginVM.isShowingError, presenting: loginVM.errorMessage) { _ in
+                Button("확인", role: .cancel) { }
+            } message: { message in
+                Text(message)
             }
         }
         .task { await loginVM.onAppear() }
@@ -35,33 +31,42 @@ struct LoginView: View {
 
     // MARK: - Title
 
-    private var title: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("안녕하세요.\n리포토입니다.")
-                .font(.system(size: 28, weight: .bold))
-
-            Text("회원 서비스 이용을 위해 로그인 해주세요")
-                .foregroundColor(.gray)
-                .font(.system(size: 14))
+    private var header: some View {
+        ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 28)
+                .foregroundStyle(
+                    Gradient(colors: [.lightGreen, .deepGreen])
+                )
+                .frame(height: 240)
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Rephoto")
+                    .font(.system(size: 40, weight: .bold))
+                Text("사진을 기억으로 묶다")
+                    .font(.system(size: 16))
+            }
+            .padding(.leading, 20)
+            .foregroundStyle(.white)
         }
-        .padding(.top, 80)
     }
 
     // MARK: - TextFields
 
     private var textField: some View {
         VStack(spacing: 40) {
-            VStack(alignment: .leading, spacing: 8) {
-                TextField("아이디", text: $loginVM.loginId)
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
-                Divider()
-            }
-            VStack(alignment: .leading, spacing: 8) {
-                SecureField("비밀번호", text: $loginVM.password)
-                    .textInputAutocapitalization(.never)
-                Divider()
-            }
+            LoginTextField(
+                title: "이메일",
+                image: "envelope",
+                text: $loginVM.loginId,
+                placeholder: "이메일을 입력하세요"
+            )
+            
+            LoginTextField(
+                title: "비밀번호",
+                image: "lock",
+                text: $loginVM.password,
+                placeholder: "비밀번호를 입력하세요",
+                isSecure: true
+            )
         }
     }
 
@@ -69,26 +74,17 @@ struct LoginView: View {
 
     private var buttons: some View {
         VStack(spacing: 16) {
-            Button {
+            CTAButton(title: "로그인", isLoading: loginVM.isLoading) {
                 Task { await loginVM.login() }
-            } label: {
-                Text("로그인하기")
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        Capsule()
-                            .tint(.green)
-                    )
             }
             NavigationLink {
-                // 회원가입 화면
+                
             } label: {
                 Text("회원가입")
                     .font(.system(size: 14))
                     .foregroundColor(.gray)
-                    .underline()
             }
+            .disabled(true)
         }
     }
 }

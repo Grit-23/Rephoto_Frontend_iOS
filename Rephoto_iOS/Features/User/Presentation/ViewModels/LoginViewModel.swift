@@ -11,11 +11,15 @@ import SwiftUI
 @MainActor
 final class LoginViewModel {
     let provider: UserUseCaseProviderProtocol
-
+    
     var loginId: String = ""
     var password: String = ""
     private(set) var isLoading = false
     var errorMessage: String?
+    var isShowingError: Bool {
+        get { errorMessage != nil }
+        set { if !newValue { errorMessage = nil } }
+    }
     private(set) var isLoggedIn = false
     private(set) var userInfo: UserInfo?
     private(set) var name: String = "리포토"
