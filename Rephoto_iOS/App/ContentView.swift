@@ -6,27 +6,25 @@
 //
 
 import SwiftUI
+import Factory
 
 struct ContentView: View {
-    @State private var loginVM: LoginViewModel
-
-    init(userProvider: UserUseCaseProviderProtocol) {
-        self._loginVM = State(initialValue: LoginViewModel(provider: userProvider))
-    }
+    @Injected(\.sessionStore) private var session
 
     var body: some View {
         Group {
-            if loginVM.isLoggedIn {
+            if session.isLoggedIn {
                 RephotoTabView()
             } else {
-                LoginView(loginVM: loginVM)
+                LoginView(session: session)
             }
         }
+        .task { await session.restore() }
     }
 }
 
 #if DEBUG
 #Preview {
-    ContentView(userProvider: MockUserUseCaseProvider())
+    ContentView()
 }
 #endif

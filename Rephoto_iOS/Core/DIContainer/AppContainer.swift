@@ -80,6 +80,17 @@ extension Container: @retroactive AutoRegistering {
         }
     }
 
+    // MARK: - Session
+
+    /// 앱 전역 세션. @MainActor 타입이므로 메인 스레드 해석을 전제로 한다 (SwiftUI 뷰 초기화 시점).
+    var sessionStore: Factory<SessionStore> {
+        self {
+            MainActor.assumeIsolated {
+                SessionStore(provider: self.userUseCaseProvider.resolve())
+            }
+        }.singleton
+    }
+
     // MARK: - AutoRegistering
 
     public func autoRegister() {
