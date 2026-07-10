@@ -11,6 +11,7 @@ import Foundation
 final class MockHomeUseCaseProvider: HomeUseCaseProviderProtocol {
     func makeGetPhotosUseCase() -> GetPhotosUseCaseProtocol { MockGetPhotosUseCase() }
     func makeUploadPhotosUseCase() -> UploadPhotosUseCaseProtocol { MockUploadPhotosUseCase() }
+    func makeExtractPhotoMetadataUseCase() -> ExtractPhotoMetadataUseCaseProtocol { MockExtractPhotoMetadataUseCase() }
     func makeDeletePhotoUseCase() -> DeletePhotoUseCaseProtocol { MockDeletePhotoUseCase() }
     func makeGetTagsUseCase() -> GetTagsUseCaseProtocol { MockGetTagsUseCase() }
     func makeAddTagUseCase() -> AddTagUseCaseProtocol { MockAddTagUseCase() }
@@ -39,6 +40,10 @@ private struct MockGetPhotosUseCase: GetPhotosUseCaseProtocol {
 
 private struct MockUploadPhotosUseCase: UploadPhotosUseCaseProtocol {
     func execute(items: [PhotoUploadItem]) async throws {}
+}
+
+private struct MockExtractPhotoMetadataUseCase: ExtractPhotoMetadataUseCaseProtocol {
+    func execute(imageData: Data, identifier: String?) async -> PhotoUploadItem? { nil }
 }
 
 private struct MockDeletePhotoUseCase: DeletePhotoUseCaseProtocol {
