@@ -5,15 +5,13 @@
 //  Created by 김도연 on 5/19/26.
 //
 
-import PhotosUI
-import SwiftUI
+import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-struct PhotoMetadataExtractor {
-    static func extract(from item: PhotosPickerItem) async -> PhotoUploadItem? {
-        guard let data = try? await item.loadTransferable(type: Data.self),
-              let source = CGImageSourceCreateWithData(data as CFData, nil),
+struct PhotoMetadataExtractor: PhotoMetadataExtractorProtocol {
+    func extract(from imageData: Data, identifier: String?) async -> PhotoUploadItem? {
+        guard let source = CGImageSourceCreateWithData(imageData as CFData, nil),
               let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any]
         else { return nil }
 
@@ -31,9 +29,9 @@ struct PhotoMetadataExtractor {
         let longitude = gps?["Longitude"] as? Double ?? 0.0
 
         // 파일 이름
-        // itemIdentifier는 "UUID/L0/001"처럼 슬래시를 포함할 수 있어, 그대로 쓰면
+        // identifier는 "UUID/L0/001"처럼 슬래시를 포함할 수 있어, 그대로 쓰면
         // appendingPathComponent가 하위 경로로 해석해 임시 파일 저장이 실패한다.
-        let rawName = item.itemIdentifier ?? UUID().uuidString
+        let rawName = identifier ?? UUID().uuidString
         let fileName = rawName.replacingOccurrences(of: "/", with: "_")
 
         // 업로드 전 다운샘플 + JPEG 압축 (원본 그대로 올리던 것을 ImageIO로 교체)
@@ -43,7 +41,7 @@ struct PhotoMetadataExtractor {
         }
 
         #if DEBUG
-        let beforeKB = data.count / 1024
+        let beforeKB = imageData.count / 1024
         let afterKB = compressed.count / 1024
         let pxW = properties[kCGImagePropertyPixelWidth as String] as? Int ?? 0
         let pxH = properties[kCGImagePropertyPixelHeight as String] as? Int ?? 0
@@ -72,7 +70,7 @@ struct PhotoMetadataExtractor {
     /// ImageIO로 디코드 시점에 다운샘플 → JPEG 인코딩.
     /// `UIImage(data:).jpegData()`는 풀해상도 비트맵을 메모리에 올려서 4000x3000 기준 ~36MB가 튀지만,
     /// `CGImageSourceCreateThumbnailAtIndex`는 목표 크기로만 디코드해 피크 메모리를 크게 낮춘다.
-    private static func downsampledJPEG(
+    private func downsampledJPEG(
         from source: CGImageSource,
         maxPixelSize: CGFloat,
         quality: CGFloat
