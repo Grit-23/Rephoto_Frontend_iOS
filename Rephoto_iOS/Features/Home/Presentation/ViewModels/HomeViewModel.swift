@@ -45,10 +45,16 @@ final class HomeViewModel {
         isLoading = true
         errorMessage = nil
 
+        let extractUseCase = provider.makeExtractPhotoMetadataUseCase()
         let items = await withTaskGroup(of: PhotoUploadItem?.self, returning: [PhotoUploadItem].self) { group in
             for pickerItem in pickerItems {
                 group.addTask {
-                    await PhotoMetadataExtractor.extract(from: pickerItem)
+                    // PhotosPickerItem(SwiftUI) → Data 변환까지만 Presentation이 담당하고,
+                    // 메타데이터 추출/압축은 Domain 계약(UseCase) 뒤의 Data 구현체가 수행
+                    guard let data = try? await pickerItem.loadTransferable(type: Data.self) else {
+                        return nil
+                    }
+                    return await extractUseCase.execute(imageData: data, identifier: pickerItem.itemIdentifier)
                 }
             }
             var results: [PhotoUploadItem] = []
