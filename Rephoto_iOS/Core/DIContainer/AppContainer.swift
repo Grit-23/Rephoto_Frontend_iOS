@@ -53,6 +53,12 @@ extension Container: @retroactive AutoRegistering {
         }.singleton
     }
 
+    // MARK: - Services
+
+    private var photoMetadataExtractor: Factory<PhotoMetadataExtractorProtocol> {
+        self { PhotoMetadataExtractor() }
+    }
+
     // MARK: - UseCaseProviders
 
     var homeUseCaseProvider: Factory<HomeUseCaseProviderProtocol> {
@@ -60,7 +66,8 @@ extension Container: @retroactive AutoRegistering {
             HomeUseCaseProvider(
                 photoRepository: self.photoRepository.resolve(),
                 tagRepository: self.tagRepository.resolve(),
-                descriptionRepository: self.descriptionRepository.resolve()
+                descriptionRepository: self.descriptionRepository.resolve(),
+                metadataExtractor: self.photoMetadataExtractor.resolve()
             )
         }
     }
