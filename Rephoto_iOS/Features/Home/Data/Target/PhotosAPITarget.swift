@@ -6,8 +6,6 @@
 //
 
 import Foundation
-import Moya
-internal import Alamofire
 
 enum PhotosAPITarget {
     case getAllPhotos
@@ -30,7 +28,7 @@ extension PhotosAPITarget: APITargetType {
         }
     }
 
-    var method: Moya.Method {
+    var method: HTTPMethod {
         switch self {
         case .getAllPhotos:
             return .get
@@ -41,27 +39,27 @@ extension PhotosAPITarget: APITargetType {
         }
     }
 
-    var task: Task {
+    var task: RequestTask {
         switch self {
         case .getAllPhotos, .deletePhoto:
-            return .requestPlain
+            return .plain
         case .s3Upload(let file):
-            let formData = MultipartFormData(
-                provider: .data(file),
+            let item = MultipartFormItem(
+                data: file,
                 name: "file",
                 fileName: "photo.jpg",
                 mimeType: "image/jpeg"
             )
-            return .uploadMultipart([formData])
+            return .multipart([item])
         case .savePhotosBatch(let request):
-            return .requestJSONEncodable(request)
+            return .jsonEncodable(request)
         }
     }
 
     var headers: [String: String]? {
         switch self {
         case .s3Upload:
-            return nil // MoyaNetworkAdapter가 multipart boundary 자동 설정
+            return nil // NetworkAdapter가 multipart boundary 자동 설정
         default:
             return ["Content-Type": "application/json"]
         }

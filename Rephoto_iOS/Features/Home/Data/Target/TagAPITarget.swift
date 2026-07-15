@@ -6,8 +6,6 @@
 //
 
 import Foundation
-import Moya
-internal import Alamofire
 
 enum TagAPITarget {
     case getTags(photoId: Int)
@@ -30,7 +28,7 @@ extension TagAPITarget: APITargetType {
         }
     }
 
-    var method: Moya.Method {
+    var method: HTTPMethod {
         switch self {
         case .getTags:
             return .get
@@ -43,14 +41,14 @@ extension TagAPITarget: APITargetType {
         }
     }
 
-    var task: Task {
+    var task: RequestTask {
         switch self {
         case .getTags, .deleteTag:
-            return .requestPlain
+            return .plain
         case .addTag(let request):
-            return .requestJSONEncodable(request)
+            return .jsonEncodable(request)
         case .updateTag(_, let request):
-            return .requestJSONEncodable(request)
+            return .jsonEncodable(request)
         }
     }
 

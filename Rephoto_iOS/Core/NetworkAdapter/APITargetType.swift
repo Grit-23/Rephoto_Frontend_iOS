@@ -6,9 +6,17 @@
 //
 
 import Foundation
-import Moya
 
-protocol APITargetType: TargetType {}
+/// API 엔드포인트 선언 DSL
+///
+/// 상태코드 검증은 NetworkClient(NetworkError.httpError)가 수행한다.
+protocol APITargetType {
+    var baseURL: URL { get }
+    var path: String { get }
+    var method: HTTPMethod { get }
+    var task: RequestTask { get }
+    var headers: [String: String]? { get }
+}
 
 extension APITargetType {
     var baseURL: URL {
@@ -16,10 +24,6 @@ extension APITargetType {
             fatalError("Invalid Base URL")
         }
         return url
-    }
-
-    var validationType: ValidationType {
-        .successCodes
     }
 
     var headers: [String: String]? {

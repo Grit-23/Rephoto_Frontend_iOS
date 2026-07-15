@@ -6,8 +6,6 @@
 //
 
 import Foundation
-import Moya
-internal import Alamofire
 
 enum UserAPITarget {
     case join(loginId: String, password: String, username: String)
@@ -34,8 +32,8 @@ extension UserAPITarget: APITargetType {
             return "/auth/refresh"
         }
     }
-    
-    var method: Moya.Method {
+
+    var method: HTTPMethod {
         switch self {
         case .join, .login, .logout, .refreshToken:
             return .post
@@ -47,44 +45,19 @@ extension UserAPITarget: APITargetType {
             return .delete
         }
     }
-    
-    var task: Task {
+
+    var task: RequestTask {
         switch self {
         case .join(let loginId, let password, let username):
-            let parameters: [String: Any] = [
-                "loginId": loginId,
-                "password": password,
-                "username": username
-            ]
-            return .requestParameters(parameters: parameters, encoding: JSONEncoding.default)
+            return .jsonEncodable(JoinRequestDTO(loginId: loginId, password: password, username: username))
         case .login(let loginId, let password):
-            let parameters: [String: Any] = [
-                "loginId": loginId,
-                "password": password
-            ]
-            return .requestParameters(parameters: parameters, encoding: JSONEncoding.default)
+            return .jsonEncodable(LoginRequestDTO(loginId: loginId, password: password))
         case .updateUser(let username, let password):
-            let parameters: [String: Any] = [
-                "username": username,
-                "password": password
-            ]
-            return .requestParameters(parameters: parameters, encoding: JSONEncoding.default)
+            return .jsonEncodable(UpdateUserRequestDTO(username: username, password: password))
         case .getUser, .logout, .deleteUser:
-            return .requestPlain
+            return .plain
         case .refreshToken(let refreshToken):
-            let parameters: [String: Any] = [
-                "Authorization": refreshToken
-            ]
-            return .requestParameters(parameters: parameters, encoding: JSONEncoding.default)
-        }
-    }
-    
-    var authorizationType: AuthorizationType? {
-        switch self {
-        case .logout, .getUser, .deleteUser, .updateUser:
-            return .bearer
-        case .login, .join, .refreshToken:
-            return .none
+            return .jsonEncodable(RefreshTokenRequestDTO(refreshToken: refreshToken))
         }
     }
 

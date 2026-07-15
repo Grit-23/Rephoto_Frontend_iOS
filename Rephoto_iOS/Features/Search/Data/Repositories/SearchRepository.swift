@@ -6,13 +6,12 @@
 //
 
 import Foundation
-import Moya
 
 final class SearchRepository: SearchRepositoryProtocol {
-    private let adapter: MoyaNetworkAdapter
+    private let adapter: NetworkAdapter
     private let decoder: JSONDecoder
 
-    init(adapter: MoyaNetworkAdapter, decoder: JSONDecoder = JSONDecoder()) {
+    init(adapter: NetworkAdapter, decoder: JSONDecoder = JSONDecoder()) {
         self.adapter = adapter
         self.decoder = decoder
     }

@@ -6,8 +6,6 @@
 //
 
 import Foundation
-import Moya
-internal import Alamofire
 
 enum SearchAPITarget {
     case search(query: String)
@@ -16,23 +14,23 @@ enum SearchAPITarget {
 extension SearchAPITarget: APITargetType {
     var path: String {
         switch self {
-        case .search: 
+        case .search:
             return "/search"
         }
     }
-    
-    var method: Moya.Method {
+
+    var method: HTTPMethod {
         switch self {
         case .search:
             return .post
         }
     }
-    
-    var task: Task {
+
+    var task: RequestTask {
         switch self {
         case .search(let query):
-            return .requestParameters(parameters: ["query": query], encoding: JSONEncoding.default)
+            return .jsonEncodable(SearchRequestDTO(query: query))
         }
     }
-    
+
 }
