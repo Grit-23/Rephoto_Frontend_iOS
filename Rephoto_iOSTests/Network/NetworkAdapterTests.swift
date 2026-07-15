@@ -99,9 +99,11 @@ struct NetworkAdapterTests {
     // MARK: - .multipart
 
     /// boundary는 요청마다 랜덤 생성되므로 값 비교 대신 헤더에서 추출해 구조를 검증한다.
-    @Test(".multipart는 boundary/파트 구조가 규격에 맞는 바디를 조립한다")
+    /// 파일 데이터는 유효한 UTF-8이 아닌 바이너리를 사용해, 조립 과정에서 바이트가 훼손되지 않음을 함께 검증한다.
+    @Test(".multipart는 규격에 맞는 바디를 조립하고 바이너리를 그대로 보존한다")
     func multipartS3UploadBuildsWellFormedBody() throws {
-        let fileData = Data("fake image bytes".utf8)
+        // JPEG 헤더 유사 바이트 — 0xFF/0x00 포함, UTF-8로 디코딩 불가
+        let fileData = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01])
         let request = try makeSUT().buildURLRequest(PhotosAPITarget.s3Upload(file: fileData))
 
         #expect(request.httpMethod == "POST")
@@ -113,13 +115,13 @@ struct NetworkAdapterTests {
         #expect(!boundary.isEmpty)
 
         let body = try #require(request.httpBody)
-        let bodyString = try #require(String(data: body, encoding: .utf8))
+        let partHeader = Data(
+            "--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"photo.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".utf8
+        )
+        let terminator = Data("\r\n--\(boundary)--\r\n".utf8)
 
-        #expect(bodyString.hasPrefix("--\(boundary)\r\n"))
-        #expect(bodyString.contains("Content-Disposition: form-data; name=\"file\"; filename=\"photo.jpg\"\r\n"))
-        #expect(bodyString.contains("Content-Type: image/jpeg\r\n"))
-        #expect(bodyString.contains("\r\n\r\nfake image bytes\r\n"))
-        #expect(bodyString.hasSuffix("--\(boundary)--\r\n"))
+        // 파트 헤더 + 원본 바이트 + 종결 boundary가 바이트 단위로 정확히 일치해야 한다
+        #expect(body == partHeader + fileData + terminator)
     }
 
     /// s3Upload는 타겟 헤더가 nil이라 어댑터가 설정한 multipart Content-Type만 존재해야 한다.
