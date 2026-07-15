@@ -6,15 +6,14 @@
 //
 
 import Foundation
-import Moya
 
 final class UserRepository: UserRepositoryProtocol {
-    private let adapter: MoyaNetworkAdapter
+    private let adapter: NetworkAdapter
     private let networkClient: NetworkClient
     private let decoder: JSONDecoder
 
     init(
-        adapter: MoyaNetworkAdapter,
+        adapter: NetworkAdapter,
         networkClient: NetworkClient,
         decoder: JSONDecoder = JSONDecoder()
     ) {
@@ -48,6 +47,6 @@ final class UserRepository: UserRepositoryProtocol {
     }
 
     func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void) {
-        _Concurrency.Task { await networkClient.setOnRefreshFailed(handler) }
+        Task { await networkClient.setOnRefreshFailed(handler) }
     }
 }

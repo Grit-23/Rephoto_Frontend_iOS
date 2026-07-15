@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum NetworkError: Error, LocalizedError, Sendable {
+enum NetworkError: Error, LocalizedError, Sendable, Equatable {
 
     /// URLResponse가 HTTPURLResponse로 변환 불가
     case invalidResponse

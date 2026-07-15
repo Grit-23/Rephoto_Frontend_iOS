@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0B4B8A962E40A67100CCBE45 /* Moya in Frameworks */ = {isa = PBXBuildFile; productRef = 0B4B8A952E40A67100CCBE45 /* Moya */; };
 		0B58CB852E269EA00074972F /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = 0B58CB842E269EA00074972F /* Nuke */; };
 		0B58CB872E269EA00074972F /* NukeExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = 0B58CB862E269EA00074972F /* NukeExtensions */; };
 		0B58CB892E269EA00074972F /* NukeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0B58CB882E269EA00074972F /* NukeUI */; };
@@ -73,7 +72,6 @@
 				0B58CB892E269EA00074972F /* NukeUI in Frameworks */,
 				0B58CB852E269EA00074972F /* Nuke in Frameworks */,
 				0B58CB8B2E269EA00074972F /* NukeVideo in Frameworks */,
-				0B4B8A962E40A67100CCBE45 /* Moya in Frameworks */,
 				0B58CB872E269EA00074972F /* NukeExtensions in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -147,7 +145,6 @@
 				0B58CB862E269EA00074972F /* NukeExtensions */,
 				0B58CB882E269EA00074972F /* NukeUI */,
 				0B58CB8A2E269EA00074972F /* NukeVideo */,
-				0B4B8A952E40A67100CCBE45 /* Moya */,
 				0BAA00022FB0A00000000001 /* Factory */,
 			);
 			productName = Rephoto_iOS;
@@ -184,7 +181,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				0B58CB832E269EA00074972F /* XCRemoteSwiftPackageReference "Nuke" */,
-				0B4B8A942E40A67100CCBE45 /* XCRemoteSwiftPackageReference "Moya" */,
 				0BAA00012FB0A00000000001 /* XCRemoteSwiftPackageReference "Factory" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -527,14 +523,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		0B4B8A942E40A67100CCBE45 /* XCRemoteSwiftPackageReference "Moya" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Moya/Moya";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 15.0.3;
-			};
-		};
 		0B58CB832E269EA00074972F /* XCRemoteSwiftPackageReference "Nuke" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/kean/Nuke";
@@ -554,11 +542,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		0B4B8A952E40A67100CCBE45 /* Moya */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 0B4B8A942E40A67100CCBE45 /* XCRemoteSwiftPackageReference "Moya" */;
-			productName = Moya;
-		};
 		0B58CB842E269EA00074972F /* Nuke */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 0B58CB832E269EA00074972F /* XCRemoteSwiftPackageReference "Nuke" */;

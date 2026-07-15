@@ -6,8 +6,6 @@
 //
 
 import Foundation
-import Moya
-internal import Alamofire
 
 enum AlbumAPITarget {
     case getAlbumList
@@ -22,21 +20,21 @@ extension AlbumAPITarget: APITargetType {
         case .getAlbumInfo(let tagId):
             return "/albums/\(tagId)/photos"
         }
-   
+
     }
-    
-    var method: Moya.Method {
+
+    var method: HTTPMethod {
         switch self {
         case .getAlbumList, .getAlbumInfo:
             return .get
         }
     }
-    
-    var task: Task {
+
+    var task: RequestTask {
         switch self {
         case .getAlbumList, .getAlbumInfo:
-            return .requestPlain
+            return .plain
         }
     }
-    
+
 }

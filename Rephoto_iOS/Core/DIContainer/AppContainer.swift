@@ -12,10 +12,10 @@ extension Container: @retroactive AutoRegistering {
         }.singleton
     }
 
-    private var adapter: Factory<MoyaNetworkAdapter> {
+    private var adapter: Factory<NetworkAdapter> {
         self {
             let baseURL = URL(string: Config.baseURL)!
-            return MoyaNetworkAdapter(
+            return NetworkAdapter(
                 networkClient: self.networkClient.resolve(),
                 baseURL: baseURL
             )

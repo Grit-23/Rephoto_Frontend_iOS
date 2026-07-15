@@ -6,8 +6,6 @@
 //
 
 import Foundation
-import Moya
-internal import Alamofire
 
 enum DescriptionAPITarget {
     case getDescription(photoId: Int)
@@ -21,17 +19,17 @@ extension DescriptionAPITarget: APITargetType {
         }
     }
 
-    var method: Moya.Method {
+    var method: HTTPMethod {
         switch self {
         case .getDescription:
             return .get
         }
     }
 
-    var task: Task {
+    var task: RequestTask {
         switch self {
         case .getDescription:
-            return .requestPlain
+            return .plain
         }
     }
 
