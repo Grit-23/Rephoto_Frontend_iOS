@@ -140,7 +140,7 @@ extension NetworkAdapter {
 
 // MARK: - AnyEncodable
 
-fileprivate struct AnyEncodable: Encodable {
+private struct AnyEncodable: Encodable {
     private let _encode: (Encoder) throws -> Void
 
     init<T: Encodable>(_ wrapped: T) {
