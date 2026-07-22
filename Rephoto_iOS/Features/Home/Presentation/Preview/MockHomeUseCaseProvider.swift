@@ -39,11 +39,29 @@ private struct MockGetPhotosUseCase: GetPhotosUseCaseProtocol {
 }
 
 private struct MockUploadPhotosUseCase: UploadPhotosUseCaseProtocol {
-    func execute(items: [PhotoUploadItem]) async throws {}
+    func execute(items: [PhotoUploadItem], onItemUploaded: ((Int) -> Void)?) async throws {
+        for index in items.indices {
+            try? await Task.sleep(for: .milliseconds(400))
+            onItemUploaded?(index + 1)
+        }
+    }
 }
 
 private struct MockExtractPhotoMetadataUseCase: ExtractPhotoMetadataUseCaseProtocol {
-    func execute(imageData: Data, identifier: String?) async -> PhotoUploadItem? { nil }
+    // nil을 반환하면 업로드 파이프라인이 조기 종료되어 진행 배너를 확인할 수 없으므로,
+    // 데모에서도 실제 업로드 흐름을 타도록 유효한 아이템을 반환
+    func execute(imageData: Data, identifier: String?) async -> PhotoUploadItem? {
+        let fileName = UUID().uuidString + ".jpg"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        try? imageData.write(to: url)
+        return PhotoUploadItem(
+            latitude: 37.5665,
+            longitude: 126.9780,
+            imageUrl: url,
+            createdAt: ISO8601DateFormatter().string(from: Date()),
+            fileName: fileName
+        )
+    }
 }
 
 private struct MockDeletePhotoUseCase: DeletePhotoUseCaseProtocol {
