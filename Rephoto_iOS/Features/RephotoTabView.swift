@@ -16,7 +16,7 @@ struct RephotoTabView: View {
 
     var body : some View {
         TabView{
-            Tab("홈", image: "home") {
+            Tab("홈", systemImage: "house") {
                 HomeView(provider: homeProvider)
             }
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
