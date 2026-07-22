@@ -53,20 +53,6 @@ enum MockDataFactory {
         return try! JSONSerialization.data(withJSONObject: response)
     }
 
-    // MARK: - Album JSON
-
-    static func albumListJSON(count: Int) -> Data {
-        guard count > 0 else { return Data("[]".utf8) }
-        let albums: [[String: Any]] = (1...count).map { i in
-            [
-                "userId": 1,
-                "tagId": i,
-                "tagName": "앨범_\(i)"
-            ]
-        }
-        return try! JSONSerialization.data(withJSONObject: albums)
-    }
-
     // MARK: - Pre-decoded DTOs
 
     static func photoResponseDTOs(count: Int) -> [PhotoResponseDTO] {

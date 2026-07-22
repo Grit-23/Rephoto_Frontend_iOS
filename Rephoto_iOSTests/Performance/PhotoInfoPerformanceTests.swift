@@ -2,8 +2,8 @@
 //  PhotoInfoPerformanceTests.swift
 //  Rephoto_iOSTests
 //
-//  사진 정보(태그/설명) 처리 성능 벤치마크
-//  리팩토링 항목 #6: 사진 정보 수정
+//  사진 정보(태그) 처리 성능 벤치마크
+//  Step 7 Dictionary 기반 O(1) 태그 조회 전환 시 비교용 baseline
 //
 
 import XCTest
@@ -23,42 +23,6 @@ final class PhotoInfoPerformanceTests: XCTestCase {
             ]
         }
         return try! JSONSerialization.data(withJSONObject: tags)
-    }
-
-    private func makeTagRequestJSON(tagName: String) -> Data {
-        let request = UpdateTagRequestDTO(tagName: tagName)
-        return try! JSONEncoder().encode(request)
-    }
-
-    // MARK: - 태그 디코딩
-
-    /// 태그 10개 디코딩 (일반적인 사진)
-    func test_decodeTags_10() {
-        let data = makeTagsJSON(count: 10)
-        measure(metrics: [XCTClockMetric()]) {
-            _ = try? JSONDecoder().decode([TagResponseDTO].self, from: data)
-        }
-    }
-
-    /// 태그 100개 디코딩 (대량 태그)
-    func test_decodeTags_100() {
-        let data = makeTagsJSON(count: 100)
-        measure(metrics: [XCTClockMetric()]) {
-            _ = try? JSONDecoder().decode([TagResponseDTO].self, from: data)
-        }
-    }
-
-    // MARK: - 태그 요청 인코딩
-
-    /// 태그 추가/수정 요청 인코딩 1000회
-    func test_encodeTagRequest_1000() {
-        measure(metrics: [XCTClockMetric()]) {
-            let encoder = JSONEncoder()
-            for i in 0..<1000 {
-                let request = UpdateTagRequestDTO(tagName: "새태그_\(i)")
-                _ = try! encoder.encode(request)
-            }
-        }
     }
 
     // MARK: - Optimistic UI: 태그 배열 검색 + 교체 (현재 updateTag 방식)
@@ -99,37 +63,6 @@ final class PhotoInfoPerformanceTests: XCTestCase {
                         photoId: tags[index].photoId
                     )
                 }
-            }
-        }
-    }
-
-    // MARK: - 태그 append 성능
-
-    /// 태그 추가 (append) 1000회
-    func test_tagAppend_1000() {
-        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-            var tags: [TagResponseDTO] = []
-            for i in 0..<1000 {
-                tags.append(TagResponseDTO(
-                    photoTagId: i, tagId: i * 10,
-                    tagName: "태그_\(i)", photoId: 42
-                ))
-            }
-            XCTAssertEqual(tags.count, 1000)
-        }
-    }
-
-    // MARK: - Description (plain text) 파싱
-
-    /// 설명 텍스트 trim 처리 1000회
-    func test_descriptionTrimming_1000() {
-        let rawTexts = (0..<1000).map { i in
-            "  \n  이 사진은 서울 한강에서 촬영된 풍경 사진입니다. 촬영 시각은 오후 3시이며 날씨가 맑았습니다. #\(i)  \n\n  "
-        }
-
-        measure(metrics: [XCTClockMetric()]) {
-            for text in rawTexts {
-                _ = text.trimmingCharacters(in: .whitespacesAndNewlines)
             }
         }
     }
