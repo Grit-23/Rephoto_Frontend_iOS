@@ -16,6 +16,7 @@ final class MockHomeUseCaseProvider: HomeUseCaseProviderProtocol {
     func makeGetTagsUseCase() -> GetTagsUseCaseProtocol { MockGetTagsUseCase() }
     func makeAddTagUseCase() -> AddTagUseCaseProtocol { MockAddTagUseCase() }
     func makeUpdateTagUseCase() -> UpdateTagUseCaseProtocol { MockUpdateTagUseCase() }
+    func makeDeleteTagUseCase() -> DeleteTagUseCaseProtocol { MockDeleteTagUseCase() }
     func makeGetDescriptionUseCase() -> GetDescriptionUseCaseProtocol { MockGetDescriptionUseCase() }
 }
 
@@ -81,6 +82,10 @@ private struct MockAddTagUseCase: AddTagUseCaseProtocol {
     func execute(photoId: Int, tagName: String) async throws -> PhotoTag {
         PhotoTag(photoTagId: 99, tagId: 99, tagName: tagName, photoId: photoId)
     }
+}
+
+private struct MockDeleteTagUseCase: DeleteTagUseCaseProtocol {
+    func execute(photoTagId: Int) async throws {}
 }
 
 private struct MockUpdateTagUseCase: UpdateTagUseCaseProtocol {
