@@ -17,7 +17,7 @@ struct CTAButton: View {
             action()
         } label: {
             ZStack {
-                RoundedRectangle(cornerRadius: 16)
+                Capsule()
                     .frame(height: 56)
                 if isLoading {
                     ProgressView()
@@ -31,7 +31,7 @@ struct CTAButton: View {
             }
         }
         .foregroundStyle(.mainGreen)
-        .glassEffect(.regular.interactive().tint(.mainGreen), in: RoundedRectangle(cornerRadius: 16))
+        .glassEffect(.regular.interactive().tint(.mainGreen), in: Capsule())
         .disabled(isLoading)
     }
 }
