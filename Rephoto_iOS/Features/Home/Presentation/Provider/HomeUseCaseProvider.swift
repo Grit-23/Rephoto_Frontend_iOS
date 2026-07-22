@@ -15,6 +15,7 @@ protocol HomeUseCaseProviderProtocol {
     func makeGetTagsUseCase() -> GetTagsUseCaseProtocol
     func makeAddTagUseCase() -> AddTagUseCaseProtocol
     func makeUpdateTagUseCase() -> UpdateTagUseCaseProtocol
+    func makeDeleteTagUseCase() -> DeleteTagUseCaseProtocol
     func makeGetDescriptionUseCase() -> GetDescriptionUseCaseProtocol
 }
 
@@ -62,6 +63,10 @@ final class HomeUseCaseProvider: HomeUseCaseProviderProtocol {
 
     func makeUpdateTagUseCase() -> UpdateTagUseCaseProtocol {
         UpdateTagUseCase(repository: tagRepository)
+    }
+
+    func makeDeleteTagUseCase() -> DeleteTagUseCaseProtocol {
+        DeleteTagUseCase(repository: tagRepository)
     }
 
     func makeGetDescriptionUseCase() -> GetDescriptionUseCaseProtocol {

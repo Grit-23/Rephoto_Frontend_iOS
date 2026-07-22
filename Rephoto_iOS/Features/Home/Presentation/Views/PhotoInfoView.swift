@@ -12,9 +12,8 @@ struct PhotoInfoView: View {
     let photo: Photo
     @State private var vm: PhotoInfoViewModel
     @State private var showDeleteConfirmation = false
-    @State private var showInfoSheet = false
-    @State private var showAddTag = false
-    @State private var newTagName = ""
+    @State private var tagSheetMode: TagSheetMode?
+    @Namespace private var tagZoom
     @Environment(\.dismiss) private var dismiss
 
     init(photo: Photo, provider: HomeUseCaseProviderProtocol) {
@@ -23,64 +22,49 @@ struct PhotoInfoView: View {
     }
 
     var body: some View {
+        // 기본 사진 앱처럼 사진 아래에 태그·AI 설명·정보·지도가 한 흐름으로 이어짐
         ScrollView {
-            VStack(spacing: 16) {
-                LazyImage(url: photo.imageUrl) { state in
-                    if let image = state.image {
-                        image
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                        Color.gray.opacity(0.3)
-                            .frame(height: 300)
-                    }
+            VStack(alignment: .leading, spacing: 24) {
+                PhotoHeroImage(imageUrl: photo.imageUrl)
+
+                TagSection(
+                    tags: vm.tags,
+                    namespace: tagZoom,
+                    onTapTag: { tagSheetMode = .edit($0) },
+                    onTapAdd: { tagSheetMode = .add }
+                )
+                .padding(.horizontal, 20)
+
+                if !vm.description.isEmpty {
+                    AIDescriptionCard(text: vm.description)
+                        .padding(.horizontal, 16)
                 }
 
-                // Tags Section
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("태그")
-                        .font(.headline)
+                FileInfoSection(fileName: photo.fileName, createdAt: photo.createdAt)
+                    .padding(.horizontal, 16)
 
-                    FlowLayout(spacing: 8) {
-                        ForEach(vm.tags) { tag in
-                            TagChipView(tag: tag) { newName in
-                                Task {
-                                    await vm.updateTag(photoTagId: tag.photoTagId, newTagName: newName)
-                                }
-                            }
-                        }
-
-                        if vm.tags.count < 3 {
-                            Button {
-                                showAddTag = true
-                            } label: {
-                                Image(systemName: "plus.circle")
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
+                if photo.latitude != 0 || photo.longitude != 0 {
+                    LocationMapSection(latitude: photo.latitude, longitude: photo.longitude)
+                        .padding(.horizontal, 16)
                 }
-                .padding(.horizontal)
             }
+            .padding(.bottom, 32)
         }
+        .scrollIndicators(.hidden)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                HStack {
-                    Button {
-                        showInfoSheet = true
-                    } label: {
-                        Image(systemName: "info.circle")
-                    }
-
-                    ShareLink(item: photo.imageUrl)
-
-                    Button(role: .destructive) {
-                        showDeleteConfirmation = true
-                    } label: {
-                        Image(systemName: "trash")
-                    }
+                ShareLink(item: photo.imageUrl)
+                    .tint(.primary)
+            }
+            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .destructive) {
+                    showDeleteConfirmation = true
+                } label: {
+                    Image(systemName: "trash")
                 }
+                .tint(.red)
             }
         }
         .confirmationDialog("사진을 삭제하시겠습니까?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
@@ -90,131 +74,73 @@ struct PhotoInfoView: View {
                 }
             }
         }
-        .sheet(isPresented: $showInfoSheet) {
-            PhotoDetailSheet(photo: photo, description: vm.description)
+        .sheet(item: $tagSheetMode) { mode in
+            TagEditorSheet(mode: mode) { name in
+                Task {
+                    switch mode {
+                    case .add:
+                        await vm.addTag(photoId: photo.photoId, tagName: name)
+                    case .edit(let tag):
+                        await vm.updateTag(photoTagId: tag.photoTagId, newTagName: name)
+                    }
+                }
+            } onDelete: {
+                if case .edit(let tag) = mode {
+                    Task { await vm.deleteTag(photoTagId: tag.photoTagId) }
+                }
+            }
+            // 탭한 태그 칩(또는 + 버튼)에서 시트가 확대되어 나오는 줌 전환
+            .navigationTransition(.zoom(sourceID: mode.id, in: tagZoom))
         }
         .task {
-            await vm.fetchTags(photoId: photo.photoId)
-            await vm.getDescription(photoId: photo.photoId)
+            // 태그와 AI 설명은 서로 독립이므로 병렬 로드
+            async let tags: Void = vm.fetchTags(photoId: photo.photoId)
+            async let description: Void = vm.getDescription(photoId: photo.photoId)
+            _ = await (tags, description)
         }
         .onChange(of: vm.isDeleted) { _, isDeleted in
             if isDeleted { dismiss() }
         }
-        .alert("태그 추가", isPresented: $showAddTag) {
-            TextField("태그 이름", text: $newTagName)
-            Button("추가") {
-                let name = newTagName.trimmingCharacters(in: .whitespaces)
-                guard !name.isEmpty else { return }
-                Task { await vm.addTag(photoId: photo.photoId, tagName: name) }
-                newTagName = ""
-            }
-            Button("취소", role: .cancel) { newTagName = "" }
-        }
     }
 }
 
-// MARK: - PhotoDetailSheet
+// MARK: - PhotoHeroImage
 
-private struct PhotoDetailSheet: View {
-    let photo: Photo
-    let description: String
+private struct PhotoHeroImage: View {
+    let imageUrl: URL
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section("파일 정보") {
-                    LabeledContent("파일명", value: photo.fileName)
-                    LabeledContent("생성일", value: photo.createdAt.formatted())
-                }
-                Section("위치") {
-                    LabeledContent("위도", value: String(format: "%.6f", photo.latitude))
-                    LabeledContent("경도", value: String(format: "%.6f", photo.longitude))
-                }
-                if !description.isEmpty {
-                    Section("설명") {
-                        Text(description)
-                    }
-                }
+        LazyImage(url: imageUrl) { state in
+            if let image = state.image {
+                image
+                    .resizable()
+                    // fit: 원본 비율 유지 — 사진이 잘리지 않도록 함
+                    .scaledToFit()
+            } else {
+                Color.gray.opacity(0.2)
+                    .aspectRatio(3.0 / 4.0, contentMode: .fit)
             }
-            .navigationTitle("상세 정보")
-            .navigationBarTitleDisplayMode(.inline)
         }
-        .presentationDetents([.medium])
+        .frame(maxWidth: .infinity, alignment: .top)
     }
 }
 
-// MARK: - TagChipView
-
-private struct TagChipView: View {
-    let tag: PhotoTag
-    let onUpdate: (String) -> Void
-    @State private var isEditing = false
-    @State private var editText: String
-
-    init(tag: PhotoTag, onUpdate: @escaping (String) -> Void) {
-        self.tag = tag
-        self.onUpdate = onUpdate
-        self._editText = State(initialValue: tag.tagName)
-    }
-
-    var body: some View {
-        if isEditing {
-            TextField("태그", text: $editText)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 100)
-                .onSubmit {
-                    onUpdate(editText)
-                    isEditing = false
-                }
-        } else {
-            Text(tag.tagName)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.blue.opacity(0.1))
-                .clipShape(Capsule())
-                .onTapGesture {
-                    isEditing = true
-                }
-        }
+#if DEBUG
+#Preview("PhotoInfo") {
+    NavigationStack {
+        PhotoInfoView(
+            photo: Photo(
+                photoId: 1,
+                imageUrl: URL(string: "https://picsum.photos/seed/detail/800/1200")!,
+                latitude: 37.5665,
+                longitude: 126.9780,
+                createdAt: Date(),
+                fileName: "IMG_0412.jpg",
+                tags: ["바다", "풍경"],
+                isSensitive: false
+            ),
+            provider: MockHomeUseCaseProvider()
+        )
     }
 }
-
-// MARK: - FlowLayout
-
-private struct FlowLayout: Layout {
-    var spacing: CGFloat
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = arrangeSubviews(proposal: proposal, subviews: subviews)
-        return result.size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = arrangeSubviews(proposal: proposal, subviews: subviews)
-        for (index, position) in result.positions.enumerated() {
-            subviews[index].place(at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y), proposal: .unspecified)
-        }
-    }
-
-    private func arrangeSubviews(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, positions: [CGPoint]) {
-        let maxWidth = proposal.width ?? .infinity
-        var positions: [CGPoint] = []
-        var currentX: CGFloat = 0
-        var currentY: CGFloat = 0
-        var rowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if currentX + size.width > maxWidth, currentX > 0 {
-                currentX = 0
-                currentY += rowHeight + spacing
-                rowHeight = 0
-            }
-            positions.append(CGPoint(x: currentX, y: currentY))
-            rowHeight = max(rowHeight, size.height)
-            currentX += size.width + spacing
-        }
-
-        return (CGSize(width: maxWidth, height: currentY + rowHeight), positions)
-    }
-}
+#endif

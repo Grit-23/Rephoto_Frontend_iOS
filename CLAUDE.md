@@ -39,7 +39,7 @@ Rephoto_iOS/
 │   ├── User/             — 로그인(LoginView), 세션(SessionStore)
 │   ├── Settings/         — 설정 (현재 placeholder, #43에서 구현 예정)
 │   └── RephotoTabView.swift — 탭 루트 뷰
-├── Resource/         — Colors.xcassets, Assets.xcassets, 공용 컴포넌트(CTAButton)
+├── Resources/        — Colors.xcassets, Assets.xcassets, 공용 컴포넌트(CTAButton), MockImages(DEBUG 데모용 사진)
 └── Utilities/
     ├── Extensions/   — Date+Photo 등
     └── Keychain/     — KeychainTokenStore (actor)

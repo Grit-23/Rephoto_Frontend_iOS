@@ -12,7 +12,8 @@ final class MockUserUseCaseProvider: UserUseCaseProviderProtocol {
     func login() -> LoginUseCaseProtocol { MockLoginUseCase() }
     func fetchUser() -> FetchUserUseCaseProtocol { MockFetchUserUseCase() }
     func logout() -> LogoutUseCaseProtocol { MockLogoutUseCase() }
-    func hasTokens() async -> Bool { false }
+    // 개발 빌드에서 세션 복원(자동 로그인) 경로를 타서 로그인 화면을 건너뛰도록 true 반환
+    func hasTokens() async -> Bool { true }
     func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void) {}
 }
 

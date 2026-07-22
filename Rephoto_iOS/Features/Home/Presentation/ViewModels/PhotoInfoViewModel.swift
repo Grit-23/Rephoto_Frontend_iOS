@@ -66,6 +66,17 @@ final class PhotoInfoViewModel {
     }
 
     @MainActor
+    func deleteTag(photoTagId: Int) async {
+        errorMessage = nil
+        do {
+            try await provider.makeDeleteTagUseCase().execute(photoTagId: photoTagId)
+            tags.removeAll { $0.photoTagId == photoTagId }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    @MainActor
     func getDescription(photoId: Int) async {
         errorMessage = nil
         do {
