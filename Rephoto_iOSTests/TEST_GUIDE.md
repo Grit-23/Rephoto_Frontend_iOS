@@ -95,6 +95,20 @@ Step 7 Dictionary 기반 O(1) 태그 조회 전환 시 비교용 baseline.
 
 ---
 
+### `HomeDerivedCollectionPerformanceTests.swift` (A/B 실측 · 19개 카운트에서 제외)
+
+#40 관찰 성능 최적화의 근거 벤치마크. 파생 컬렉션 전략 A/B — 계산 프로퍼티(#47 이전,
+접근마다 filter) vs didSet 캐싱(현재 HomeViewModel) — 를 body 평가 100회 × 사진 100/1000/10000으로 비교.
+didSet 방식의 쓰기 비용(`photosAssign_10000`)도 함께 기록. 측정 수치는 `BASELINE_RESULTS.md` 참조.
+
+| 테스트 | 측정 대상 |
+|---|---|
+| `test_computedProperty_bodyEval100_photos100/1000/10000` | 계산 프로퍼티: body 평가마다 filter 재실행 |
+| `test_didSetCache_bodyEval100_photos100/1000/10000` | didSet 캐싱: 저장 프로퍼티 읽기 |
+| `test_didSetCache_photosAssign_10000` | 트레이드오프: photos 교체 시 didSet 갱신 1회 |
+
+---
+
 ### `UploadMemoryBenchmark.swift` (측정 전용 · 19개 카운트에서 제외)
 
 업로드 전처리(#34 ImageIO 다운샘플) 메모리 피크의 전/후 비교 측정. `XCTMemoryMetric` 대신
