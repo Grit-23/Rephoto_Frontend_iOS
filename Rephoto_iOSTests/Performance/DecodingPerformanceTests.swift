@@ -12,7 +12,7 @@ final class DecodingPerformanceTests: XCTestCase {
 
     private func measureDecode<T: Decodable>(_ type: T.Type, from data: Data) {
         let decoder = JSONDecoder()
-        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
+        measure(metrics: [XCTClockMetric()]) {
             do {
                 _ = try decoder.decode(T.self, from: data)
             } catch {
@@ -23,21 +23,9 @@ final class DecodingPerformanceTests: XCTestCase {
 
     // MARK: - PhotoResponseDTO 디코딩
 
-    /// 사진 10개 디코딩 성능
-    func test_decodePhotos_10() throws {
-        let data = MockDataFactory.photosJSONData(count: 10)
-        measureDecode([PhotoResponseDTO].self, from: data)
-    }
-
     /// 사진 100개 디코딩 성능
     func test_decodePhotos_100() throws {
         let data = MockDataFactory.photosJSONData(count: 100)
-        measureDecode([PhotoResponseDTO].self, from: data)
-    }
-
-    /// 사진 500개 디코딩 성능 (대량 데이터)
-    func test_decodePhotos_500() throws {
-        let data = MockDataFactory.photosJSONData(count: 500)
         measureDecode([PhotoResponseDTO].self, from: data)
     }
 
@@ -49,23 +37,9 @@ final class DecodingPerformanceTests: XCTestCase {
 
     // MARK: - SearchResponseDto 디코딩
 
-    /// 검색 결과 50개 디코딩 성능
-    func test_decodeSearchResponse_50() throws {
-        let data = MockDataFactory.searchResponseJSON(resultCount: 50)
-        measureDecode(SearchResponseDTO.self, from: data)
-    }
-
     /// 검색 결과 200개 디코딩 성능
     func test_decodeSearchResponse_200() throws {
         let data = MockDataFactory.searchResponseJSON(resultCount: 200)
         measureDecode(SearchResponseDTO.self, from: data)
-    }
-
-    // MARK: - AlbumResponseDto 디코딩
-
-    /// 앨범 리스트 20개 디코딩 성능
-    func test_decodeAlbumList_20() throws {
-        let data = MockDataFactory.albumListJSON(count: 20)
-        measureDecode([AlbumResponseDTO].self, from: data)
     }
 }

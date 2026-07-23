@@ -1,6 +1,9 @@
 # Rephoto iOS 성능 벤치마크 테스트 가이드
 
-리팩토링 전 **현재 레거시 코드의 성능 baseline**을 측정하고, 리팩토링 후 동일한 테스트를 실행해서 비교하기 위한 테스트.
+리팩토링 전후 성능을 비교하기 위한 벤치마크 테스트.
+
+> 2026-07-23 스위트 정리: 소임을 다한 레거시 재현 테스트(`DateFormatter`, `PhotoLoading`, `CacheHash`, `ImageCompression`)와 노이즈성 소규모 테스트, 정보량이 적은 중간 티어(500급)를 삭제했다. 데이터 규모는 100(일반) / 1000(실사용 상한) 2단계만 유지.
+> `XCTMemoryMetric`은 `MemoryPerformanceTests`에만 유지 — Memory Physical baseline이 0.0kB로 기록되거나 peak가 프로세스 전체값이라 번들 리소스 추가만으로 밀리는 문제가 있어, 나머지 테스트에서는 제거했다.
 
 ---
 
@@ -27,130 +30,94 @@
 
 ---
 
-## 테스트 파일 구성 (39개 테스트)
+## 테스트 파일 구성 (19개 테스트)
 
-### `MockDataFactory.swift`
+### `Support/MockDataFactory.swift`
 공용 Mock 데이터 생성 팩토리.
 
 ---
 
-### `DateFormatterPerformanceTests.swift`
-**리팩토링 항목: #3 사진 관리**
-
-| 테스트 | 현재 코드 동작 |
-|---|---|
-| `test_dateFormatter_createEveryTime_1000` | toHomeModel()에서 매번 DateFormatter 새로 생성 |
-
----
-
 ### `DecodingPerformanceTests.swift`
-**리팩토링 항목: #3 사진 관리**
 
-| 테스트 | 현재 코드 동작 |
+| 테스트 | 측정 대상 |
 |---|---|
-| `test_decodePhotos_10` | 서버 응답 JSON → PhotoResponseDto 디코딩 10개 |
-| `test_decodePhotos_100` | 100개 |
-| `test_decodePhotos_500` | 500개 |
+| `test_decodePhotos_100` | 서버 응답 JSON → PhotoResponseDTO 디코딩 100개 |
 | `test_decodePhotos_1000` | 1000개 (스트레스) |
-| `test_decodeSearchResponse_50` | 검색 결과 50개 |
 | `test_decodeSearchResponse_200` | 검색 결과 200개 |
-| `test_decodeAlbumList_20` | 앨범 리스트 20개 |
 
 ---
 
 ### `MappingPerformanceTests.swift`
-**리팩토링 항목: #3 사진 관리**
 
-| 테스트 | 현재 코드 동작 |
+| 테스트 | 측정 대상 |
 |---|---|
-| `test_mapToHomeModel_100` | PhotoResponseDto → HomeModel 변환 100개 |
-| `test_mapToHomeModel_500` | 500개 |
-| `test_mapToHomeModel_1000` | 1000개 |
-| `test_fullPipeline_decodeAndMap_100` | JSON → DTO → HomeModel 전체 파이프라인 100개 |
-| `test_fullPipeline_decodeAndMap_500` | 500개 |
-| `test_filterNonSensitivePhotos_1000` | 비민감 사진 필터링 |
-| `test_filterSensitivePhotos_1000` | 민감 사진 필터링 |
-| `test_countSensitivePhotos_1000` | 민감 사진 카운트 |
+| `test_mapToPhoto_100` | PhotoResponseDTO → Photo 변환 100개 |
+| `test_mapToPhoto_1000` | 1000개 |
+| `test_fullPipeline_decodeAndMap_100` | JSON → DTO → Photo 전체 파이프라인 100개 |
+| `test_filterNonSensitivePhotos_1000` | 비민감 사진 필터링 (#40 벤치마크 대상) |
+| `test_filterSensitivePhotos_1000` | 민감 사진 필터링 (#40 벤치마크 대상) |
+| `test_countSensitivePhotos_1000` | 민감 사진 카운트 (#40 벤치마크 대상) |
 
 ---
 
 ### `MemoryPerformanceTests.swift`
-**리팩토링 항목: #3, #4**
 
-| 테스트 | 현재 코드 동작 |
+메모리 사용량 측정 전용 스위트 — `XCTMemoryMetric`을 유지하는 유일한 파일. baseline 비교 없이 측정값 확인 용도로 사용한다.
+
+| 테스트 | 측정 대상 |
 |---|---|
-| `test_memoryFootprint_homeModels_1000` | HomeModel 1000개 메모리 사용량 |
+| `test_memoryFootprint_homeModels_1000` | Photo 1000개 메모리 사용량 |
 | `test_memoryFootprint_searchResults_500` | SearchResults 500개 메모리 |
 | `test_memoryPeak_fullPipeline_1000` | JSON→DTO→Model 파이프라인 메모리 피크 |
 
 ---
 
 ### `TokenPerformanceTests.swift`
-**리팩토링 항목: #2 Token 관리 로직**
 
-| 테스트 | 현재 코드 동작 |
+| 테스트 | 측정 대상 |
 |---|---|
-| `test_tokenStore_save_1000` | UserDefaults 토큰 저장 1000회 |
-| `test_tokenStore_read_1000` | UserDefaults 토큰 읽기 1000회 |
+| `test_tokenStore_save_1000` | Keychain 토큰 저장 1000회 |
+| `test_tokenStore_read_1000` | Keychain 토큰 읽기 1000회 |
 | `test_tokenStore_hasTokens_check_1000` | hasTokens 체크 1000회 |
 | `test_tokenRefreshCycle_500` | 읽기→확인→저장 사이클 500회 |
 | `test_tokenStore_clear_1000` | 토큰 삭제 1000회 |
 
 ---
 
-### `PhotoLoadingPerformanceTests.swift`
-**리팩토링 항목: #4 사진 로딩 비동기 처리**
-
-| 테스트 | 현재 코드 동작 |
-|---|---|
-| `test_dataContentsOf_4K` | Data(contentsOf:) 동기 로딩 4K 1장 |
-| `test_sequentialLoad_10photos` | for loop 순차 로딩 10장 |
-| `test_fileCopy_10photos` | FileManager.copyItem 10장 |
-| `test_loadAndParseEXIF_10photos` | 파일 읽기 → EXIF 파싱 10장 순차 |
-
----
-
-### `CacheHashPerformanceTests.swift`
-**리팩토링 항목: #5 캐시 기반 API 호출 최적화**
-
-| 테스트 | 현재 코드 동작 |
-|---|---|
-| `test_fullReplace_500` | 매번 전체 목록 디코딩+매핑+배열 교체 500개 |
-| `test_fullReplace_1000` | 1000개 |
-
----
-
-### `Performance/ImageCompressionPerformanceTests.swift`
-**리팩토링 항목: #3 사진 관리**
-
-| 테스트 | 현재 코드 동작 |
-|---|---|
-| `test_noCompression_originalData_4K` | 원본 Data 그대로 업로드 |
-| `test_jpegCompression_quality100_4K` | JPEG quality 1.0 변환 비용 |
-
----
-
 ### `PhotoInfoPerformanceTests.swift`
-**리팩토링 항목: #6 사진 정보 수정**
 
-| 테스트 | 현재 코드 동작 |
+Step 7 Dictionary 기반 O(1) 태그 조회 전환 시 비교용 baseline.
+
+| 테스트 | 측정 대상 |
 |---|---|
-| `test_decodeTags_10` | 태그 10개 디코딩 |
-| `test_decodeTags_100` | 태그 100개 디코딩 |
-| `test_encodeTagRequest_1000` | 태그 요청 인코딩 1000회 |
 | `test_optimisticTagUpdate_in10` | 배열 검색+교체 (10개 중) |
 | `test_optimisticTagUpdate_in100` | 배열 검색+교체 (100개 중, 최악) |
-| `test_tagAppend_1000` | 태그 append 1000회 |
-| `test_descriptionTrimming_1000` | 설명 텍스트 trim 1000회 |
 
 ---
 
-## 리팩토링 항목 → 테스트 매핑
+### `UploadMemoryBenchmark.swift` (측정 전용 · 19개 카운트에서 제외)
 
-| # | 항목 | 테스트 파일 |
-|---|---|---|
-| 2 | Token 관리 로직 | `TokenPerformanceTests` |
-| 3 | 사진 관리 | `DateFormatter` + `Decoding` + `Mapping` + `ImageCompression` |
-| 4 | 사진 로딩 비동기 | `PhotoLoading` + `Memory` |
-| 5 | 캐시/API 호출 최적화 | `CacheHash` |
-| 6 | 사진 정보 수정 | `PhotoInfo` |
+업로드 전처리(#34 ImageIO 다운샘플) 메모리 피크의 전/후 비교 측정. `XCTMemoryMetric` 대신
+`task_vm_info.phys_footprint` 폴링으로 작업 구간의 피크 증가분(delta)을 잰다 — 프로세스 전체
+피크에 셋업 메모리가 섞이는 오염을 피하기 위함. baseline 비교 없음, 결과는 콘솔 출력.
+
+입력으로 카메라 원본 사진이 필요한데 개인 EXIF 때문에 커밋하지 않으므로,
+리포 루트 `MockImagesReal/` 폴더가 없으면 **자동 스킵**된다. (앱 타겟 `Resources/` 안에 두면
+`MockImages`와 파일명이 겹쳐 번들 복사 충돌이 나므로 반드시 타겟 밖에 둘 것.) 측정 수치는 `BASELINE_RESULTS.md` 참조.
+
+| 테스트 | 측정 대상 |
+|---|---|
+| `test_legacy_fullDecodeReencode_peakDelta` | 리팩토링 전: UIImage 풀사이즈 디코드 + JPEG 재인코딩 |
+| `test_current_downsampleExtract_peakDelta` | 현재: `PhotoMetadataExtractor.extract` (2048px 썸네일 디코드) |
+
+---
+
+## 벤치마크 → 후속 작업 매핑
+
+| 테스트 파일 | 후속 작업 |
+|---|---|
+| `MappingPerformanceTests` (filterSensitive 계열) | #40 Home 파생 컬렉션 캐싱 벤치마크 |
+| `PhotoInfoPerformanceTests` | Step 7 Dictionary 기반 태그 조회 |
+| `DecodingPerformanceTests` | Step 7 캐시 기반 diff 업데이트 |
+| `TokenPerformanceTests` | Keychain 성능 회귀 감시 |
+| `MemoryPerformanceTests` | 대량 데이터 메모리 회귀 감시 |

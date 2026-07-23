@@ -83,7 +83,7 @@ final class TokenPerformanceTests: XCTestCase {
     func test_tokenRefreshCycle_500() async throws {
         try await store.save(accessToken: "initial-access", refreshToken: "initial-refresh")
 
-        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
+        measure(metrics: [XCTClockMetric()]) {
             let exp = expectation(description: "refresh")
             Task {
                 for i in 0..<500 {

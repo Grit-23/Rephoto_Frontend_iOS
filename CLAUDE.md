@@ -74,7 +74,7 @@ Presentation → Domain ← Data
 # Xcode에서 빌드
 Cmd + B
 
-# 테스트 실행 (성능 벤치마크 포함 39개)
+# 테스트 실행 (성능 벤치마크 포함 19개)
 Cmd + U
 ```
 
@@ -155,7 +155,7 @@ PR 템플릿: `.github/pull_request_template.md`
 - Feature 모듈별 독립 빌드/테스트 가능하도록 타겟 분리
 
 ### Step 5. 테스트 커버리지 강화
-**현재**: 성능 벤치마크 39개 존재. UseCase/ViewModel 단위 테스트 없음. UI 테스트 없음.
+**현재**: 성능 벤치마크 19개 존재. UseCase/ViewModel 단위 테스트 없음. UI 테스트 없음.
 **목표**:
 - Domain UseCase 단위 테스트: mock repository 주입하여 비즈니스 로직 검증
 - ViewModel 상태 테스트: UseCase mock 주입 → 입력 이벤트 → 상태 변화 assertion
