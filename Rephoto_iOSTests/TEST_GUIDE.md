@@ -95,6 +95,23 @@ Step 7 Dictionary 기반 O(1) 태그 조회 전환 시 비교용 baseline.
 
 ---
 
+### `UploadMemoryBenchmark.swift` (측정 전용 · 19개 카운트에서 제외)
+
+업로드 전처리(#34 ImageIO 다운샘플) 메모리 피크의 전/후 비교 측정. `XCTMemoryMetric` 대신
+`task_vm_info.phys_footprint` 폴링으로 작업 구간의 피크 증가분(delta)을 잰다 — 프로세스 전체
+피크에 셋업 메모리가 섞이는 오염을 피하기 위함. baseline 비교 없음, 결과는 콘솔 출력.
+
+입력으로 카메라 원본 사진이 필요한데 개인 EXIF 때문에 커밋하지 않으므로,
+리포 루트 `MockImagesReal/` 폴더가 없으면 **자동 스킵**된다. (앱 타겟 `Resources/` 안에 두면
+`MockImages`와 파일명이 겹쳐 번들 복사 충돌이 나므로 반드시 타겟 밖에 둘 것.) 측정 수치는 `BASELINE_RESULTS.md` 참조.
+
+| 테스트 | 측정 대상 |
+|---|---|
+| `test_legacy_fullDecodeReencode_peakDelta` | 리팩토링 전: UIImage 풀사이즈 디코드 + JPEG 재인코딩 |
+| `test_current_downsampleExtract_peakDelta` | 현재: `PhotoMetadataExtractor.extract` (2048px 썸네일 디코드) |
+
+---
+
 ## 벤치마크 → 후속 작업 매핑
 
 | 테스트 파일 | 후속 작업 |

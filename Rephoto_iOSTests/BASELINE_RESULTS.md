@@ -140,6 +140,25 @@
 
 ---
 
+## UploadMemoryBenchmark (업로드 전처리 실측 — 2026-07-23)
+
+> 입력: 아이폰 카메라 원본 IMG_9898.jpeg 4032×3024 (5,733KB) · iPhone 17 Pro Simulator
+> 측정: `task_vm_info.phys_footprint` 0.2ms 폴링 — 작업 구간 피크 증가분(delta)
+
+| 경로 | 메모리 피크 delta (5회) | 처리 시간 | 페이로드 |
+|---|---|---|---|
+| 레거시: UIImage 풀디코드 + 재인코딩 | +19.1, +19.1, +19.5, +19.3, +17.2 MB | ~0.25s | 5,733KB (원본 그대로 업로드) |
+| 현재: ImageIO 다운샘플 2048px (`PhotoMetadataExtractor.extract`) | +171.1(워밍업), +49.1, +50.4, +50.4, +50.4 MB | ~0.17s | **1,547KB (−73%)** |
+
+**발견**: "썸네일 API가 디코드 자체를 축소해 메모리 피크를 낮춘다"는 가설은 **기각**.
+`CGImageSourceCreateThumbnailAtIndex`가 풀사이즈 RGBA(4032×3024×4 ≈ 47MB)를 디코드한 뒤 축소하는 반면
+(`+50MB` delta가 정확히 그 크기), `UIImage(data:)` 디코드는 YUV 4:2:0(≈18MB)로 떨어져 오히려 가볍다.
+이 최적화(#34)의 실증된 효과는 **페이로드 −73% + 처리 시간 −30%**이며, 메모리 개선 주장은 실측 근거 없음.
+(후속 아이디어: `kCGImageSourceCreateThumbnailWithTransform` 제거 + orientation 별도 처리 시
+JPEG 1/2 서브샘플 디코드 경로를 탈 수 있는지 검증)
+
+---
+
 ## 요약
 
 | 테스트 | Clock (s) | Memory Peak (kB) |
