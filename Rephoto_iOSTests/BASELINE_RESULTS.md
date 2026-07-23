@@ -154,8 +154,26 @@
 `CGImageSourceCreateThumbnailAtIndex`가 풀사이즈 RGBA(4032×3024×4 ≈ 47MB)를 디코드한 뒤 축소하는 반면
 (`+50MB` delta가 정확히 그 크기), `UIImage(data:)` 디코드는 YUV 4:2:0(≈18MB)로 떨어져 오히려 가볍다.
 이 최적화(#34)의 실증된 효과는 **페이로드 −73% + 처리 시간 −30%**이며, 메모리 개선 주장은 실측 근거 없음.
-(후속 아이디어: `kCGImageSourceCreateThumbnailWithTransform` 제거 + orientation 별도 처리 시
-JPEG 1/2 서브샘플 디코드 경로를 탈 수 있는지 검증)
+→ 아래 옵션 대조 실험에서 원인 규명 후 #49에서 수정.
+
+### 다운샘플 옵션 대조 실험 (`test_downsampleOptions_experiment`, 2026-07-23)
+
+가설 검증: Transform(EXIF 회전) vs maxPixelSize 경계, 무엇이 풀사이즈 디코드를 유발하는가.
+
+| 변형 | 피크 delta (3회) | 시간 | 출력 |
+|---|---|---|---|
+| A 현행 — transform:true, max **2048** | +41.5, +50.3, +50.0 MB | 0.146s | 1536×2048 |
+| B transform:false, max 2048 | +38.4 ×3 MB | 0.142s | 2048×1536 |
+| C transform:false, max **2016** | +24.1 ×3 MB | 0.113s | 2016×1512 |
+| D transform:true, max **2016** | +27.9~28.7 MB | 0.117s | 1512×2016 |
+
+**결론**: 주범은 Transform(+4MB에 불과)이 아니라 **maxPixelSize 경계 미정렬**.
+서브샘플(1/2ⁿ) 디코드는 `원본/2ⁿ ≥ maxPixelSize`일 때만 성립 — 4032 원본에 2048을 요청하면
+1/2 디코드(2016)로는 목표를 못 채워 풀사이즈로 떨어진다. 2016으로 정렬하면 피크 절반, 시간 −20%.
+
+**수정 및 재측정 (#49)**: `PhotoMetadataExtractor` 목표 크기를 원본 기반 동적 계산으로 변경
+(긴 변을 2로 나눠가며 2048 이하가 되는 첫 값) → 프로덕션 경로(`extract`) 재측정
+**+28.7MB / 0.12s** (수정 전 +50MB / 0.146s). 페이로드 1540KB로 동일, EXIF 회전 유지.
 
 ---
 

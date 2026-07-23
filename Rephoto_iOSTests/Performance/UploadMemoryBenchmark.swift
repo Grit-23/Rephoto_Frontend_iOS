@@ -21,6 +21,7 @@
 import XCTest
 import UIKit
 import ImageIO
+import UniformTypeIdentifiers
 @testable import Rephoto_iOS
 
 final class UploadMemoryBenchmark: XCTestCase {
@@ -160,5 +161,70 @@ final class UploadMemoryBenchmark: XCTestCase {
         }
         // extract 내부 DEBUG print("📷 [압축] WxH beforeKB → afterKB (%)")가 페이로드 수치도 출력
         print("🧪 [current ImageIO 다운샘플]\n" + lines.joined(separator: "\n"))
+    }
+
+    // MARK: - 다운샘플 옵션 실험: 풀사이즈 디코드(+50MB)의 원인 규명
+
+    /// PhotoMetadataExtractor.downsampledJPEG의 복제본 — 옵션을 바꿔가며 측정하기 위한 실험용
+    private func downsampledJPEG(
+        data: Data,
+        maxPixelSize: CGFloat,
+        withTransform: Bool,
+        quality: CGFloat = 0.8
+    ) -> (data: Data, w: Int, h: Int)? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: withTransform,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize
+        ]
+        guard let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        let out = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(out, UTType.jpeg.identifier as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(dest, cg, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)
+        guard CGImageDestinationFinalize(dest) else { return nil }
+        return (out as Data, cg.width, cg.height)
+    }
+
+    /// Transform(EXIF 회전) on/off × maxPixelSize 2048/2016 조합별 피크 delta 비교.
+    /// 가설: Transform:true가 JPEG 서브샘플 디코드 경로를 무력화해 풀사이즈 디코드(+50MB)를 유발한다.
+    /// 서브샘플 경로를 타면 출력이 2016px(정확히 1/2)로 나오고 delta가 ~12MB대로 떨어질 것.
+    func test_downsampleOptions_experiment() throws {
+        let url = try Self.fixtureURL()
+        let data = try Data(contentsOf: url)
+        print("🧪 [입력] \(Self.describe(url, data))")
+
+        // JPEG 코덱 워밍업 (첫 호출의 일회성 +100MB대 스파이크 제거)
+        _ = downsampledJPEG(data: data, maxPixelSize: 64, withTransform: false)
+
+        struct Variant { let label: String; let maxPixel: CGFloat; let transform: Bool }
+        let variants = [
+            Variant(label: "A 현행 — transform:true, max 2048", maxPixel: 2048, transform: true),
+            Variant(label: "B transform:false, max 2048", maxPixel: 2048, transform: false),
+            Variant(label: "C transform:false, max 2016", maxPixel: 2016, transform: false),
+            Variant(label: "D transform:true, max 2016", maxPixel: 2016, transform: true),
+        ]
+
+        for v in variants {
+            var lines: [String] = []
+            for i in 1...3 {
+                let sampler = FootprintSampler()
+                let baseline = sampler.start()
+                let t0 = CFAbsoluteTimeGetCurrent()
+                var out = "변환 실패"
+                autoreleasepool {
+                    if let r = downsampledJPEG(data: data, maxPixelSize: v.maxPixel, withTransform: v.transform) {
+                        out = "\(r.w)x\(r.h) \(r.data.count / 1024)KB"
+                    } else {
+                        XCTFail("변환 실패: \(v.label)")
+                    }
+                }
+                let dt = CFAbsoluteTimeGetCurrent() - t0
+                let peak = sampler.stopPeak()
+                lines.append("run\(i): +\(mb(peak - baseline))MB, \(String(format: "%.3f", dt))s, out \(out)")
+            }
+            print("🧪 [\(v.label)]\n" + lines.joined(separator: "\n"))
+        }
     }
 }
