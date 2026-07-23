@@ -36,17 +36,25 @@ struct PhotoMetadataExtractor: PhotoMetadataExtractorProtocol {
 
         // 업로드 전 다운샘플 + JPEG 압축 (원본 그대로 올리던 것을 ImageIO로 교체)
         // 위치/촬영시간은 위에서 EXIF로 이미 추출했으므로, 압축본에 메타가 빠져도 무방
-        guard let compressed = downsampledJPEG(from: source, maxPixelSize: 2048, quality: 0.8) else {
+        //
+        // 목표 크기는 JPEG 1/2ⁿ 서브샘플 디코드 경계에 맞춰 동적 계산한다.
+        // 경계에 안 맞으면(예: 4032px 원본에 2048 요청) ImageIO가 풀사이즈로 디코드한 뒤
+        // 축소해서 피크 메모리가 2배로 뛴다 — UploadMemoryBenchmark 실측 +50MB → +28MB
+        let pxW = properties[kCGImagePropertyPixelWidth as String] as? Int ?? 0
+        let pxH = properties[kCGImagePropertyPixelHeight as String] as? Int ?? 0
+        let longerSide = max(pxW, pxH)
+        var targetPixelSize: CGFloat = longerSide > 0 ? CGFloat(longerSide) : 2016
+        while targetPixelSize > 2048 { targetPixelSize /= 2 }
+
+        guard let compressed = downsampledJPEG(from: source, maxPixelSize: targetPixelSize, quality: 0.8) else {
             return nil
         }
 
         #if DEBUG
         let beforeKB = imageData.count / 1024
         let afterKB = compressed.count / 1024
-        let pxW = properties[kCGImagePropertyPixelWidth as String] as? Int ?? 0
-        let pxH = properties[kCGImagePropertyPixelHeight as String] as? Int ?? 0
         let ratio = beforeKB == 0 ? 0 : afterKB * 100 / beforeKB
-        print("📷 [압축] \(pxW)x\(pxH)  \(beforeKB)KB → \(afterKB)KB  (\(ratio)%)")
+        print("📷 [압축] \(pxW)x\(pxH) → 목표 \(Int(targetPixelSize))px  \(beforeKB)KB → \(afterKB)KB  (\(ratio)%)")
         #endif
 
         // 임시 파일 저장 (실패 시 업로드 불가하므로 nil 반환)
@@ -68,8 +76,9 @@ struct PhotoMetadataExtractor: PhotoMetadataExtractorProtocol {
     }
 
     /// ImageIO로 디코드 시점에 다운샘플 → JPEG 인코딩.
-    /// `UIImage(data:).jpegData()`는 풀해상도 비트맵을 메모리에 올려서 4000x3000 기준 ~36MB가 튀지만,
-    /// `CGImageSourceCreateThumbnailAtIndex`는 목표 크기로만 디코드해 피크 메모리를 크게 낮춘다.
+    /// 주의: 서브샘플(1/2ⁿ) 디코드 경로는 `원본/2ⁿ ≥ maxPixelSize`일 때만 성립한다.
+    /// 경계에 안 맞는 값을 넘기면 풀사이즈 디코드 후 축소로 떨어져 피크 메모리 이점이 사라지므로
+    /// (UploadMemoryBenchmark 실측), 호출부에서 원본 크기 기반으로 경계에 맞는 목표를 계산해 넘긴다.
     private func downsampledJPEG(
         from source: CGImageSource,
         maxPixelSize: CGFloat,
