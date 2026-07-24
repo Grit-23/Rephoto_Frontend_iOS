@@ -38,6 +38,7 @@ struct HomeView: View {
                     )
                 }
             }
+            .background(Color.base.ignoresSafeArea())
             .navigationTitle("앨범")
             .navigationDestination(for: Photo.self) { photo in
                 PhotoInfoView(photo: photo, provider: vm.provider)
