@@ -63,36 +63,6 @@ struct HomeSheetView: View {
     }
 }
 
-// MARK: - ProfileCard
-
-/// 아바타(이름 첫 글자) + 이름 글래스 프로필 카드
-private struct ProfileCard: View {
-    let name: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Text(name.prefix(1))
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 52, height: 52)
-                .background(
-                    LinearGradient(colors: [.lightGreen, .mainGreen], startPoint: .top, endPoint: .bottom),
-                    in: Circle()
-                )
-
-            Text(name)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.labelPrimary)
-
-            Spacer()
-        }
-        .padding(.leading, 14)
-        .padding(.trailing, 16)
-        .frame(height: 78)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
-    }
-}
-
 // MARK: - SettingsLinkRow
 
 /// 설정 화면으로 이동하는 글래스 행 (그린 아이콘 타일 + chevron)
@@ -125,25 +95,6 @@ private struct SettingsLinkRow: View {
             .padding(.trailing, 16)
             .frame(height: 56)
             .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 16))
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - LogoutCard
-
-/// 로그아웃 글래스 카드 버튼
-private struct LogoutCard: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text("로그아웃")
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(Color(red: 0xE2 / 255, green: 0x33 / 255, blue: 0x2F / 255))
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
     }

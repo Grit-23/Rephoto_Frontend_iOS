@@ -12,13 +12,14 @@ import Factory
 struct SearchView: View {
     @State private var searchVM: SearchViewModel
     @State private var albumVM: AlbumViewModel
-    /// 검색 결과(photoId)를 상세 화면용 전체 Photo로 매핑하기 위한 홈 사진 색인
-    @State private var photosById: [Int: Photo] = [:]
     @Namespace private var photoZoom
     @Injected(\.homeUseCaseProvider) private var homeProvider
 
     init(provider: SearchUseCaseProviderProtocol) {
-        self._searchVM = State(initialValue: SearchViewModel(provider: provider))
+        self._searchVM = State(initialValue: SearchViewModel(
+            provider: provider,
+            getPhotosUseCase: Container.shared.homeUseCaseProvider().makeGetPhotosUseCase()
+        ))
         self._albumVM = State(initialValue: AlbumViewModel(provider: provider))
     }
 
@@ -45,9 +46,7 @@ struct SearchView: View {
         }
         .task {
             await albumVM.fetchAlbums()
-            if let photos = try? await homeProvider.makeGetPhotosUseCase().execute() {
-                photosById = Dictionary(uniqueKeysWithValues: photos.map { ($0.photoId, $0) })
-            }
+            await searchVM.loadPhotoIndex()
         }
     }
 
@@ -86,24 +85,10 @@ struct SearchView: View {
             SearchResultGrid(
                 query: searchVM.query,
                 results: searchVM.searchResults,
-                namespace: photoZoom,
-                photoResolver: photo(for:)
+                photosById: searchVM.photosById,
+                namespace: photoZoom
             )
         }
-    }
-
-    /// 홈 사진 색인에서 전체 메타데이터를 찾고, 없으면 검색 결과 정보만으로 구성
-    private func photo(for result: SearchResult) -> Photo {
-        photosById[result.photoId] ?? Photo(
-            photoId: result.photoId,
-            imageUrl: result.imageUrl,
-            latitude: 0,
-            longitude: 0,
-            createdAt: Date(),
-            fileName: "",
-            tags: [],
-            isSensitive: false
-        )
     }
 }
 
@@ -221,8 +206,8 @@ private struct AlbumCard: View {
 private struct SearchResultGrid: View {
     let query: String
     let results: [SearchResult]
+    let photosById: [Int: Photo]
     let namespace: Namespace.ID
-    let photoResolver: (SearchResult) -> Photo
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
 
@@ -235,7 +220,7 @@ private struct SearchResultGrid: View {
 
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(results) { item in
-                    NavigationLink(value: photoResolver(item)) {
+                    NavigationLink(value: photo(for: item)) {
                         SearchResultTile(imageUrl: item.imageUrl)
                             .matchedTransitionSource(id: item.photoId, in: namespace)
                     }
@@ -245,6 +230,20 @@ private struct SearchResultGrid: View {
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
+    }
+
+    /// 홈 사진 색인에서 전체 메타데이터를 찾고, 없으면 검색 결과 정보만으로 구성
+    private func photo(for result: SearchResult) -> Photo {
+        photosById[result.photoId] ?? Photo(
+            photoId: result.photoId,
+            imageUrl: result.imageUrl,
+            latitude: 0,
+            longitude: 0,
+            createdAt: Date(),
+            fileName: "",
+            tags: [],
+            isSensitive: false
+        )
     }
 }
 

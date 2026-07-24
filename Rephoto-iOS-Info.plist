@@ -6,5 +6,7 @@
 	<string>$(BASE_URL)</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>숨겨진 민감한 사진을 보려면 Face ID 인증이 필요해요.</string>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 </dict>
 </plist>
