@@ -36,6 +36,7 @@ struct SensitivePhotosView: View {
                 }
             }
         }
+        .background(Color.base.ignoresSafeArea())
         .navigationTitle("민감한 사진")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
