@@ -51,6 +51,7 @@ struct PhotoInfoView: View {
             .padding(.bottom, 32)
         }
         .scrollIndicators(.hidden)
+        .background(Color.base.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

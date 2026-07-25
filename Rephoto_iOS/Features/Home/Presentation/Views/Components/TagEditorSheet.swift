@@ -78,6 +78,7 @@ struct TagEditorSheet: View {
                 Spacer()
             }
             .padding(20)
+            .background(Color.base.ignoresSafeArea())
             .navigationTitle(mode.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

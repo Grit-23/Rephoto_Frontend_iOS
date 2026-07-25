@@ -23,7 +23,7 @@ struct RephotoTabView: View {
                 SearchView(provider: searchProvider)
             }
         }
-        .tint(.green)
+        .tint(.mainGreen)
         .tabBarMinimizeBehavior(.onScrollDown)
         // 하위 탭(프로필/로그아웃 UI 등)이 @Environment(SessionStore.self)로 세션에 접근
         .environment(session)
