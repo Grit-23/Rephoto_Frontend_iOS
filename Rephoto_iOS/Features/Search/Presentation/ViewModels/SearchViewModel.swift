@@ -8,11 +8,11 @@
 import Foundation
 
 @Observable
-class SearchViewModel {
+final class SearchViewModel {
     let provider: SearchUseCaseProviderProtocol
     private let getPhotosUseCase: GetPhotosUseCaseProtocol
 
-    var searchResults: [SearchResult] = []
+    private(set) var searchResults: [SearchResult] = []
     /// 검색 결과(photoId)를 사진 상세용 전체 Photo로 매핑하기 위한 홈 사진 색인
     private(set) var photosById: [Int: Photo] = [:]
     /// 색인 로드 실패 여부 — 다음 검색 시 재시도 트리거로 사용
@@ -30,18 +30,30 @@ class SearchViewModel {
     func search(query: String) async {
         isLoading = true
         errorMessage = nil
+        defer { isLoading = false }
+
         do {
-            searchResults = try await provider.searchPhotos().execute(query: query)
+            let results = try await provider.searchPhotos().execute(query: query)
+            // 검색어가 바뀌어 이 작업이 취소됐다면 늦게 도착한 결과로 최신 결과를 덮어쓰지 않는다
+            guard !Task.isCancelled else { return }
+            searchResults = results
+        } catch is CancellationError {
+            return
         } catch {
             searchResults = []
             errorMessage = error.localizedDescription
         }
-        isLoading = false
 
         // 이전에 색인 로드가 실패했다면 결과 → 상세 매핑을 위해 재시도
         if photoIndexLoadFailed {
             await loadPhotoIndex()
         }
+    }
+
+    @MainActor
+    func clearResults() {
+        searchResults = []
+        errorMessage = nil
     }
 
     @MainActor

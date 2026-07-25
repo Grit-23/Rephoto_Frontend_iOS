@@ -30,13 +30,16 @@ struct SearchView: View {
                 .navigationTitle("검색")
                 .toolbarTitleDisplayMode(.inlineLarge)
                 .searchable(text: $searchVM.query, prompt: "사진을 검색해보세요!")
-                .onSubmit(of: .search) {
-                    Task { await searchVM.search(query: searchVM.query) }
-                }
-                .onChange(of: searchVM.query) { _, newValue in
-                    if newValue.isEmpty {
-                        searchVM.searchResults = []
+                // task(id:)는 검색어가 바뀔 때마다 이전 작업을 자동 취소하므로,
+                // 300ms 대기 중 취소 = 디바운스가 됨. 대기를 통과한 마지막 검색어만 요청된다
+                .task(id: searchVM.query) {
+                    guard !searchVM.query.isEmpty else {
+                        searchVM.clearResults()
+                        return
                     }
+                    try? await Task.sleep(for: .milliseconds(300))
+                    guard !Task.isCancelled else { return }
+                    await searchVM.search(query: searchVM.query)
                 }
                 .navigationDestination(for: Photo.self) { photo in
                     PhotoInfoView(photo: photo, provider: homeProvider)
