@@ -33,13 +33,13 @@ struct SearchView: View {
                 // task(id:)는 검색어가 바뀔 때마다 이전 작업을 자동 취소하므로,
                 // 300ms 대기 중 취소 = 디바운스가 됨. 대기를 통과한 마지막 검색어만 요청된다
                 .task(id: searchVM.query) {
-                    guard !searchVM.query.isEmpty else {
+                    guard !trimmedQuery.isEmpty else {
                         searchVM.clearResults()
                         return
                     }
                     try? await Task.sleep(for: .milliseconds(300))
                     guard !Task.isCancelled else { return }
-                    await searchVM.search(query: searchVM.query)
+                    await searchVM.search(query: trimmedQuery)
                 }
                 .navigationDestination(for: Photo.self) { photo in
                     PhotoInfoView(photo: photo, provider: homeProvider)
@@ -55,13 +55,18 @@ struct SearchView: View {
 
     // MARK: - Content
 
+    /// 공백만 입력한 검색어를 빈 검색어로 취급 — 분기·요청·표시가 같은 기준을 쓴다
+    private var trimmedQuery: String {
+        searchVM.query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     @ViewBuilder
     private var content: some View {
         if searchVM.isLoading {
             ProgressView("검색 중…")
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding()
-        } else if searchVM.query.isEmpty {
+        } else if trimmedQuery.isEmpty {
             if albumVM.isLoading {
                 ProgressView("앨범 불러오는 중…")
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -81,12 +86,12 @@ struct SearchView: View {
             }
         } else if searchVM.searchResults.isEmpty {
             SearchEmptyStateView(
-                title: "‘\(searchVM.query)’에 대한 결과가 없어요",
+                title: "‘\(trimmedQuery)’에 대한 결과가 없어요",
                 subtitle: "다른 검색어나 태그로 다시 찾아보세요"
             )
         } else {
             SearchResultGrid(
-                query: searchVM.query,
+                query: trimmedQuery,
                 results: searchVM.searchResults,
                 photosById: searchVM.photosById,
                 namespace: photoZoom

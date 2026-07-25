@@ -17,6 +17,8 @@ final class SearchViewModel {
     private(set) var photosById: [Int: Photo] = [:]
     /// 색인 로드 실패 여부 — 다음 검색 시 재시도 트리거로 사용
     private var photoIndexLoadFailed = false
+    /// 요청 세대 — 상태(결과/에러/로딩) 변경을 가장 최근 요청에만 귀속시킨다
+    private var searchGeneration = 0
     private(set) var isLoading = false
     private(set) var errorMessage: String?
     var query: String = ""
@@ -28,23 +30,28 @@ final class SearchViewModel {
 
     @MainActor
     func search(query: String) async {
+        searchGeneration += 1
+        let generation = searchGeneration
         isLoading = true
         errorMessage = nil
-        defer { isLoading = false }
 
         do {
             let results = try await provider.searchPhotos().execute(query: query)
-            // 검색어가 바뀌어 이 작업이 취소됐다면 늦게 도착한 결과로 최신 결과를 덮어쓰지 않는다
-            guard !Task.isCancelled else { return }
+            // 검색어가 바뀌어 교체/취소된 요청이면 늦게 도착한 결과로 상태를 덮어쓰지 않는다
+            guard generation == searchGeneration, !Task.isCancelled else { return }
             searchResults = results
-        } catch is CancellationError {
-            return
+            isLoading = false
         } catch {
+            // 취소는 CancellationError 외에 URLError(.cancelled) 등으로도 던져진다 —
+            // 교체/취소된 요청의 실패는 최신 요청의 상태를 건드리지 않는다
+            guard generation == searchGeneration, !Task.isCancelled, !(error is CancellationError) else { return }
             searchResults = []
             errorMessage = error.localizedDescription
+            isLoading = false
         }
 
         // 이전에 색인 로드가 실패했다면 결과 → 상세 매핑을 위해 재시도
+        // (결과 반영·로딩 종료 후에 수행 — 재시도 동안 스피너를 붙잡지 않는다)
         if photoIndexLoadFailed {
             await loadPhotoIndex()
         }
@@ -52,8 +59,10 @@ final class SearchViewModel {
 
     @MainActor
     func clearResults() {
+        searchGeneration += 1  // 진행 중 요청 무효화
         searchResults = []
         errorMessage = nil
+        isLoading = false
     }
 
     @MainActor
