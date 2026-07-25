@@ -24,8 +24,9 @@ final class MockHomeUseCaseProvider: HomeUseCaseProviderProtocol {
 
 /// Resources/MockImages의 실제 사진과 1:1로 매칭되는 데모 픽스처.
 /// 태그·AI 설명·좌표·촬영일이 사진 내용/EXIF 기준으로 작성되어 있음.
-/// photoId는 배열 순서(최신순) 기반 index + 1 — GetPhotos/GetTags/GetDescription이 모두 이 데이터를 공유
-private enum MockPhotoFixtures {
+/// photoId는 배열 순서(최신순) 기반 index + 1 — GetPhotos/GetTags/GetDescription이 모두 이 데이터를 공유.
+/// Search 데모(MockSearchUseCaseProvider)도 같은 사진을 앨범/검색 결과로 재사용한다
+enum MockPhotoFixtures {
     struct Entry {
         let fileName: String
         let tags: [String]
@@ -146,6 +147,21 @@ private enum MockPhotoFixtures {
         return entries[photoId - 1]
     }
 
+    /// 배열 index 기준으로 Photo 도메인 모델 생성 (photoId = index + 1)
+    static func photo(at index: Int) -> Photo {
+        let entry = entries[index]
+        return Photo(
+            photoId: index + 1,
+            imageUrl: imageUrl(fileName: entry.fileName),
+            latitude: entry.latitude,
+            longitude: entry.longitude,
+            createdAt: isoFormatter.date(from: entry.createdAt) ?? Date(),
+            fileName: entry.fileName,
+            tags: entry.tags,
+            isSensitive: entry.isSensitive
+        )
+    }
+
     static func imageUrl(fileName: String) -> URL {
         let name = (fileName as NSString).deletingPathExtension
         let ext = (fileName as NSString).pathExtension
@@ -161,18 +177,7 @@ private enum MockPhotoFixtures {
 
 private struct MockGetPhotosUseCase: GetPhotosUseCaseProtocol {
     func execute() async throws -> [Photo] {
-        MockPhotoFixtures.entries.enumerated().map { index, entry in
-            Photo(
-                photoId: index + 1,
-                imageUrl: MockPhotoFixtures.imageUrl(fileName: entry.fileName),
-                latitude: entry.latitude,
-                longitude: entry.longitude,
-                createdAt: MockPhotoFixtures.isoFormatter.date(from: entry.createdAt) ?? Date(),
-                fileName: entry.fileName,
-                tags: entry.tags,
-                isSensitive: entry.isSensitive
-            )
-        }
+        MockPhotoFixtures.entries.indices.map { MockPhotoFixtures.photo(at: $0) }
     }
 }
 
