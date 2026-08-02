@@ -33,6 +33,9 @@
             reference = "container:Rephoto_iOS.xctestplan"
             default = "YES">
          </TestPlanReference>
+         <TestPlanReference
+            reference = "container:Rephoto_Performance.xctestplan">
+         </TestPlanReference>
       </TestPlans>
       <Testables>
          <TestableReference
