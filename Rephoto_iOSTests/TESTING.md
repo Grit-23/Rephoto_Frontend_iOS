@@ -108,10 +108,11 @@ Swift Testing은 스위트 간에도 병렬 실행하므로, `.serialized`를 �
 로컬 실행:
 
 ```bash
-# 단위 (CI와 동일)
+# 단위 (CI와 동일). 아래 커버리지 명령이 읽을 결과 번들도 함께 남긴다.
 xcodebuild test -project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS \
   -testPlan Rephoto_iOS \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -resultBundlePath TestResults.xcresult \
   -enableCodeCoverage YES
 
 # 벤치마크
