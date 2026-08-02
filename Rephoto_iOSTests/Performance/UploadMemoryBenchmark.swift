@@ -4,18 +4,26 @@
 //
 //  Created by 김도연 on 7/23/26.
 //
-//  업로드 전처리 메모리 피크 비교: 레거시(풀사이즈 디코드 + 재인코딩) vs 현재(ImageIO 다운샘플 2048px, #34)
+//  업로드 전처리 메모리 피크 비교: 풀디코드 대조군(전체 디코드 + 재인코딩) vs 현재(ImageIO 다운샘플, #34)
 //  측정 결과는 BASELINE_RESULTS.md에 기록.
+//
+//  라벨 정정(2026-08-02): 대조군은 리팩토링 전 앱의 재현이 아니다. 실제 레거시 앱(#34 이전)은
+//  픽셀을 디코드하지 않고 EXIF만 읽은 뒤 원본 파일을 그대로 업로드했다(전처리 상주 ≈ 원본 Data).
+//  이 테스트는 "다운샘플하지 않는 표준 구현"의 메모리 기준선으로 유지한다.
 //
 //  측정 방식: XCTMemoryMetric의 "Memory Peak Physical"은 프로세스 전체의 단조증가 피크라
 //  셋업 메모리에 오염된다. 대신 task_vm_info.phys_footprint를 폴링해
 //  작업 구간의 피크 증가분(delta)을 직접 잰다. 결과는 콘솔의 🧪 라인으로 출력.
 //
-//  입력: 리포 루트 MockImagesReal/ 안의 가장 큰 원본 사진.
-//  이 폴더는 개인 사진(GPS EXIF 포함)이라 커밋하지 않는다 — 폴더가 없으면 테스트는 자동 스킵.
-//  앱/테스트 타겟 밖에 두는 이유: Resources/ 안에 넣으면 MockImages와 파일명이 겹쳐
-//  번들 복사 충돌(Multiple commands produce)이 나고, 번들링 자체가 불필요하기 때문.
-//  재측정하려면 카메라 원본(무보정 JPEG/HEIC)을 해당 경로에 넣고 시뮬레이터에서 개별 실행.
+//  입력: 카메라 원본 사진(무보정 JPEG/HEIC) 중 가장 큰 것. 두 위치를 순서대로 찾는다.
+//   1. 테스트 번들의 Performance/Fixtures/ — 실기기 실행용. 기기에는 #filePath 경로가
+//      존재하지 않으므로 번들 동봉이 유일한 수단이다.
+//   2. 리포 루트 MockImagesReal/ — 시뮬레이터 실행용(호스트 파일시스템 직접 읽기).
+//  둘 다 없으면 테스트는 자동 스킵.
+//
+//  두 폴더 모두 개인 사진(GPS EXIF 포함)이라 커밋하지 않는다 (.gitignore).
+//  앱 타겟 Resources/ 에 넣지 말 것 — MockImages와 파일명이 겹쳐 번들 복사 충돌
+//  (Multiple commands produce)이 난다. 테스트 타겟은 별개 번들이라 충돌하지 않는다.
 //
 
 import XCTest
@@ -28,6 +36,8 @@ final class UploadMemoryBenchmark: XCTestCase {
 
     // MARK: - 입력 픽스처
 
+    private static let photoExtensions = ["jpg", "jpeg", "heic", "png"]
+
     // 시뮬레이터 테스트는 호스트 파일시스템을 그대로 읽을 수 있으므로 #filePath 기준 상대 경로 사용
     private static let originalsDir = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()  // Performance/
@@ -35,22 +45,48 @@ final class UploadMemoryBenchmark: XCTestCase {
         .deletingLastPathComponent()  // repo root
         .appendingPathComponent("MockImagesReal")
 
-    /// 원본 폴더에서 가장 큰 사진을 고른다 (원본 = EXIF/해상도 보존본)
-    private static func fixtureURL() throws -> URL {
-        let fm = FileManager.default
-        let exts = ["jpg", "jpeg", "heic", "png"]
-        let candidates = (try? fm.contentsOfDirectory(at: originalsDir, includingPropertiesForKeys: [.fileSizeKey]))?
-            .filter { exts.contains($0.pathExtension.lowercased()) } ?? []
+    /// 번들 동봉본(실기기) → 호스트 폴더(시뮬레이터) 순으로 찾아 가장 큰 사진을 고른다.
+    /// 가장 큰 것 = 원본(EXIF/해상도 보존본).
+    /// `DecodeVariantBenchTests`가 동일 입력을 쓰기 위해 internal.
+    static func fixtureURL() throws -> URL {
+        if let bundled = largestPhoto(in: bundledCandidates()) { return bundled }
+        if let onHost = largestPhoto(in: hostCandidates()) { return onHost }
+        throw XCTSkip("""
+            원본 사진 픽스처를 찾지 못했습니다.
+            · 실기기: Rephoto_iOSTests/Performance/Fixtures/ 에 카메라 원본을 두세요 (테스트 번들에 동봉됨)
+            · 시뮬레이터: 리포 루트 MockImagesReal/ 도 가능
+            """)
+    }
+
+    /// 테스트 번들에 동봉된 픽스처. 동기화 그룹이 리소스를 번들 루트로 평탄화하는 경우와
+    /// Fixtures/ 하위를 유지하는 경우 둘 다 훑는다.
+    private static func bundledCandidates() -> [URL] {
+        let bundle = Bundle(for: UploadMemoryBenchmark.self)
+        let subdirectories: [String?] = [nil, "Fixtures"]
+        return subdirectories
+            .flatMap { bundle.urls(forResourcesWithExtension: nil, subdirectory: $0) ?? [] }
+            .filter { photoExtensions.contains($0.pathExtension.lowercased()) }
+    }
+
+    private static func hostCandidates() -> [URL] {
+        let urls = (try? FileManager.default.contentsOfDirectory(
+            at: originalsDir,
+            includingPropertiesForKeys: [.fileSizeKey]
+        )) ?? []
+        return urls.filter { photoExtensions.contains($0.pathExtension.lowercased()) }
+    }
+
+    private static func largestPhoto(in candidates: [URL]) -> URL? {
         func size(_ url: URL) -> Int {
             (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         }
         guard let best = candidates.max(by: { size($0) < size($1) }), size(best) > 0 else {
-            throw XCTSkip("Resources/MockImagesReal/에 사진이 없습니다")
+            return nil
         }
         return best
     }
 
-    private static func describe(_ url: URL, _ data: Data) -> String {
+    static func describe(_ url: URL, _ data: Data) -> String {
         var dims = "?x?"
         if let src = CGImageSourceCreateWithData(data as CFData, nil),
            let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [String: Any],
@@ -58,12 +94,15 @@ final class UploadMemoryBenchmark: XCTestCase {
            let h = props[kCGImagePropertyPixelHeight as String] as? Int {
             dims = "\(w)x\(h)"
         }
-        return "\(url.lastPathComponent) \(dims) \(data.count / 1024)KB"
+        // 상위 폴더명으로 출처를 함께 남긴다 (Fixtures = 번들 동봉 / MockImagesReal = 호스트)
+        let origin = url.deletingLastPathComponent().lastPathComponent
+        return "\(url.lastPathComponent) \(dims) \(data.count / 1024)KB [출처: \(origin)]"
     }
 
     // MARK: - phys_footprint 샘플러
 
-    private final class FootprintSampler: @unchecked Sendable {
+    /// `DecodeVariantBenchTests`가 동일 계측기를 쓰기 위해 internal (가시성만 변경, 로직 동일)
+    final class FootprintSampler: @unchecked Sendable {
         private let lock = NSLock()
         private var peak: UInt64 = 0
         private var running = true
@@ -114,10 +153,11 @@ final class UploadMemoryBenchmark: XCTestCase {
         String(format: "%.1f", Double(bytes) / 1_048_576)
     }
 
-    // MARK: - 레거시 경로: 풀사이즈 디코드 + 재인코딩
+    // MARK: - 풀디코드 대조군: 전체 디코드 + 재인코딩
 
-    /// 리팩토링 전 업로드 전처리: 원본 전체를 UIImage로 디코드(풀사이즈 비트맵 상주) 후 JPEG 재인코딩
-    func test_legacy_fullDecodeReencode_peakDelta() throws {
+    /// 풀디코드 대조군: 다운샘플 없이 원본 전체를 UIImage로 디코드(풀사이즈 비트맵 상주) 후 JPEG 재인코딩.
+    /// 주의: 리팩토링 전 앱의 재현이 아니다 — 레거시는 픽셀을 디코드하지 않고 원본을 그대로 업로드했다.
+    func test_fullDecodeControl_peakDelta() throws {
         let url = try Self.fixtureURL()
         let data = try Data(contentsOf: url)
         print("🧪 [입력] \(Self.describe(url, data))")
@@ -136,7 +176,7 @@ final class UploadMemoryBenchmark: XCTestCase {
             let peak = sampler.stopPeak()
             lines.append("run\(i): peakDelta +\(mb(peak - baseline))MB, \(String(format: "%.3f", dt))s")
         }
-        print("🧪 [legacy 풀디코드+재인코딩]\n" + lines.joined(separator: "\n"))
+        print("🧪 [풀디코드 대조군: 전체 디코드+재인코딩]\n" + lines.joined(separator: "\n"))
     }
 
     // MARK: - 현재 경로: ImageIO 다운샘플 (실제 프로덕션 코드)
