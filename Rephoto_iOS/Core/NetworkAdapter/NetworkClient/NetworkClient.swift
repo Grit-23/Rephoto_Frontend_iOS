@@ -102,9 +102,11 @@ extension NetworkClient {
                 throw NetworkError.unauthorized
             }
 
+            // 재시도 호출은 do 블록 밖에 둔다.
+            // 안에 두면 재귀 호출이 한도 초과로 던진 unauthorized까지 아래 catch에 걸려
+            // onRefreshFailed가 호출 깊이만큼 중복 실행된다.
             do {
                 _ = try await refreshToken()
-                return try await performRequest(urlRequest, retryCount: retryCount + 1)
             } catch is NetworkError {
                 onRefreshFailed?()
                 throw NetworkError.unauthorized
@@ -114,6 +116,8 @@ extension NetworkClient {
             } catch {
                 throw error
             }
+
+            return try await performRequest(urlRequest, retryCount: retryCount + 1)
         }
 
         // 성공 응답 확인
