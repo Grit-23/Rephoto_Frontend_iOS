@@ -31,7 +31,7 @@
 | **아키텍처** | Clean Architecture (Data / Domain / Presentation), MVVM |
 | **비동기** | Swift Concurrency (`async/await`, `actor`) |
 | **DI** | [Factory](https://github.com/hmlongco/Factory) |
-| **네트워크** | URLSession 기반 자체 네트워크 레이어 + Moya `TargetType` |
+| **네트워크** | URLSession 기반 자체 네트워크 레이어 (`APITargetType` DSL) |
 | **보안** | Keychain |
 | **이미지** | [Nuke](https://github.com/kean/Nuke) |
 | **패키지 관리** | Swift Package Manager |
@@ -44,9 +44,10 @@
 - **`NetworkClient` (actor)** — 401 응답 시 토큰을 자동 갱신·재요청. 여러 요청이 동시에 갱신을 트리거해도 단일 `Task`로 직렬화해 중복 갱신과 race condition을 차단합니다.
 - **`KeychainTokenStore` (actor)** — Access/Refresh 토큰을 `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` 옵션으로 Keychain에 저장하고, refresh 저장 실패 시 access를 롤백해 부분 저장을 방지합니다.
 
-### 2. Moya 의존성 점진적 제거
-- 엔드포인트 선언은 Moya `TargetType` DSL로 유지하되, 실제 네트워킹은 `URLSession` 기반 자체 `NetworkClient`로 교체했습니다.
-- `MoyaNetworkAdapter`가 `TargetType` → `URLRequest` 변환과 멀티파트 인코딩을 직접 담당해, Alamofire 런타임 의존을 제거하면서도 마이그레이션 비용을 분산했습니다.
+### 2. Moya 의존성 제거 (2단계 마이그레이션)
+- **1단계** — 엔드포인트 선언은 Moya `TargetType` DSL로 두고 실제 네트워킹만 `URLSession` 기반 자체 `NetworkClient`로 교체했습니다. Alamofire 런타임 의존을 먼저 끊어 마이그레이션 비용을 분산했습니다.
+- **2단계 ([#46](https://github.com/Grit-23/Rephoto_Frontend_iOS/pull/46))** — 선언 DSL도 자체 `APITargetType`으로 옮기고 `NetworkAdapter`가 `URLRequest` 변환·멀티파트 인코딩을 담당하게 해 **Moya 의존성을 완전히 제거**했습니다. 현재 외부 패키지는 Factory / Nuke 둘뿐입니다.
+- 서버 스펙이 바뀌어도 컴파일은 통과하고 런타임에서야 깨지는 계층이라, `APITarget` 6종의 `path`·`method`·`task`·`headers`를 37개 테스트로 값 고정해뒀습니다.
 
 ### 3. TaskGroup 기반 병렬 업로드
 - 여러 장의 사진을 `withThrowingTaskGroup`으로 S3에 동시 업로드한 뒤, 메타데이터를 한 번에 batch 저장합니다.
