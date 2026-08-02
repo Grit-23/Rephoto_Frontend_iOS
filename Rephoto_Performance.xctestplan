@@ -1,15 +1,15 @@
 {
   "configurations" : [
     {
-      "id" : "70BCBDBC-3BE0-410D-AA1E-E14C6AADB199",
-      "name" : "Test Scheme Action",
+      "id" : "D863D323-59D8-4FC0-A3BB-3C6198F75E91",
+      "name" : "Performance",
       "options" : {
 
       }
     }
   ],
   "defaultOptions" : {
-    "performanceAntipatternCheckerEnabled" : false,
+    "performanceAntipatternCheckerEnabled" : true,
     "targetForVariableExpansion" : {
       "containerPath" : "container:Rephoto_iOS.xcodeproj",
       "identifier" : "0BE71D512E1657D500E85407",
@@ -19,7 +19,7 @@
   "testTargets" : [
     {
       "parallelizable" : false,
-      "skippedTests" : [
+      "selectedTests" : [
         "DecodingPerformanceTests",
         "HomeDerivedCollectionPerformanceTests",
         "MappingPerformanceTests",

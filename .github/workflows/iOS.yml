@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-26
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -29,12 +29,37 @@ jobs:
           key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
           restore-keys: ${{ runner.os }}-spm-
 
-      - name: Build
+      # 앱과 테스트 번들을 한 번만 빌드한다.
+      # xcodebuild build는 테스트 타겟을 만들지 않아, 뒤이은 test가 처음부터 다시 빌드했다.
+      # 커버리지 계측은 빌드 시점 설정이라 이 스텝에도 -enableCodeCoverage가 필요하다.
+      - name: Build for testing
         run: |
-          xcodebuild build \
+          xcodebuild build-for-testing \
             -project Rephoto_iOS.xcodeproj \
             -scheme Rephoto_iOS \
+            -testPlan Rephoto_iOS \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             -configuration Debug \
             -clonedSourcePackagesDirPath .spm-cache \
-            CODE_SIGNING_ALLOWED=NO
+            -enableCodeCoverage YES
+
+      - name: Test
+        run: |
+          xcodebuild test-without-building \
+            -project Rephoto_iOS.xcodeproj \
+            -scheme Rephoto_iOS \
+            -testPlan Rephoto_iOS \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -configuration Debug \
+            -resultBundlePath TestResults.xcresult \
+            -enableCodeCoverage YES
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          if [ -d TestResults.xcresult ]; then
+            echo '## Code Coverage' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            xcrun xccov view --report --only-targets TestResults.xcresult >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi

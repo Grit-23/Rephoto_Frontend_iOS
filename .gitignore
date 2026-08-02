@@ -8,6 +8,9 @@ xcuserdata/
 ## Obj-C/Swift specific
 *.hmap
 
+## 테스트 결과 번들 (CI 산출물)
+TestResults.xcresult/
+
 # ignore xcconfig
 *.xcconfig
 

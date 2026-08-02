@@ -25,6 +25,8 @@ actor NetworkClient {
 
     /// 리프레시 실패 시 호출되는 콜백 (예: 강제 로그아웃)
     private var onRefreshFailed: (@Sendable () -> Void)?
+    /// 세션 종료 통지를 이미 보냈는지 여부. 새 토큰을 확보하면 다시 false가 된다.
+    private var hasNotifiedRefreshFailure = false
 
     // MARK: - Initializer
 
@@ -59,6 +61,7 @@ actor NetworkClient {
     /// 토큰 저장 (로그인 성공 후 호출)
     func saveTokens(accessToken: String, refreshToken: String) async throws {
         try await tokenStore.save(accessToken: accessToken, refreshToken: refreshToken)
+        hasNotifiedRefreshFailure = false
     }
 
     /// 로그인 여부 확인
@@ -98,22 +101,26 @@ extension NetworkClient {
         // 401 에러 응답 처리
         if authPolicy.isUnauthorizedResponse(httpResponse) {
             guard retryCount < maxRetryCount else {
-                onRefreshFailed?()
+                notifyRefreshFailed()
                 throw NetworkError.unauthorized
             }
 
+            // 재시도 호출은 do 블록 밖에 둔다.
+            // 안에 두면 재귀 호출이 한도 초과로 던진 unauthorized까지 아래 catch에 걸려
+            // 세션 종료 처리 경로를 한 번 더 타게 된다.
             do {
                 _ = try await refreshToken()
-                return try await performRequest(urlRequest, retryCount: retryCount + 1)
             } catch is NetworkError {
-                onRefreshFailed?()
+                notifyRefreshFailed()
                 throw NetworkError.unauthorized
             } catch is TokenRefreshError {
-                onRefreshFailed?()
+                notifyRefreshFailed()
                 throw NetworkError.unauthorized
             } catch {
                 throw error
             }
+
+            return try await performRequest(urlRequest, retryCount: retryCount + 1)
         }
 
         // 성공 응답 확인
@@ -122,6 +129,17 @@ extension NetworkClient {
         }
 
         return (data, httpResponse)
+    }
+
+    /// 세션 종료를 상위에 통지한다. 새 토큰을 확보하기 전까지 1회만 나간다.
+    ///
+    /// 갱신 Task는 하나로 합쳐지지만 그 실패는 대기하던 요청 전원에게 전달된다.
+    /// 각자 콜백을 부르면 동시 401 N건에 통지가 N번 나가므로, 여기서 한 번으로 접는다.
+    /// 재귀 재시도와 재시도 한도 소진 경로도 같은 이유로 이 함수를 거친다.
+    private func notifyRefreshFailed() {
+        guard !hasNotifiedRefreshFailure else { return }
+        hasNotifiedRefreshFailure = true
+        onRefreshFailed?()
     }
 
     /// 토큰 갱신 수행 (Task deduplication으로 중복 방지)
@@ -145,6 +163,8 @@ extension NetworkClient {
                 accessToken: tokenPair.accessToken,
                 refreshToken: tokenPair.refreshToken
             )
+            // 세션이 되살아났으므로 다음 만료 때 다시 통지할 수 있게 되돌린다.
+            hasNotifiedRefreshFailure = false
 
             return tokenPair
         }

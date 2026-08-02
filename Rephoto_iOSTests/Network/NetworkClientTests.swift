@@ -188,6 +188,62 @@ extension StubURLProtocolSuites {
             #expect(refreshCount == 1, "동시 401에도 토큰 갱신은 단 1회여야 한다 (thundering-herd 방지)")
         }
 
+        /// 갱신 Task는 하나로 합쳐지지만 그 실패는 대기하던 요청 전원에게 전달된다.
+        /// 각자 콜백을 부르면 강제 로그아웃 통지가 요청 수만큼 나간다.
+        @Test("동시 401에서 갱신이 실패해도 onRefreshFailed 통지는 1회만 나간다")
+        func notifiesRefreshFailureOnceUnderConcurrent401() async throws {
+            // 지연을 줘서 모든 동시 요청이 먼저 401을 받고 같은 갱신 Task에 합류하도록 한다.
+            let refresh = SpyRefreshService(success: nil, delay: .milliseconds(100))
+            let client = makeClient(refreshService: refresh)
+            StubURLProtocol.handler = { req in (Self.response(req.url, 401), Data("{}".utf8)) }
+
+            let counter = CallCounter()
+            await client.setOnRefreshFailed { counter.increment() }
+
+            let req = request(path: "/photos")
+            await withTaskGroup(of: Void.self) { group in
+                for _ in 0..<20 {
+                    group.addTask { _ = try? await client.request(req) }
+                }
+            }
+
+            // 통지는 요청이 throw하기 전에 동기로 끝나므로, 그룹이 끝난 시점에 카운트는 확정이다.
+            #expect(counter.value == 1, "동시 401 20건이 같은 갱신 실패를 공유해도 통지는 1회여야 한다")
+            let refreshCount = await refresh.count()
+            #expect(refreshCount == 1, "갱신 시도 자체도 1회여야 한다")
+        }
+
+        /// 통지를 1회로 접되, 세션이 되살아나면 다음 만료 때 다시 울려야 한다.
+        @Test("갱신에 성공해 세션이 되살아나면 다음 갱신 실패는 다시 통지된다")
+        func notifiesAgainAfterSessionRecovers() async throws {
+            let store = MockTokenStore(accessToken: "old", refreshToken: "r")
+            let refresh = ScriptedRefreshService(results: [
+                TokenPair(accessToken: "new", refreshToken: "r2"), // 1회차: 성공
+                nil                                                // 2회차: 실패
+            ])
+            let client = makeClient(tokenStore: store, refreshService: refresh)
+
+            let counter = CallCounter()
+            await client.setOnRefreshFailed { counter.increment() }
+
+            // 1라운드: 401 → 갱신 성공 → 재시도 성공. 통지 없음.
+            StubURLProtocol.handler = { req in
+                let authorized = req.value(forHTTPHeaderField: "Authorization") == "Bearer new"
+                return (Self.response(req.url, authorized ? 200 : 401), Data("{}".utf8))
+            }
+            _ = try await client.request(request(path: "/photos"))
+
+            #expect(counter.value == 0, "갱신이 성공했으면 통지는 없어야 한다")
+
+            // 2라운드: 다시 401 → 이번엔 갱신 실패 → 통지가 나가야 한다.
+            StubURLProtocol.handler = { req in (Self.response(req.url, 401), Data("{}".utf8)) }
+            await #expect(throws: NetworkError.unauthorized) {
+                _ = try await client.request(self.request(path: "/photos"))
+            }
+
+            #expect(counter.value == 1, "세션이 되살아난 뒤의 갱신 실패는 다시 통지돼야 한다")
+        }
+
         // MARK: - logout
 
         @Test("logout은 저장된 토큰을 삭제하고 로그인 상태를 false로 만든다")
@@ -228,4 +284,38 @@ actor SpyRefreshService: TokenRefreshService {
     }
 
     func count() -> Int { callCount }
+}
+
+
+
+/// 호출마다 다른 결과를 내는 토큰 갱신 서비스. nil이면 실패를 던진다.
+/// 대본을 다 쓰면 마지막 결과를 반복한다.
+actor ScriptedRefreshService: TokenRefreshService {
+    private let results: [TokenPair?]
+    private var index = 0
+
+    init(results: [TokenPair?]) {
+        self.results = results
+    }
+
+    func refresh(_ refreshToken: String) async throws -> TokenPair {
+        let result = results[min(index, results.count - 1)]
+        index += 1
+        guard let result else { throw NetworkError.unauthorized }
+        return result
+    }
+}
+
+/// onRefreshFailed 호출 횟수를 세는 카운터.
+///
+/// actor가 아니라 락으로 감싼다. 콜백이 동기 클로저(`@Sendable () -> Void`)라
+/// actor로 만들면 `Task { await ... }`로 넘겨야 하고, 그러면 집계 시점이 밀려
+/// 검증 전에 sleep으로 기다리는 비결정적 테스트가 된다.
+/// 락 기반이면 콜백 호출 즉시 집계되므로, 요청이 끝난 시점에 카운트가 확정된다.
+final class CallCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+
+    func increment() { lock.withLock { count += 1 } }
+    var value: Int { lock.withLock { count } }
 }

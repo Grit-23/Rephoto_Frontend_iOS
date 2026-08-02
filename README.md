@@ -79,8 +79,11 @@ Rephoto_iOS/
 
 ## CI
 
-- `main` 브랜치 push / PR 시 GitHub Actions가 자동 빌드 검증을 수행합니다.
+- `main` 브랜치 push / PR 시 GitHub Actions가 빌드와 단위 테스트를 검증합니다.
 - 실행 환경: `macos-26`, `iPhone 17 Pro` 시뮬레이터
+- 테스트 플랜을 분리해 단위 테스트만 PR 게이트로 실행하고,
+  머신 편차가 큰 성능 벤치마크는 수동 실행합니다. (`Rephoto_iOSTests/TESTING.md`)
+- 코드 커버리지는 `xccov` 리포트로 Actions 요약에 출력됩니다.
 - SPM 캐시 적용으로 빌드 시간을 단축하고, 동일 브랜치 중복 실행은 자동 취소합니다.
 
 <br>
