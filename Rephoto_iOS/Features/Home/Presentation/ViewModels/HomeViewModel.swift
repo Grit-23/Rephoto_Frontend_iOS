@@ -24,11 +24,16 @@ final class HomeViewModel {
             visiblePhotos = photos.filter { !$0.isSensitive }
             sensitivePhotos = photos.filter(\.isSensitive)
             sensitiveCount = sensitivePhotos.count
+            hasPhotos = !photos.isEmpty
         }
     }
     private(set) var visiblePhotos: [Photo] = []
     private(set) var sensitivePhotos: [Photo] = []
     private(set) var sensitiveCount: Int = 0
+    /// `isShowingErrorAlert`가 `photos`를 직접 읽지 않도록 캐싱한다.
+    /// 계산 프로퍼티에서 `photos`를 읽으면 관찰 의존성이 배열 전체로 전이되어,
+    /// 파생 컬렉션을 캐싱해 좁혀둔 무효화 범위가 알림 경로를 통해 다시 넓어진다.
+    private(set) var hasPhotos: Bool = false
     private(set) var isLoading: Bool = false
     private(set) var errorMessage: String?
     private(set) var uploadProgress: UploadProgress?
@@ -36,7 +41,7 @@ final class HomeViewModel {
     // 사진이 있는 상태의 실패(업로드 등)만 알림으로 표시 — 빈 화면 에러는 전체 화면 상태가 담당.
     // KeyPath 기반 Binding($vm.isShowingErrorAlert)으로 쓰기 위한 양방향 프로퍼티
     var isShowingErrorAlert: Bool {
-        get { errorMessage != nil && !photos.isEmpty }
+        get { errorMessage != nil && hasPhotos }
         set { if !newValue { errorMessage = nil } }
     }
 

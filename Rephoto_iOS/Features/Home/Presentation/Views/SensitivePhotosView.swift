@@ -16,6 +16,9 @@ struct SensitivePhotosView: View {
     let namespace: Namespace.ID
 
     @State private var isUnlocked = false
+    // 알림 표시 여부를 별도 @State로 둬야 클로저 없이 KeyPath 바인딩($isShowingAuthAlert)을 쓸 수 있다.
+    // 두 값은 presentAuthError(_:)에서만 함께 갱신한다.
+    @State private var isShowingAuthAlert = false
     @State private var authErrorMessage: String?
     @Environment(\.scenePhase) private var scenePhase
 
@@ -54,18 +57,16 @@ struct SensitivePhotosView: View {
                 isUnlocked = false
             }
         }
-        .alert("잠금 해제 실패", isPresented: authAlertBinding) {
+        .alert("잠금 해제 실패", isPresented: $isShowingAuthAlert, presenting: authErrorMessage) { _ in
             Button("확인", role: .cancel) {}
-        } message: {
-            Text(authErrorMessage ?? "")
+        } message: { message in
+            Text(message)
         }
     }
 
-    private var authAlertBinding: Binding<Bool> {
-        Binding(
-            get: { authErrorMessage != nil },
-            set: { if !$0 { authErrorMessage = nil } }
-        )
+    private func presentAuthError(_ message: String) {
+        authErrorMessage = message
+        isShowingAuthAlert = true
     }
 
     private func authenticate() async {
@@ -78,7 +79,7 @@ struct SensitivePhotosView: View {
             // Face ID 테스트: Simulator 메뉴 Features > Face ID > Enrolled 후 Matching Face
             withAnimation { isUnlocked = true }
             #else
-            authErrorMessage = error?.localizedDescription ?? "이 기기에서는 인증을 사용할 수 없어요"
+            presentAuthError(error?.localizedDescription ?? "이 기기에서는 인증을 사용할 수 없어요")
             #endif
             return
         }
@@ -95,7 +96,7 @@ struct SensitivePhotosView: View {
         } catch let laError as LAError where laError.code == .userCancel || laError.code == .appCancel || laError.code == .systemCancel {
             // 사용자/시스템 취소는 에러로 표시하지 않음
         } catch {
-            authErrorMessage = error.localizedDescription
+            presentAuthError(error.localizedDescription)
         }
     }
 }
