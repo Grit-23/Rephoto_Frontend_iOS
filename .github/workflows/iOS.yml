@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-26
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -38,3 +38,25 @@ jobs:
             -configuration Debug \
             -clonedSourcePackagesDirPath .spm-cache \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Test
+        run: |
+          xcodebuild test \
+            -project Rephoto_iOS.xcodeproj \
+            -scheme Rephoto_iOS \
+            -testPlan Rephoto_iOS \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -configuration Debug \
+            -clonedSourcePackagesDirPath .spm-cache \
+            -resultBundlePath TestResults.xcresult \
+            -enableCodeCoverage YES
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          if [ -d TestResults.xcresult ]; then
+            echo '## Code Coverage' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            xcrun xccov view --report --only-targets TestResults.xcresult >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
