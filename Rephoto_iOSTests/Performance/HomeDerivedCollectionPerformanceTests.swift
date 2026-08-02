@@ -126,4 +126,53 @@ final class HomeDerivedCollectionPerformanceTests: XCTestCase {
             XCTAssertEqual(model.visiblePhotos.count + model.sensitivePhotos.count, 10000)
         }
     }
+
+    // MARK: - 고반복(10,000회) 측정 — B의 절대값을 타이머 분해능 위로 끌어올리기 위함
+
+    // 위 100회 테스트에서 B는 실기기 Release 기준 총합이 1~3µs로 나온다.
+    // XCTClockMetric의 분해능이 1µs라 값이 양자화되고 상대표준편차가 40~49%까지 튄다.
+    // "상수 시간"이라는 결론에는 지장이 없지만, 평가당 절대값을 인용하려면
+    // 그 수치는 측정 정밀도를 넘어선 주장이 된다.
+    //
+    // 그래서 평가 횟수를 10,000회로 올려 총합을 100µs대로 만든다. 평가당 값은
+    // 총합 ÷ 10,000으로 환산한다. 100회 테스트는 원래 시나리오(body 평가 100회)를
+    // 그대로 두기 위해 유지한다 — 이 블록은 정밀도 보강용이다.
+
+    func test_didSetCache_bodyEval10000_photos100() {
+        let model = DidSetCacheModel()
+        model.photos = makePhotos(count: 100)
+        measure(metrics: [XCTClockMetric()]) {
+            let checksum = simulateBodyEvaluations(10000, visible: { model.visiblePhotos }, sensitiveCount: { model.sensitiveCount })
+            XCTAssertGreaterThan(checksum, 0)
+        }
+    }
+
+    func test_didSetCache_bodyEval10000_photos1000() {
+        let model = DidSetCacheModel()
+        model.photos = makePhotos(count: 1000)
+        measure(metrics: [XCTClockMetric()]) {
+            let checksum = simulateBodyEvaluations(10000, visible: { model.visiblePhotos }, sensitiveCount: { model.sensitiveCount })
+            XCTAssertGreaterThan(checksum, 0)
+        }
+    }
+
+    func test_didSetCache_bodyEval10000_photos10000() {
+        let model = DidSetCacheModel()
+        model.photos = makePhotos(count: 10000)
+        measure(metrics: [XCTClockMetric()]) {
+            let checksum = simulateBodyEvaluations(10000, visible: { model.visiblePhotos }, sensitiveCount: { model.sensitiveCount })
+            XCTAssertGreaterThan(checksum, 0)
+        }
+    }
+
+    /// A의 동일 평가 횟수 대조군 — 같은 축에서 배율을 산출하고,
+    /// 평가당 비용이 평가 횟수에 선형인지(= 100회 측정이 유효한지) 교차 검증한다.
+    func test_computedProperty_bodyEval10000_photos1000() {
+        let model = ComputedPropertyModel()
+        model.photos = makePhotos(count: 1000)
+        measure(metrics: [XCTClockMetric()]) {
+            let checksum = simulateBodyEvaluations(10000, visible: { model.visiblePhotos }, sensitiveCount: { model.sensitiveCount })
+            XCTAssertGreaterThan(checksum, 0)
+        }
+    }
 }
