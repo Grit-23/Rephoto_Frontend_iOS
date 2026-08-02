@@ -10,6 +10,12 @@ xcuserdata/
 
 ## 테스트 결과 번들 (CI 산출물)
 TestResults.xcresult/
+*.xcresult/
+
+## 벤치마크 입력 픽스처 (카메라 원본 — GPS EXIF 포함 개인 사진이라 미커밋)
+## 없으면 UploadMemoryBenchmark / DecodeVariantBenchTests는 자동 스킵된다
+MockImagesReal/
+Rephoto_iOSTests/Performance/Fixtures/
 
 # ignore xcconfig
 *.xcconfig

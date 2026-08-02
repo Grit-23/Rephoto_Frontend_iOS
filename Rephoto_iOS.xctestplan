@@ -20,6 +20,7 @@
     {
       "parallelizable" : false,
       "skippedTests" : [
+        "DecodeVariantBenchTests",
         "DecodingPerformanceTests",
         "HomeDerivedCollectionPerformanceTests",
         "MappingPerformanceTests",
