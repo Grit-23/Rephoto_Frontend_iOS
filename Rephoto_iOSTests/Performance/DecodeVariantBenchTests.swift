@@ -96,12 +96,15 @@ final class DecodeVariantBenchTests: XCTestCase {
     /// D: `UploadMemoryBenchmark.test_fullDecodeControl_peakDelta`의 작업 구간 복사본.
     /// 원본은 손대지 않는다 — 동일 계측기로 A/B/C와 같은 축에서 비교하기 위한 사본이다.
     func test_D_legacyControl_peakDelta() throws {
+        // 재인코딩 결과 검증은 측정 구간 밖에서 한다 — XCTAssert 자체가
+        // 계측 구간에 섞이지 않도록 바이트 수만 받아 나온다.
+        var encodedBytes = 0
         try measureVariant("D_legacy_control") { data in
             guard let image = UIImage(data: data) else { return nil }
-            let out = image.jpegData(compressionQuality: 1.0)
-            XCTAssertGreaterThan(out?.count ?? 0, 0)
+            encodedBytes = image.jpegData(compressionQuality: 1.0)?.count ?? 0
             return image
         }
+        XCTAssertGreaterThan(encodedBytes, 0, "JPEG 재인코딩이 바이트를 만들지 못했다")
     }
 
     // MARK: - 측정 하네스
@@ -117,14 +120,26 @@ final class DecodeVariantBenchTests: XCTestCase {
         warmUpCodec(with: data)
 
         var deltas: [UInt64] = []
+        var producedCount = 0
         for _ in 1...repeatCount {
-            deltas.append(peakDelta { body(data) })
+            var produced = false
+            deltas.append(peakDelta {
+                let object = body(data)
+                produced = object != nil
+                return object
+            })
+            if produced { producedCount += 1 }
         }
 
         let runs = deltas.map { "+\(mb($0))MB" }.joined(separator: ", ")
         let peak = deltas.max() ?? 0
         // max가 대표값. 개별 run도 함께 남겨 캐시로 인한 0.0 패턴이 보이게 한다.
         print("🧪 [\(label)] max: \(mb(peak))MB  (runs: \(runs))")
+
+        // 변형이 nil을 반환하면 delta가 0으로 찍히고 "메모리를 안 썼다"로 오독된다.
+        // 실제로는 디코드/컨텍스트 생성 실패이므로 반드시 실패로 드러내야 한다.
+        XCTAssertEqual(producedCount, repeatCount,
+                       "\(label): \(repeatCount)회 중 \(producedCount)회만 객체를 만들었다 — 측정값 무효")
     }
 
     /// JPEG 코덱 최초 사용 비용만 걷어낸다. 변형 자신을 돌리지 않는 것이 핵심 —
