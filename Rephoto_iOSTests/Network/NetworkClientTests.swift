@@ -198,7 +198,7 @@ extension StubURLProtocolSuites {
             StubURLProtocol.handler = { req in (Self.response(req.url, 401), Data("{}".utf8)) }
 
             let counter = CallCounter()
-            await client.setOnRefreshFailed { Task { await counter.increment() } }
+            await client.setOnRefreshFailed { counter.increment() }
 
             let req = request(path: "/photos")
             await withTaskGroup(of: Void.self) { group in
@@ -207,11 +207,8 @@ extension StubURLProtocolSuites {
                 }
             }
 
-            // 콜백이 Task로 감싸여 있으므로 카운트가 반영될 여지를 준다.
-            try await Task.sleep(for: .milliseconds(100))
-
-            let notifyCount = await counter.value()
-            #expect(notifyCount == 1, "동시 401 20건이 같은 갱신 실패를 공유해도 통지는 1회여야 한다")
+            // 통지는 요청이 throw하기 전에 동기로 끝나므로, 그룹이 끝난 시점에 카운트는 확정이다.
+            #expect(counter.value == 1, "동시 401 20건이 같은 갱신 실패를 공유해도 통지는 1회여야 한다")
             let refreshCount = await refresh.count()
             #expect(refreshCount == 1, "갱신 시도 자체도 1회여야 한다")
         }
@@ -227,7 +224,7 @@ extension StubURLProtocolSuites {
             let client = makeClient(tokenStore: store, refreshService: refresh)
 
             let counter = CallCounter()
-            await client.setOnRefreshFailed { Task { await counter.increment() } }
+            await client.setOnRefreshFailed { counter.increment() }
 
             // 1라운드: 401 → 갱신 성공 → 재시도 성공. 통지 없음.
             StubURLProtocol.handler = { req in
@@ -236,9 +233,7 @@ extension StubURLProtocolSuites {
             }
             _ = try await client.request(request(path: "/photos"))
 
-            try await Task.sleep(for: .milliseconds(50))
-            let afterRecovery = await counter.value()
-            #expect(afterRecovery == 0, "갱신이 성공했으면 통지는 없어야 한다")
+            #expect(counter.value == 0, "갱신이 성공했으면 통지는 없어야 한다")
 
             // 2라운드: 다시 401 → 이번엔 갱신 실패 → 통지가 나가야 한다.
             StubURLProtocol.handler = { req in (Self.response(req.url, 401), Data("{}".utf8)) }
@@ -246,9 +241,7 @@ extension StubURLProtocolSuites {
                 _ = try await client.request(self.request(path: "/photos"))
             }
 
-            try await Task.sleep(for: .milliseconds(50))
-            let afterFailure = await counter.value()
-            #expect(afterFailure == 1, "세션이 되살아난 뒤의 갱신 실패는 다시 통지돼야 한다")
+            #expect(counter.value == 1, "세션이 되살아난 뒤의 갱신 실패는 다시 통지돼야 한다")
         }
 
         // MARK: - logout
@@ -314,10 +307,15 @@ actor ScriptedRefreshService: TokenRefreshService {
 }
 
 /// onRefreshFailed 호출 횟수를 세는 카운터.
-/// 콜백이 @Sendable 클로저라 actor로 감싸 경합 없이 집계한다.
-actor CallCounter {
+///
+/// actor가 아니라 락으로 감싼다. 콜백이 동기 클로저(`@Sendable () -> Void`)라
+/// actor로 만들면 `Task { await ... }`로 넘겨야 하고, 그러면 집계 시점이 밀려
+/// 검증 전에 sleep으로 기다리는 비결정적 테스트가 된다.
+/// 락 기반이면 콜백 호출 즉시 집계되므로, 요청이 끝난 시점에 카운트가 확정된다.
+final class CallCounter: @unchecked Sendable {
+    private let lock = NSLock()
     private var count = 0
 
-    func increment() { count += 1 }
-    func value() -> Int { count }
+    func increment() { lock.withLock { count += 1 } }
+    var value: Int { lock.withLock { count } }
 }
