@@ -188,6 +188,69 @@ extension StubURLProtocolSuites {
             #expect(refreshCount == 1, "동시 401에도 토큰 갱신은 단 1회여야 한다 (thundering-herd 방지)")
         }
 
+        /// 갱신 Task는 하나로 합쳐지지만 그 실패는 대기하던 요청 전원에게 전달된다.
+        /// 각자 콜백을 부르면 강제 로그아웃 통지가 요청 수만큼 나간다.
+        @Test("동시 401에서 갱신이 실패해도 onRefreshFailed 통지는 1회만 나간다")
+        func notifiesRefreshFailureOnceUnderConcurrent401() async throws {
+            // 지연을 줘서 모든 동시 요청이 먼저 401을 받고 같은 갱신 Task에 합류하도록 한다.
+            let refresh = SpyRefreshService(success: nil, delay: .milliseconds(100))
+            let client = makeClient(refreshService: refresh)
+            StubURLProtocol.handler = { req in (Self.response(req.url, 401), Data("{}".utf8)) }
+
+            let counter = CallCounter()
+            await client.setOnRefreshFailed { Task { await counter.increment() } }
+
+            let req = request(path: "/photos")
+            await withTaskGroup(of: Void.self) { group in
+                for _ in 0..<20 {
+                    group.addTask { _ = try? await client.request(req) }
+                }
+            }
+
+            // 콜백이 Task로 감싸여 있으므로 카운트가 반영될 여지를 준다.
+            try await Task.sleep(for: .milliseconds(100))
+
+            let notifyCount = await counter.value()
+            #expect(notifyCount == 1, "동시 401 20건이 같은 갱신 실패를 공유해도 통지는 1회여야 한다")
+            let refreshCount = await refresh.count()
+            #expect(refreshCount == 1, "갱신 시도 자체도 1회여야 한다")
+        }
+
+        /// 통지를 1회로 접되, 세션이 되살아나면 다음 만료 때 다시 울려야 한다.
+        @Test("갱신에 성공해 세션이 되살아나면 다음 갱신 실패는 다시 통지된다")
+        func notifiesAgainAfterSessionRecovers() async throws {
+            let store = MockTokenStore(accessToken: "old", refreshToken: "r")
+            let refresh = ScriptedRefreshService(results: [
+                TokenPair(accessToken: "new", refreshToken: "r2"), // 1회차: 성공
+                nil                                                // 2회차: 실패
+            ])
+            let client = makeClient(tokenStore: store, refreshService: refresh)
+
+            let counter = CallCounter()
+            await client.setOnRefreshFailed { Task { await counter.increment() } }
+
+            // 1라운드: 401 → 갱신 성공 → 재시도 성공. 통지 없음.
+            StubURLProtocol.handler = { req in
+                let authorized = req.value(forHTTPHeaderField: "Authorization") == "Bearer new"
+                return (Self.response(req.url, authorized ? 200 : 401), Data("{}".utf8))
+            }
+            _ = try await client.request(request(path: "/photos"))
+
+            try await Task.sleep(for: .milliseconds(50))
+            let afterRecovery = await counter.value()
+            #expect(afterRecovery == 0, "갱신이 성공했으면 통지는 없어야 한다")
+
+            // 2라운드: 다시 401 → 이번엔 갱신 실패 → 통지가 나가야 한다.
+            StubURLProtocol.handler = { req in (Self.response(req.url, 401), Data("{}".utf8)) }
+            await #expect(throws: NetworkError.unauthorized) {
+                _ = try await client.request(self.request(path: "/photos"))
+            }
+
+            try await Task.sleep(for: .milliseconds(50))
+            let afterFailure = await counter.value()
+            #expect(afterFailure == 1, "세션이 되살아난 뒤의 갱신 실패는 다시 통지돼야 한다")
+        }
+
         // MARK: - logout
 
         @Test("logout은 저장된 토큰을 삭제하고 로그인 상태를 false로 만든다")
@@ -228,4 +291,33 @@ actor SpyRefreshService: TokenRefreshService {
     }
 
     func count() -> Int { callCount }
+}
+
+
+
+/// 호출마다 다른 결과를 내는 토큰 갱신 서비스. nil이면 실패를 던진다.
+/// 대본을 다 쓰면 마지막 결과를 반복한다.
+actor ScriptedRefreshService: TokenRefreshService {
+    private let results: [TokenPair?]
+    private var index = 0
+
+    init(results: [TokenPair?]) {
+        self.results = results
+    }
+
+    func refresh(_ refreshToken: String) async throws -> TokenPair {
+        let result = results[min(index, results.count - 1)]
+        index += 1
+        guard let result else { throw NetworkError.unauthorized }
+        return result
+    }
+}
+
+/// onRefreshFailed 호출 횟수를 세는 카운터.
+/// 콜백이 @Sendable 클로저라 actor로 감싸 경합 없이 집계한다.
+actor CallCounter {
+    private var count = 0
+
+    func increment() { count += 1 }
+    func value() -> Int { count }
 }
