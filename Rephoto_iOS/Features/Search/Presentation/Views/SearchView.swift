@@ -41,6 +41,10 @@ struct SearchView: View {
                     guard !Task.isCancelled else { return }
                     await searchVM.search(query: trimmedQuery)
                 }
+                // destination은 lazy 컨테이너 밖, 스택 루트에 등록한다
+                .navigationDestination(for: Album.self) { album in
+                    AlbumDetailView(album: album, provider: albumVM.provider, namespace: photoZoom)
+                }
                 .navigationDestination(for: Photo.self) { photo in
                     PhotoInfoView(photo: photo, provider: homeProvider)
                         // 홈과 동일하게 타일에서 사진이 확대되어 나오는 줌 전환
@@ -79,9 +83,7 @@ struct SearchView: View {
             } else {
                 AlbumGridSection(
                     albums: albumVM.albums,
-                    previews: albumVM.albumPreviews,
-                    provider: albumVM.provider,
-                    namespace: photoZoom
+                    previews: albumVM.albumPreviews
                 )
             }
         } else if searchVM.searchResults.isEmpty {
@@ -106,8 +108,6 @@ struct SearchView: View {
 private struct AlbumGridSection: View {
     let albums: [Album]
     let previews: [Int: AlbumViewModel.AlbumPreview]
-    let provider: SearchUseCaseProviderProtocol
-    let namespace: Namespace.ID
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
 
@@ -125,9 +125,9 @@ private struct AlbumGridSection: View {
 
             LazyVGrid(columns: columns, spacing: 12) {
                 ForEach(albums) { album in
-                    NavigationLink {
-                        AlbumDetailView(album: album, provider: provider, namespace: namespace)
-                    } label: {
+                    // 값 기반 링크로 통일 — 뷰를 직접 넘기는 링크와 섞으면, 앨범 안에서
+                    // 사진(value)을 push할 때 SwiftUI가 앨범(view)을 pop했다가 다시 덮는다
+                    NavigationLink(value: album) {
                         AlbumCard(album: album, preview: previews[album.tagId])
                     }
                     .buttonStyle(.plain)
