@@ -4,10 +4,10 @@
 //
 //  Created by Doyeon Kim on 8/2/26.
 //
-//  디코드 변형별 메모리 피크 대조 — "풀디코드 대조군 +19MB" 수치의 원인 규명용.
+//  디코드 변형별 메모리 피크 대조 — "다운샘플 없는 대조군 +19MB" 수치의 원인 규명용.
 //
 //  문제: 4032×3024 원본을 풀사이즈 RGBA(8bit×4ch)로 디코드하면 이론상 ≈46.5MB인데,
-//  기존 `UploadMemoryBenchmark.test_fullDecodeControl_peakDelta`는 그 절반도 나오지 않는다.
+//  기존 `UploadMemoryBenchmark.test_undownsampledReencode_peakDelta`는 그 절반도 나오지 않는다.
 //
 //  가설 두 개를 가른다.
 //   (a) 대조군이 UIImage lazy decoding 탓에 실제로는 픽셀을 디코드하지 않았다
@@ -93,13 +93,13 @@ final class DecodeVariantBenchTests: XCTestCase {
         }
     }
 
-    /// D: `UploadMemoryBenchmark.test_fullDecodeControl_peakDelta`의 작업 구간 복사본.
+    /// D: `UploadMemoryBenchmark.test_undownsampledReencode_peakDelta`의 작업 구간 복사본.
     /// 원본은 손대지 않는다 — 동일 계측기로 A/B/C와 같은 축에서 비교하기 위한 사본이다.
-    func test_D_legacyControl_peakDelta() throws {
+    func test_D_undownsampled_peakDelta() throws {
         // 재인코딩 결과 검증은 측정 구간 밖에서 한다 — XCTAssert 자체가
         // 계측 구간에 섞이지 않도록 바이트 수만 받아 나온다.
         var encodedBytes = 0
-        try measureVariant("D_legacy_control") { data in
+        try measureVariant("D_undownsampled") { data in
             guard let image = UIImage(data: data) else { return nil }
             encodedBytes = image.jpegData(compressionQuality: 1.0)?.count ?? 0
             return image

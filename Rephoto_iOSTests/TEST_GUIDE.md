@@ -130,16 +130,16 @@ didSet 방식의 쓰기 비용(`photosAssign_10000`)도 함께 기록. 측정 �
 
 | 테스트 | 측정 대상 |
 |---|---|
-| `test_fullDecodeControl_peakDelta` | 풀디코드 대조군: UIImage 전체 디코드 + JPEG 재인코딩 (레거시 앱 재현 아님 — 라벨 정정 이력은 `BASELINE_RESULTS.md`) |
+| `test_undownsampledReencode_peakDelta` | 다운샘플 없는 대조군: UIImage 전체 디코드 + JPEG 재인코딩 (레거시 앱 재현 아님 — 라벨 정정 이력은 `BASELINE_RESULTS.md`) |
 | `test_current_downsampleExtract_peakDelta` | 현재: `PhotoMetadataExtractor.extract` (2048px 썸네일 디코드) |
 
 ---
 
 ### `DecodeVariantBenchTests.swift` (측정 전용 · 19개 카운트에서 제외)
 
-위 풀디코드 대조군의 +19MB가 어디서 온 값인지 가르는 대조 실험.
+위 다운샘플 없는 대조군의 +19MB가 어디서 온 값인지 가르는 대조 실험.
 `UIImage` lazy decoding 때문에 디코드를 안 한 것인지, YUV 4:2:0으로 푼 것인지를
-네 변형(`A_lazy` / `B_prepared` / `C_cgdraw` / `D_legacy_control`)을 같은 세션에서 찍어 비교한다.
+네 변형(`A_lazy` / `B_prepared` / `C_cgdraw` / `D_undownsampled`)을 같은 세션에서 찍어 비교한다.
 
 입력과 `FootprintSampler`는 `UploadMemoryBenchmark`와 공유하므로 스킵 조건도 동일하다
 (`MockImagesReal/` 없으면 자동 스킵). 목적·변형 정의·실행 명령은 [`TESTING.md`](TESTING.md),
@@ -150,7 +150,7 @@ didSet 방식의 쓰기 비용(`photosAssign_10000`)도 함께 기록. 측정 �
 | `test_A_lazy_peakDelta` | `UIImage(data:)`만 — 디코드 강제 없음 |
 | `test_B_prepared_peakDelta` | `preparingForDisplay()` — 플랫폼이 고른 픽셀 포맷 |
 | `test_C_cgdraw_peakDelta` | RGBA 8bit `CGContext` draw — 강제 풀디코드 |
-| `test_D_legacyControl_peakDelta` | 기존 풀디코드 대조군의 복사본 |
+| `test_D_undownsampled_peakDelta` | 기존 다운샘플 없는 대조군의 복사본 |
 
 변형별 독립 메서드로 나뉜 이유, 집계를 `max`로 쓰는 이유는 [`TESTING.md`](TESTING.md)의
 "측정 설계에서 반드시 지켜야 할 세 가지"에 있다. 순서 의존성을 없애려면 `-only-testing`으로

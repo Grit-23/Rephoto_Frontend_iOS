@@ -1,9 +1,15 @@
 # Rephoto iOS 성능 측정 결과 (레거시 baseline)
 
-> ⚠️ **이 문서의 모든 수치는 시뮬레이터 + Debug 측정이다. 실기기 + Release 재측정 예정.**
+> ⚠️ **측정 환경이 섹션마다 다르다. 표를 읽기 전에 각 섹션 머리의 환경 블록을 반드시 먼저 볼 것.**
+>
+> | 범위 | 환경 | 신뢰도 |
+> |---|---|---|
+> | 문서 앞부분의 레거시 baseline (`Decoding` / `Mapping` / `Memory` / `PhotoInfo` / `Token`)과 맨 아래 「요약」 표 | **시뮬레이터 + Debug** (`-Onone`) | 상대 비교용만 |
+> | `UploadMemoryBenchmark`의 "실기기 + Release 재측정" 절부터 그 이후 전부 — A16/A13 교차 검증, `DecodeVariantBenchTests`, `HomeDerivedCollectionPerformanceTests` | **실기기 + Release** (`-O`) | 판정 근거로 사용 가능 |
+>
 > 시뮬레이터는 호스트 macOS의 코덱·메모리 서브시스템을 쓰고 Debug는 `-Onone`이라,
-> 특히 **이미지 디코드 메모리**와 **연산 위주 Clock 수치**는 실기기와 다르게 나올 수 있다.
-> 재측정 전까지 이 값들은 상대 비교용으로만 쓴다.
+> 특히 **이미지 디코드 메모리**와 **연산 위주 Clock 수치**가 실기기와 실제로 갈린다
+> (이 문서에서 두 번 확인됐다 — 대조군 19MB↔9.8MB, maxPixelSize 정렬 효과는 시뮬레이터에서만 재현).
 
 ## 측정 환경
 
@@ -17,7 +23,8 @@
 > 빌드 구성:          Debug | Release
 > 최적화 수준:        -Onone | -O   (SWIFT_OPTIMIZATION_LEVEL)
 > 테스트 플랜:        Rephoto_Performance
-> 반복/집계:          N회 반복, 평균 | 중앙값
+> 반복/집계:          N회 반복, 평균 | 중앙값 | max
+>                     (피크 측정은 max를 쓴다 — 사유는 「집계를 max로 쓰는 이유」 절)
 > 호스트(시뮬레이터만): (예: Apple M4 / Mac16,12, macOS 26)
 ```
 
@@ -193,7 +200,7 @@ C_cgdraw가 이론값과 0.2% 일치, D가 출력 JPEG 크기와 일치, A/B의 
 
 | 경로 | 메모리 피크 delta (5회) | 처리 시간 | 페이로드 |
 |---|---|---|---|
-| 풀디코드 대조군: UIImage 전체 디코드 + 재인코딩 (`test_fullDecodeControl_peakDelta`) | +19.1, +19.1, +19.5, +19.3, +17.2 MB | ~0.25s | — (페이로드 비교 대상 아님) |
+| 다운샘플 없는 대조군: UIImage 전체 디코드 + 재인코딩 (`test_undownsampledReencode_peakDelta`) | +19.1, +19.1, +19.5, +19.3, +17.2 MB | ~0.25s | — (페이로드 비교 대상 아님) |
 | 현재: ImageIO 다운샘플 2048px (`PhotoMetadataExtractor.extract`) | +171.1(워밍업), +49.1, +50.4, +50.4, +50.4 MB | ~0.17s | **1,547KB (레거시 앱 5,733KB 대비 −73%)** |
 
 > **라벨 정정 (2026-08-02)**: 위 대조군은 종전에 "레거시"로 표기했으나, 리팩토링 전 앱의 재현이 아니다.
@@ -238,7 +245,7 @@ C_cgdraw가 이론값과 0.2% 일치, D가 출력 JPEG 크기와 일치, A/B의 
 
 | 테스트 | 실기기 Release | (참고) 시뮬레이터 Debug |
 |---|---|---|
-| `test_fullDecodeControl_peakDelta` | +9.8, 9.3, 9.8, 9.7, 8.7 MB · **0.146s** | +17.2~19.5MB · ~0.25s |
+| `test_undownsampledReencode_peakDelta` | +9.8, 9.3, 9.8, 9.7, 8.7 MB · **0.146s** | +17.2~19.5MB · ~0.25s |
 | `test_current_downsampleExtract_peakDelta` | +26.3(콜드), 19.5, 19.7, 19.7, 19.7 MB · **0.023s** | +28.7MB · 0.12s (#49 수정 후) |
 
 **옵션 대조 실험 (`test_downsampleOptions_experiment`) — 실기기**
@@ -286,7 +293,7 @@ C_cgdraw가 이론값과 0.2% 일치, D가 출력 JPEG 크기와 일치, A/B의 
 
 ## DecodeVariantBenchTests (디코드 변형 대조 — 2026-08-02, 실기기 Release)
 
-> **목적**: 위 "풀디코드 대조군"이 왜 이론값(4032×3024×4 ≈ 46.5MB)의 절반도 안 나오는가.
+> **목적**: 위 "다운샘플 없는 대조군"이 왜 이론값(4032×3024×4 ≈ 46.5MB)의 절반도 안 나오는가.
 > 가설 (a) `UIImage` lazy decoding으로 애초에 디코드하지 않음,
 > (b) 디코더가 서브샘플 YUV(1.5~2B/px)로 풂.
 
@@ -304,9 +311,9 @@ C_cgdraw가 이론값과 0.2% 일치, D가 출력 JPEG 크기와 일치, A/B의 
 | `A_lazy` — `UIImage(data:)`만 | **+0.2MB** | +0.0 | ~0 | 디코드 없음 ✔ |
 | `B_prepared` — `preparingForDisplay()` | **+17.2MB** | +0.0 (캐시) | **1.48** | YUV 4:2:0 = 1.5B/px (18.3MB) — 6% 이내 |
 | `C_cgdraw` — RGBA 8bit `CGContext` draw | +139.7 (콜드) / **+46.6** | +46.3~46.7 | **4.01** | RGBA 8888 = 4B/px (46.5MB) — **오차 0.2%** |
-| `D_legacy_control` — 기존 대조군 복사본 | +15.2 (콜드) / **+9.8** | +9.8 | 0.84 | 어떤 픽셀 포맷과도 불일치 |
+| `D_undownsampled` — 기존 대조군 복사본 | +15.2 (콜드) / **+9.8** | +9.8 | 0.84 | 어떤 픽셀 포맷과도 불일치 |
 
-원본 `UploadMemoryBenchmark.test_fullDecodeControl_peakDelta`도 같은 세션에서
+원본 `UploadMemoryBenchmark.test_undownsampledReencode_peakDelta`도 같은 세션에서
 **+8.7~9.8MB**를 냈다. 서로 다른 코드 경로가 일치하므로 D 값은 신뢰할 수 있다.
 
 ### 2세대 교차 검증 — iPhone SE 2 / A13 · iOS 26.6 정식 (2026-08-03)
@@ -316,7 +323,7 @@ C_cgdraw가 이론값과 0.2% 일치, D가 출력 JPEG 크기와 일치, A/B의 
 | `A_lazy` | +0.0MB | +0.2MB | 디코드 없음 ✔ |
 | `B_prepared` | **+17.2MB** | **+17.2MB** | YUV 4:2:0 = 18.3MB |
 | `C_cgdraw` | +141.5(콜드) / **+93.1** | +139.7(콜드) / **+46.6** | RGBA 46.5MB (×2 / ×1) |
-| `D_legacy_control` | +11.4(콜드) / **+19.1** | +15.2(콜드) / **+9.8** | — |
+| `D_undownsampled` | +11.4(콜드) / **+19.1** | +15.2(콜드) / **+9.8** | — |
 
 **두 기기에서 같은 것 (교란 요인과 무관하게 안전)**
 
@@ -329,7 +336,7 @@ C_cgdraw가 이론값과 0.2% 일치, D가 출력 JPEG 크기와 일치, A/B의 
 
 ### ⚠️ 미해결: D의 9.8 ↔ 19.1MB 차이 — 칩 세대와 OS를 분리하지 못했다
 
-`D_legacy_control`이 A13에서 **19.1MB**(1.64B/px, YUV 4:2:0의 18.3MB에 근접),
+`D_undownsampled`이 A13에서 **19.1MB**(1.64B/px, YUV 4:2:0의 18.3MB에 근접),
 A16에서 **9.8MB**(출력 JPEG 크기와 일치)다. 해석하면 A13은 `jpegData()` 경로가 풀해상도
 YUV 버퍼를 상주시키고, A16은 비트맵 없이 출력 버퍼만 든다는 뜻이 된다.
 
@@ -341,7 +348,7 @@ OS 버전(26.6 정식 vs 27.0 beta) **양쪽 모두 다르기 때문**이다. �
 - 참고로 시뮬레이터 Debug의 D도 +19.1MB로 A13과 같았다. 포트폴리오에 쓰였던 "+19MB"는
   **폐기된 값이 아니라 A13에서 재현되는 값**이었다.
 
-> **재측정 계획**: iPhone 14 Pro를 **정식 iOS 27**로 올린 뒤 `test_D_legacyControl_peakDelta`를
+> **재측정 계획**: iPhone 14 Pro를 **정식 iOS 27**로 올린 뒤 `test_D_undownsampled_peakDelta`를
 > 다시 돌린다. 9.8MB가 유지되면 칩 세대 차이, 19.1MB로 바뀌면 베타 OS 차이다.
 > 그전까지 이 항목은 **결론 없음**으로 두고, 포트폴리오·문서에 어느 쪽으로도 서술하지 않는다.
 
@@ -359,10 +366,15 @@ OS 버전(26.6 정식 vs 27.0 beta) **양쪽 모두 다르기 때문**이다. �
 (A16 46.6 ≈ ×1, A13 93.1 ≈ ×2). 디코더가 46.5MB를 못 만드는 게 아니라,
 **대조군이 그걸 요구한 적이 없다.**
 
-> **결론: `test_fullDecodeControl_peakDelta`는 이름이 틀렸다.** 어느 기기에서도 풀디코드
-> (RGBA 46.5MB)가 일어나지 않는다. "다운샘플 없는 디코드+재인코딩 경로"일 뿐이다.
+> **결론: 이 대조군은 풀디코드가 아니다.** 어느 기기에서도 풀사이즈 RGBA(46.5MB)가
+> 일어나지 않는다. "다운샘플 없는 디코드+재인코딩 경로"일 뿐이다.
 > 이 벤치를 "풀디코드 대비 −N%" 같은 메모리 개선 근거로 쓰면 안 된다.
 > (#34의 실증된 효과는 **페이로드 −73% + 처리 시간 −30%(A16)·−27%(A13)**이다.)
+>
+> **개명 이력 (2026-08-03)**: 이 발견에 따라 테스트 이름을
+> `test_fullDecodeControl_peakDelta` → **`test_undownsampledReencode_peakDelta`**,
+> 디코드 변형의 `D_legacy_control` → **`D_undownsampled`**로 바꿨다.
+> 이전 커밋·이슈에서 옛 이름을 보면 같은 테스트로 읽으면 된다.
 >
 > 다만 **그 메모리가 무엇으로 채워지는지는 기기/OS마다 다르다** — A16에서는 출력 JPEG(9.8MB),
 > A13에서는 YUV 버퍼(19.1MB)로 보인다. 원인은 위 "미해결" 절 참조. 확정 전까지는
@@ -454,7 +466,7 @@ Release `-O` + wholemodule에서 컴파일러가 루프 불변으로 판정해 �
 
 ## 요약
 
-> ⚠️ 아래 전부 시뮬레이터 + Debug 측정, 실기기 재측정 예정
+> ⚠️ 아래 표는 **레거시 baseline(시뮬레이터 + Debug)** 만 모은 것이다. 실기기 Release 수치는 각 섹션 참조.
 
 | 테스트 | Clock (s) | Memory Peak (kB) |
 |---|---|---|

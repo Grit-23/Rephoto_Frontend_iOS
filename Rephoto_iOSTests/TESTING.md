@@ -52,7 +52,7 @@
 
 #### `DecodeVariantBenchTests` — 디코드 변형 대조 (4개)
 
-**목적**: `UploadMemoryBenchmark`의 "풀디코드 대조군"이 이론값(4032×3024×4 ≈ 46.5MB)의
+**목적**: `UploadMemoryBenchmark`의 "다운샘플 없는 대조군"이 이론값(4032×3024×4 ≈ 46.5MB)의
 절반도 안 나오는 이유를 가른다. 가설 (a) `UIImage` lazy decoding으로 애초에 디코드하지 않음,
 (b) 디코더가 서브샘플 YUV(1.5~2B/px)로 풂.
 
@@ -66,7 +66,7 @@
 | `test_A_lazy_peakDelta` | `UIImage(data:)` 생성만 — 디코드 강제 없음 |
 | `test_B_prepared_peakDelta` | `UIImage(data:).preparingForDisplay()` — UIKit이 고른 포맷으로 즉시 디코드 |
 | `test_C_cgdraw_peakDelta` | `CGImageSource` → RGBA 8bit `CGContext` draw — 포맷을 못박은 강제 풀디코드 |
-| `test_D_legacyControl_peakDelta` | 기존 대조군(`test_fullDecodeControl_peakDelta`)의 작업 구간 복사본 |
+| `test_D_undownsampled_peakDelta` | 기존 대조군(`test_undownsampledReencode_peakDelta`)의 작업 구간 복사본 |
 
 각 메서드가 5회 반복 후 `🧪 [B_prepared] max: 17.2MB  (runs: +17.2MB, +0.0MB, …)` 형태로 출력한다.
 입력과 `FootprintSampler`는 `UploadMemoryBenchmark`와 공유한다 — 동일 조건을 보장하기 위해서다.
@@ -94,7 +94,7 @@
 ```bash
 # 변형별로 하나씩 (권장). UDID는 xcrun devicectl list devices 로 확인
 for M in test_A_lazy_peakDelta test_B_prepared_peakDelta \
-         test_C_cgdraw_peakDelta test_D_legacyControl_peakDelta; do
+         test_C_cgdraw_peakDelta test_D_undownsampled_peakDelta; do
   xcodebuild test -project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS \
     -testPlan Rephoto_Performance -configuration Release \
     -destination 'platform=iOS,id=<UDID>' \

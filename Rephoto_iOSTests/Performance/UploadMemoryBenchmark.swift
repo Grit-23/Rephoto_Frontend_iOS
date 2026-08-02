@@ -4,7 +4,7 @@
 //
 //  Created by 김도연 on 7/23/26.
 //
-//  업로드 전처리 메모리 피크 비교: 풀디코드 대조군(전체 디코드 + 재인코딩) vs 현재(ImageIO 다운샘플, #34)
+//  업로드 전처리 메모리 피크 비교: 다운샘플 없는 대조군(전체 디코드 + 재인코딩) vs 현재(ImageIO 다운샘플, #34)
 //  측정 결과는 BASELINE_RESULTS.md에 기록.
 //
 //  라벨 정정(2026-08-02): 대조군은 리팩토링 전 앱의 재현이 아니다. 실제 레거시 앱(#34 이전)은
@@ -36,7 +36,9 @@ final class UploadMemoryBenchmark: XCTestCase {
 
     // MARK: - 입력 픽스처
 
-    private static let photoExtensions = ["jpg", "jpeg", "heic", "png"]
+    // png 제외 — fixtureURL()이 "가장 큰 파일"을 고르므로 큰 PNG 스크린샷이 섞이면
+    // 카메라 원본 대신 선택되어 디코드·재인코딩 조건이 문서 기재와 달라진다
+    private static let photoExtensions = ["jpg", "jpeg", "heic"]
 
     // 시뮬레이터 테스트는 호스트 파일시스템을 그대로 읽을 수 있으므로 #filePath 기준 상대 경로 사용
     private static let originalsDir = URL(fileURLWithPath: #filePath)
@@ -153,11 +155,18 @@ final class UploadMemoryBenchmark: XCTestCase {
         String(format: "%.1f", Double(bytes) / 1_048_576)
     }
 
-    // MARK: - 풀디코드 대조군: 전체 디코드 + 재인코딩
+    // MARK: - 다운샘플 없는 대조군: 전체 디코드 + 재인코딩
 
-    /// 풀디코드 대조군: 다운샘플 없이 원본 전체를 UIImage로 디코드(풀사이즈 비트맵 상주) 후 JPEG 재인코딩.
+    /// 다운샘플 없는 대조군: 원본을 그대로 `UIImage(data:)`로 받아 JPEG로 재인코딩한다.
+    ///
+    /// 이름 이력(2026-08-03): 종전 `test_fullDecodeControl_peakDelta`. 실기기 측정에서
+    /// 이 경로가 **풀사이즈 RGBA 비트맵을 상주시키지 않는다는 것이 확인**되어 개명했다
+    /// (A16 9.8MB ≈ 출력 JPEG 크기, A13 19.1MB ≈ YUV 4:2:0). 픽셀 포맷을 못박은 강제
+    /// 풀디코드는 `DecodeVariantBenchTests.test_C_cgdraw_peakDelta` 쪽이며, 거기서는
+    /// 이론값(4032×3024×4 ≈ 46.5MB)의 정수배가 나온다. 상세는 BASELINE_RESULTS.md.
+    ///
     /// 주의: 리팩토링 전 앱의 재현이 아니다 — 레거시는 픽셀을 디코드하지 않고 원본을 그대로 업로드했다.
-    func test_fullDecodeControl_peakDelta() throws {
+    func test_undownsampledReencode_peakDelta() throws {
         let url = try Self.fixtureURL()
         let data = try Data(contentsOf: url)
         print("🧪 [입력] \(Self.describe(url, data))")
@@ -176,7 +185,7 @@ final class UploadMemoryBenchmark: XCTestCase {
             let peak = sampler.stopPeak()
             lines.append("run\(i): peakDelta +\(mb(peak - baseline))MB, \(String(format: "%.3f", dt))s")
         }
-        print("🧪 [풀디코드 대조군: 전체 디코드+재인코딩]\n" + lines.joined(separator: "\n"))
+        print("🧪 [다운샘플 없는 대조군: 전체 디코드+재인코딩]\n" + lines.joined(separator: "\n"))
     }
 
     // MARK: - 현재 경로: ImageIO 다운샘플 (실제 프로덕션 코드)
