@@ -9,11 +9,11 @@
 
 ## 무엇을 테스트하는가
 
-### 네트워크 코어 — `Network/` (30 케이스)
+### 네트워크 코어 — `Network/` (32 케이스)
 
 | 스위트 | 검증 대상 |
 |---|---|
-| `NetworkClient` (9) | Bearer 주입 / 공개 경로 제외, 401 후 갱신·재시도, 갱신 실패 시 `onRefreshFailed`, **동시 401 20건에도 갱신 정확히 1회**(thundering-herd 방지) |
+| `NetworkClient` (11) | Bearer 주입 / 공개 경로 제외, 401 후 갱신·재시도, 갱신 실패 시 `onRefreshFailed`, **동시 401 20건에도 갱신 정확히 1회**(thundering-herd 방지), **실패 통지는 세션당 1회**(`hasNotifiedRefreshFailure` — 갱신 Task는 dedup으로 1개가 되지만 그 실패는 대기 중인 요청 전원에게 전달되므로 통지도 접는다) 및 **세션 복구 후 재통지** |
 | `NetworkAdapter` (8) | `APITargetType` → `URLRequest` 조립. `.plain` / `.jsonEncodable` / `.multipart` 3경로와 헤더 우선순위 |
 | `KeychainTokenStore` (6) | 저장·조회·덮어쓰기·삭제, service 격리, actor 직렬화 하 동시 접근 |
 | `DefaultAuthenticationPolicy` (4) | 공개/보호 경로 판정. `/relogin` `/joint` 같은 유사 경로가 공개로 새지 않는지 |
@@ -154,7 +154,7 @@ Swift Testing은 스위트 간에도 병렬 실행하므로, `.serialized`를 �
 
 | 테스트 플랜 | 대상 | 시점 |
 |---|---|---|
-| `Rephoto_iOS.xctestplan` | 단위 테스트 79케이스 (성능 제외) | PR / push · CI 게이트 |
+| `Rephoto_iOS.xctestplan` | 단위·계약 테스트 81케이스 (성능 제외) | PR / push · CI 게이트 |
 | `Rephoto_Performance.xctestplan` | 벤치마크 37케이스만 | 수동 · baseline 대조 |
 
 플랜만 분리하고 **테스트 타겟은 1개**로 유지한다. 단일 앱 타겟이라 어느 쪽이든
