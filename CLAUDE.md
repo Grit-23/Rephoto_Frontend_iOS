@@ -14,7 +14,7 @@
 ## 기술 스택
 
 - **Swift 5 / SwiftUI** (iOS 26.0+)
-- **Moya** — 엔드포인트 선언(`TargetType` DSL)만 사용. 실제 네트워킹은 URLSession 기반 자체 `NetworkClient`(actor)가 수행하고, `MoyaNetworkAdapter`가 `TargetType` → `URLRequest` 변환 담당
+- **자체 네트워크 DSL** — Moya는 PR #46에서 **완전 제거**됨(SPM 6개 → 2개). 엔드포인트 선언은 자체 `APITargetType` 프로토콜, 요청 조립은 `NetworkAdapter`(`APITargetType` → `URLRequest`), 실행·인증은 URLSession 기반 `NetworkClient`(actor)가 담당
 - **Factory** — DI (`@Injected`, `AppContainer`). DEBUG 빌드에서 Mock provider 자동 주입
 - **Nuke** — 이미지 비동기 로딩 & 캐싱
 - **SPM** — 패키지 관리
@@ -31,13 +31,14 @@ Rephoto_iOS/
 │   ├── Error/        — NetworkError, RepositoryError
 │   └── NetworkAdapter/
 │       ├── NetworkClient/ — NetworkClient(actor), TokenStoreProtocol, TokenPair, DefaultAuthenticationPolicy
-│       ├── TokenRefreshService/ — TokenRefreshServiceImpl, MoyaNetworkAdapter
-│       └── APITargetType, AuthSystemFactory
+│       ├── TokenRefreshService/ — TokenRefreshServiceImpl
+│       ├── Base/            — HTTPMethod, RequestTask, MultipartFormItem, NetworkResponse
+│       └── APITargetType, NetworkAdapter, AuthSystemFactory
 ├── Features/             — 각 Feature는 Data/Domain/Presentation 3계층 동일 구조
 │   ├── Home/             — 사진 그리드, 업로드, 사진 상세(태그/설명)
-│   ├── Search/           — 자연어 검색(onSubmit 시점), 태그 앨범
+│   ├── Search/           — 자연어 검색(300ms 디바운스 + generation 가드), 태그 앨범
 │   ├── User/             — 로그인(LoginView), 세션(SessionStore)
-│   ├── Settings/         — 설정 (현재 placeholder, #43에서 구현 예정)
+│   ├── Settings/         — 설정 화면 (#43/PR #52에서 구현 완료)
 │   └── RephotoTabView.swift — 탭 루트 뷰
 ├── Resources/        — Colors.xcassets, Assets.xcassets, 공용 컴포넌트(CTAButton), MockImages(DEBUG 데모용 사진)
 └── Utilities/
@@ -74,12 +75,15 @@ Presentation → Domain ← Data
 # Xcode에서 빌드
 Cmd + B
 
-# 테스트 실행 (성능 벤치마크 포함 19개)
+# 테스트 실행
 Cmd + U
 ```
 
+- **테스트 플랜 2개**
+  - `Rephoto_iOS` — 단위·계약 81케이스 (성능 스위트 skip). CI 게이트가 이걸 돌린다
+  - `Rephoto_Performance` — 성능 벤치 37개 (회귀 감시용 baseline 대조 19 + A/B·측정 전용 18). 수동 실행
 - 성능 테스트 baseline은 `Rephoto_iOSTests/BASELINE_RESULTS.md`에 기록
-- 테스트 가이드: `Rephoto_iOSTests/TEST_GUIDE.md`
+- 테스트 가이드: `Rephoto_iOSTests/TEST_GUIDE.md`, 프레임워크 선택 기준: `TESTING.md`
 
 ## 커밋 컨벤션
 
@@ -97,15 +101,15 @@ PR 템플릿: `.github/pull_request_template.md`
 ## 네트워크 플로우
 
 1. ViewModel → UseCase → Repository(프로토콜 구현)
-2. Repository → NetworkClient(actor): `MoyaNetworkAdapter`가 `TargetType` → `URLRequest` 변환, URLSession으로 실행
+2. Repository → NetworkClient(actor): `NetworkAdapter`가 `APITargetType` → `URLRequest` 변환, URLSession으로 실행
 3. NetworkClient가 Bearer 토큰 자동 주입, 401 응답 시 TokenRefreshService로 갱신 후 재시도 (동시 갱신은 단일 Task로 직렬화)
 4. DTO → Domain Model 매핑은 Data 레이어(Repository)에서 수행 — Presentation은 Domain Model만 사용
 
 ## 사진 업로드 플로우
 
 1. `PhotosPicker`(SwiftUI)로 사진 선택
-2. `PhotoMetadataExtractor`가 EXIF/GPS 메타데이터 추출 — `TaskGroup`으로 병렬 처리
-3. 업로드 전 이미지 다운샘플 + JPEG 압축 (ImageIO, #34)
+2. `HomeViewModel.handlePickedPhotos`가 `TaskGroup`으로 장별 병렬 처리 → 각 Task가 `ExtractPhotoMetadataUseCase` → `PhotoMetadataExtractor`(EXIF/GPS 추출)
+3. 업로드 전 이미지 다운샘플 + JPEG 압축 (ImageIO, #34 · 경계 정렬 #50)
 4. S3 업로드 (`PhotosAPITarget.s3Upload`) → 메타데이터 일괄 저장 (`PhotosAPITarget.savePhotosBatch`)
 
 ---
@@ -114,11 +118,17 @@ PR 템플릿: `.github/pull_request_template.md`
 
 핵심 역량 (아키텍처, Concurrency, 모듈화, 테스트, CI/CD) 중심 포트폴리오 강화.
 
-> **진행 현황 (2026-07 기준)**: Step 1~3 완료. Step 6 일부 완료(GitHub Actions 빌드 검증). Step 7 일부 완료(이미지 압축 #34).
-> 현재 작업: SwiftUI 관찰 성능·뷰 구조 개선 + UI 마무리 — 열린 이슈 #35, #40~#43 참조. UI 작업 완료 후 포트폴리오 마무리 예정.
+> **진행 현황 (2026-08-03 기준)**: **열린 이슈 0개 — 코드 작업 종료.**
+> - Step 1~3 **완료** (#14·#21·#23·#27·#44 / #29·#32 / #31)
+> - Step 4 (Tuist 멀티모듈) — **유일한 미착수 항목**
+> - Step 5 **부분 완료**: 단위·계약 테스트 81케이스(Swift Testing 69 + XCTest 12), 성능 플랜 37개(회귀 감시용 baseline 대조 19). 미완: UseCase 전수 테스트, UI Test
+> - Step 6 **부분 완료**: PR마다 빌드 + 유닛 플랜 실행 + `xccov` 커버리지 요약(#56). 미완: SwiftLint 워크플로, Fastlane TestFlight
+> - Step 7 **부분 완료**: DateFormatter static 캐싱, 이미지 다운샘플·압축(#34·#50), Home 관찰 성능(#47·#59), 검색 디바운스(#53). 미완: ETag 캐시, Dictionary O(1) 태그 조회
+>
+> 남은 작업: 포트폴리오 마무리.
 
 ### Step 1. ✅ Clean Architecture + DI 전환 (완료)
-**현재**: ViewModel 내부에서 MoyaProvider 직접 생성. 레이어 경계 없음. 테스트 시 stub 주입 불가.
+**리팩토링 전**: ViewModel 내부에서 MoyaProvider 직접 생성. 레이어 경계 없음. 테스트 시 stub 주입 불가.
 **목표**:
 - Feature별 Data/Domain/Presentation 3레이어 분리
 - Domain 레이어에 UseCase 프로토콜 정의 → Implementations/ 에 구현체
@@ -127,7 +137,7 @@ PR 템플릿: `.github/pull_request_template.md`
 - DTO → Domain Model 매핑을 Data 레이어에 격리 (Presentation은 Domain Model만 사용)
 
 ### Step 2. ✅ Token 관리 — Keychain + Actor (완료)
-**현재**: UserDefaults에 토큰 직접 저장. 보안 취약 + 매 읽기/쓰기마다 디스크 I/O. race condition 가능성.
+**리팩토링 전**: UserDefaults에 토큰 직접 저장. 보안 취약 + 매 읽기/쓰기마다 디스크 I/O. race condition 가능성.
 **목표**:
 - KeychainTokenStore를 Swift actor로 구현 → thread-safe 보장
 - 메모리 캐시 레이어 추가 (Keychain 접근 최소화)
@@ -136,7 +146,7 @@ PR 템플릿: `.github/pull_request_template.md`
 - 토큰 만료/갱신/삭제 시나리오별 에러 처리 (로그아웃 유도 포함)
 
 ### Step 3. ✅ Swift Concurrency 전면 전환 (완료)
-**현재**: `Data(contentsOf:)` 동기 로딩 + for loop 순차 처리. completion handler 혼재. 메인 스레드 블로킹.
+**리팩토링 전**: `Data(contentsOf:)` 동기 로딩 + for loop 순차 처리. completion handler 혼재. 메인 스레드 블로킹.
 **목표**:
 - async/await 전면 도입. completion handler 전량 제거
 - TaskGroup으로 사진 병렬 로딩 (HomeViewModel.handlePickedItems())
@@ -146,7 +156,7 @@ PR 템플릿: `.github/pull_request_template.md`
 - 네트워크 레이어 async화: MoyaProvider → async wrapper
 
 ### Step 4. Tuist + 멀티모듈 분리
-**현재**: 단일 앱 타겟. .xcodeproj 직접 관리. Feature 간 암묵적 의존.
+**현재(미착수)**: 단일 앱 타겟. .xcodeproj 직접 관리. Feature 간 암묵적 의존.
 **목표**:
 - Tuist manifest (Project.swift) 기반 프로젝트 생성
 - Core 모듈: Network, DI, Navigation, Common (공유 인프라)
@@ -154,17 +164,19 @@ PR 템플릿: `.github/pull_request_template.md`
 - 모듈 간 의존성 단방향 강제 (Feature → Core, Feature ✕→ Feature)
 - Feature 모듈별 독립 빌드/테스트 가능하도록 타겟 분리
 
-### Step 5. 테스트 커버리지 강화
-**현재**: 성능 벤치마크 19개 존재. UseCase/ViewModel 단위 테스트 없음. UI 테스트 없음.
+### Step 5. 🔶 테스트 커버리지 강화 (부분 완료)
+**리팩토링 전**: 성능 벤치마크만 존재. UseCase/ViewModel 단위 테스트 없음. UI 테스트 없음.
+**현재**: 단위·계약 81케이스(Network 32 · APITarget 계약 37 · Presentation 12) + 성능 플랜 37개. UseCase 전수 테스트와 UI Test는 미완.
 **목표**:
 - Domain UseCase 단위 테스트: mock repository 주입하여 비즈니스 로직 검증
 - ViewModel 상태 테스트: UseCase mock 주입 → 입력 이벤트 → 상태 변화 assertion
-- Network 레이어 stub 테스트: Moya의 stubClosure 활용한 응답 시나리오 검증
+- Network 레이어 stub 테스트: `StubURLProtocol`로 응답 시나리오 검증 (Moya stubClosure 대체)
 - UI Test: 로그인 → 사진 목록 → 업로드 핵심 플로우 자동화
 - 모듈별 독립 테스트 타겟 (Step 4 Tuist 구조 활용)
 
-### Step 6. CI/CD (GitHub Actions + Fastlane)
-**현재**: 수동 빌드/배포. 코드 스타일 규칙 미적용.
+### Step 6. 🔶 CI/CD (GitHub Actions + Fastlane) (부분 완료)
+**리팩토링 전**: 수동 빌드/배포. 코드 스타일 규칙 미적용.
+**현재**: `iOS.yml` 하나가 PR마다 `build-for-testing` → `test-without-building`(`-testPlan Rephoto_iOS`) → `xcrun xccov` 커버리지 요약까지 수행(#56). SwiftLint 워크플로와 Fastlane은 미착수.
 **목표**:
 - GitHub Actions workflow: PR 생성 시 자동 빌드 + 전체 테스트 실행
 - SwiftLint 자동 체크 (PR에 violation 코멘트)
@@ -172,8 +184,9 @@ PR 템플릿: `.github/pull_request_template.md`
 - 코드 커버리지 리포트 자동 생성 + PR에 첨부
 - Tuist 기반 빌드이므로 `tuist generate` → `xcodebuild` 파이프라인
 
-### Step 7. 성능 최적화
-**현재**: DateFormatter 매번 생성, 이미지 원본 업로드, fetchPhotos() 전체 교체, 태그 배열 선형 검색.
+### Step 7. 🔶 성능 최적화 (부분 완료)
+**리팩토링 전**: DateFormatter 매번 생성, 이미지 원본 업로드, fetchPhotos() 전체 교체, 태그 배열 선형 검색.
+**현재**: DateFormatter static 캐싱 완료, 이미지 다운샘플·압축 완료(#34·#50 — 페이로드 −73%, 처리 시간 −22~24%), Home 파생 컬렉션 didSet 캐싱(#47·#59). ETag 캐시와 Dictionary O(1) 태그 조회는 미완(`PhotoInfoViewModel`이 아직 `firstIndex` 선형 검색).
 **목표**:
 - DateFormatter static 캐싱 또는 ISO8601DateFormatter 전환
 - 업로드 전 이미지 압축 (quality 0.7~0.8)
