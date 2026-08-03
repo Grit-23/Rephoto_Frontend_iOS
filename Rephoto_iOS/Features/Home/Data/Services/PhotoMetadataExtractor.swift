@@ -41,10 +41,11 @@ struct PhotoMetadataExtractor: PhotoMetadataExtractorProtocol {
         // 경계에 안 맞으면(예: 4032px 원본에 2048 요청) ImageIO가 풀사이즈로 디코드한 뒤 축소한다.
         //
         // 효과 (실기기 Release 실측, BASELINE_RESULTS.md):
-        //   - 처리 시간 −22%(A16) / −24%(A13) — 세대 무관하게 재현됨
+        //   - 처리 시간 −22%(A16) / −24%(A13) — 측정한 두 세대(A13·A16)에서 재현됨
         //   - 메모리 피크: 개선 없음. 시뮬레이터에서는 +50→+28MB로 보였으나 실기기에서는
-        //     네 변형이 전부 +19.7~20.0MB로 동일하다(A13·A16 양쪽). 기기의 하드웨어 디코더는
-        //     목표 크기와 무관하게 같은 메모리를 쓴다 — 시뮬레이터 한정 아티팩트로 확정.
+        //     네 변형의 워밍업 이후 값이 전부 +19.7~20.0MB로 동일하다(A13·A16 양쪽).
+        //     콜드 런은 변형별로 흔들린다(+37.8 / +1.7 / +24.2MB) — 비교는 반복 측정값으로 한다.
+        //     기기의 하드웨어 디코더는 목표 크기와 무관하게 같은 메모리를 쓴다 — 시뮬레이터 한정 아티팩트.
         let pxW = properties[kCGImagePropertyPixelWidth as String] as? Int ?? 0
         let pxH = properties[kCGImagePropertyPixelHeight as String] as? Int ?? 0
         let longerSide = max(pxW, pxH)

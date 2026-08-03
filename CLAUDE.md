@@ -101,7 +101,7 @@ PR 템플릿: `.github/pull_request_template.md`
 ## 네트워크 플로우
 
 1. ViewModel → UseCase → Repository(프로토콜 구현)
-2. Repository → NetworkClient(actor): `NetworkAdapter`가 `APITargetType` → `URLRequest` 변환, URLSession으로 실행
+2. Repository → `NetworkAdapter` → NetworkClient(actor): 어댑터가 `APITargetType` → `URLRequest`로 조립하고(baseURL은 어댑터가 주입받아 소유), NetworkClient가 URLSession으로 실행
 3. NetworkClient가 Bearer 토큰 자동 주입, 401 응답 시 TokenRefreshService로 갱신 후 재시도 (동시 갱신은 단일 Task로 직렬화)
 4. DTO → Domain Model 매핑은 Data 레이어(Repository)에서 수행 — Presentation은 Domain Model만 사용
 
@@ -186,7 +186,7 @@ PR 템플릿: `.github/pull_request_template.md`
 
 ### Step 7. 🔶 성능 최적화 (부분 완료)
 **리팩토링 전**: DateFormatter 매번 생성, 이미지 원본 업로드, fetchPhotos() 전체 교체, 태그 배열 선형 검색.
-**현재**: DateFormatter static 캐싱 완료, 이미지 다운샘플·압축 완료(#34·#50 — 페이로드 −73%, 처리 시간 −22~24%), Home 파생 컬렉션 didSet 캐싱(#47·#59). ETag 캐시와 Dictionary O(1) 태그 조회는 미완(`PhotoInfoViewModel`이 아직 `firstIndex` 선형 검색).
+**현재**: DateFormatter static 캐싱 완료, 이미지 다운샘플·압축 완료(#34·#50 — 페이로드 −74%, 처리 시간 −22%(A16)·−24%(A13)), Home 파생 컬렉션 didSet 캐싱(#47·#59). ETag 캐시와 Dictionary O(1) 태그 조회는 미완(`PhotoInfoViewModel`이 아직 `firstIndex` 선형 검색).
 **목표**:
 - DateFormatter static 캐싱 또는 ISO8601DateFormatter 전환
 - 업로드 전 이미지 압축 (quality 0.7~0.8)
