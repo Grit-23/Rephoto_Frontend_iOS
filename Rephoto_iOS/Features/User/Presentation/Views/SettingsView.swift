@@ -74,10 +74,6 @@ private struct VersionRow: View {
             Text(version)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(.labelTertiary)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.labelTertiary)
         }
         .padding(.leading, 12)
         .padding(.trailing, 16)
