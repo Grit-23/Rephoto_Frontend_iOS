@@ -1,94 +1,70 @@
-# Rephoto iOS
+# Rephoto
 
-> 고령층을 위한 AI 사진 찾기 앱 — 사진을 올리면 AI가 자동으로 설명·태그를 달고, 자연어로 검색할 수 있습니다.
+고령층을 위한 AI 사진 관리 앱 — 사진을 올리면 AI가 자동으로 설명과 태그를 달아주고, 일상적인 문장으로 사진을 찾을 수 있습니다.
 
-<br>
+![Platform](https://img.shields.io/badge/platform-iOS%2026.0%2B-blue)
+![Swift](https://img.shields.io/badge/Swift-5-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## 프로젝트 개요
+## 스크린샷
 
-- **기간**: 2025.04 ~ 2025.08
-- **인원**: iOS 1 · Backend 2 · AI 1 (총 4명)
-- **담당**: iOS 앱 **단독 개발** — 아키텍처 설계부터 네트워크 레이어·전체 화면 구현까지
-
-<br>
+| 홈 | 사진 상세 | 자연어 검색 |
+|:---:|:---:|:---:|
+| ![홈](docs/screenshots/home.png) | ![사진 상세](docs/screenshots/photo-detail.png) | ![자연어 검색](docs/screenshots/search.png) |
 
 ## 주요 기능
 
-| 기능 | 설명 |
-|------|------|
-| 📷 **사진 업로드 + AI 분석** | 사진을 올리면 서버 AI(VLM)가 자동으로 설명·태그를 생성 |
-| 🔍 **자연어 검색** | "바다에서 찍은 사진"처럼 문장으로 사진을 검색 |
-| 🗂 **태그 기반 앨범** | 생성된 태그로 사진을 자동 분류해 앨범으로 제공 |
-| ⚠️ **개인정보 감지 경고** | 개인정보 및 문서가 포함된 사진 분류 표시 |
+- **사진 업로드 + AI 분석** — 사진을 올리면 서버의 VLM이 자동으로 설명과 태그를 생성합니다. 여러 장을 선택하면 병렬로 업로드됩니다.
+- **자연어 검색** — "바다에서 찍은 사진"처럼 문장으로 사진을 검색할 수 있습니다.
+- **태그 앨범** — AI가 생성한 태그로 사진을 자동 분류해 앨범으로 보여줍니다.
+- **태그 편집** — 사진 상세에서 태그를 직접 추가·수정·삭제할 수 있습니다.
+- **민감한 사진 보호** — 개인정보나 문서가 포함된 사진은 홈에서 분리되고, Face ID 인증 후에만 볼 수 있습니다.
+- **위치 정보** — 촬영 시점의 GPS 정보를 추출해 사진 상세에서 지도로 보여줍니다.
 
-<br>
+## 요구 사항
 
-## 기술 스택
+- iOS 26.0+
+- Xcode 26.0+
+- Swift 5
 
-| 구분 | 사용 기술 |
-|------|-----------|
-| **언어 / UI** | Swift, SwiftUI |
-| **아키텍처** | Clean Architecture (Data / Domain / Presentation), MVVM |
-| **비동기** | Swift Concurrency (`async/await`, `actor`) |
-| **DI** | [Factory](https://github.com/hmlongco/Factory) |
-| **네트워크** | URLSession 기반 자체 네트워크 레이어 (`APITargetType` DSL) |
-| **보안** | Keychain |
-| **이미지** | [Nuke](https://github.com/kean/Nuke) |
-| **패키지 관리** | Swift Package Manager |
-
-<br>
-
-## 사용 기술
-
-### 1. actor 기반 인증 네트워크 레이어
-- **`NetworkClient` (actor)** — 401 응답 시 토큰을 자동 갱신·재요청. 여러 요청이 동시에 갱신을 트리거해도 단일 `Task`로 직렬화해 중복 갱신과 race condition을 차단합니다.
-- **`KeychainTokenStore` (actor)** — Access/Refresh 토큰을 `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` 옵션으로 Keychain에 저장하고, refresh 저장 실패 시 access를 롤백해 부분 저장을 방지합니다.
-
-### 2. Moya 의존성 제거 (2단계 마이그레이션)
-- **1단계** — 엔드포인트 선언은 Moya `TargetType` DSL로 두고 실제 네트워킹만 `URLSession` 기반 자체 `NetworkClient`로 교체했습니다. Alamofire 런타임 의존을 먼저 끊어 마이그레이션 비용을 분산했습니다.
-- **2단계 ([#46](https://github.com/Grit-23/Rephoto_Frontend_iOS/pull/46))** — 선언 DSL도 자체 `APITargetType`으로 옮기고 `NetworkAdapter`가 `URLRequest` 변환·멀티파트 인코딩을 담당하게 해 **Moya 의존성을 완전히 제거**했습니다. 현재 외부 패키지는 Factory / Nuke 둘뿐입니다.
-- 서버 스펙이 바뀌어도 컴파일은 통과하고 런타임에서야 깨지는 계층이라, `APITarget` 6종의 `path`·`method`·`task`·`headers`를 37개 테스트로 값 고정해뒀습니다.
-
-### 3. TaskGroup 기반 병렬 업로드
-- 여러 장의 사진을 `withThrowingTaskGroup`으로 S3에 동시 업로드한 뒤, 메타데이터를 한 번에 batch 저장합니다.
-
-### 4. Factory DI + DEBUG Mock 자동 주입
-- `Factory`로 의존성을 등록하고, DEBUG 빌드에서는 `UseCaseProvider`를 Mock으로 자동 교체해 SwiftUI Preview·단위 테스트를 실제 네트워크 없이 격리합니다.
-
-<br>
-
-## 프로젝트 구조
+## 아키텍처
 
 기능(Feature) 단위로 폴더를 나누고, 각 기능을 Data / Domain / Presentation 3계층으로 분리했습니다.
 
 ```
 Rephoto_iOS/
 ├── App/              # 앱 진입점 (@main, ContentView)
-├── Core/             # 공통 인프라 (DI, 네트워크, 에러)
+├── Core/             # 공통 인프라
+│   ├── Config/           # 환경 설정 (BASE_URL)
+│   ├── DIContainer/      # Factory 기반 DI 컨테이너
+│   ├── Error/            # 공통 에러 타입
+│   └── NetworkAdapter/   # URLSession 기반 자체 네트워크 레이어
 ├── Features/
-│   ├── Home/         # 사진 목록·업로드·태그·설명
-│   ├── Search/       # 자연어 검색·앨범
-│   ├── User/         # 로그인·인증
-│   └── Settings/     # 설정·휴지통·도움말
-│       ├── Data/         # DTO · Repository · API Target
-│       ├── Domain/       # UseCase · Model · Interface
-│       └── Presentation/ # View · ViewModel
+│   ├── Home/         # 사진 그리드 · 업로드 · 상세(태그/설명)
+│   │   ├── Data/         # DTO · Repository 구현 · API Target
+│   │   ├── Domain/       # UseCase · Model · Repository 인터페이스
+│   │   └── Presentation/ # View · ViewModel
+│   ├── Search/       # 자연어 검색 · 태그 앨범
+│   ├── User/         # 로그인 · 세션
+│   └── Settings/     # 설정 (도메인 로직이 없어 Presentation만 존재)
+├── Resources/        # 에셋 · 공용 컴포넌트
 └── Utilities/        # Keychain, Extensions
 ```
 
-<br>
+### 설계 패턴
 
-## CI
+- **Clean Architecture + MVVM** — View → ViewModel → UseCase → Repository 단방향 의존. Presentation은 Domain Model만 사용하고, DTO 매핑은 Data 계층에 격리됩니다.
+- **Swift Concurrency** — `async/await` 전면 사용. 토큰 저장소와 네트워크 클라이언트는 `actor`로 구현해 동시 접근을 직렬화합니다.
+- **자체 네트워크 DSL** — 엔드포인트를 `APITargetType` 프로토콜로 선언하면 `NetworkAdapter`가 `URLRequest`로 조립하고, `NetworkClient`(actor)가 Bearer 토큰 주입과 401 시 토큰 자동 갱신·재시도를 처리합니다.
+- **의존성 주입** — Factory로 의존성을 등록하고, DEBUG 빌드에서는 Mock provider를 자동 주입해 SwiftUI Preview와 테스트를 네트워크 없이 격리합니다.
 
-- `main` 브랜치 push / PR 시 GitHub Actions가 빌드와 단위 테스트를 검증합니다.
-- 실행 환경: `macos-26`, `iPhone 17 Pro` 시뮬레이터
-- 테스트 플랜을 분리해 단위 테스트만 PR 게이트로 실행하고,
-  머신 편차가 큰 성능 벤치마크는 수동 실행합니다. (`Rephoto_iOSTests/TESTING.md`)
-- 코드 커버리지는 `xccov` 리포트로 Actions 요약에 출력됩니다.
-- SPM 캐시 적용으로 빌드 시간을 단축하고, 동일 브랜치 중복 실행은 자동 취소합니다.
+## 의존성
 
-<br>
+| 패키지 | 용도 |
+|--------|------|
+| [Factory](https://github.com/hmlongco/Factory) | 의존성 주입 |
+| [Nuke](https://github.com/kean/Nuke) | 이미지 비동기 로딩 · 캐싱 |
 
-## License
+## 라이선스
 
 [MIT License](LICENSE) © 2025 Grit-23
