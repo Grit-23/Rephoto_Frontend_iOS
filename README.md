@@ -45,8 +45,7 @@ Rephoto_iOS/
 │   │   ├── Domain/       # UseCase · Model · Repository 인터페이스
 │   │   └── Presentation/ # View · ViewModel
 │   ├── Search/       # 자연어 검색 · 태그 앨범
-│   ├── User/         # 로그인 · 세션
-│   └── Settings/     # 설정 (도메인 로직이 없어 Presentation만 존재)
+│   └── User/         # 로그인 · 세션 · 설정
 ├── Resources/        # 에셋 · 공용 컴포넌트
 └── Utilities/        # Keychain, Extensions
 ```

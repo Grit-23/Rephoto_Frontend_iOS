@@ -37,8 +37,7 @@ Rephoto_iOS/
 ├── Features/             — 각 Feature는 Data/Domain/Presentation 3계층 동일 구조
 │   ├── Home/             — 사진 그리드, 업로드, 사진 상세(태그/설명)
 │   ├── Search/           — 자연어 검색(300ms 디바운스 + generation 가드), 태그 앨범
-│   ├── User/             — 로그인(LoginView), 세션(SessionStore)
-│   ├── Settings/         — 설정 화면 (#43/PR #52에서 구현 완료)
+│   ├── User/             — 로그인(LoginView), 세션(SessionStore), 설정(SettingsView — #43/PR #52 구현, Settings→User 의존 제거를 위해 User로 이동)
 │   └── RephotoTabView.swift — 탭 루트 뷰
 ├── Resources/        — Colors.xcassets, Assets.xcassets, 공용 컴포넌트(CTAButton), MockImages(DEBUG 데모용 사진)
 └── Utilities/
@@ -160,7 +159,7 @@ PR 템플릿: `.github/pull_request_template.md`
 **목표**:
 - Tuist manifest (Project.swift) 기반 프로젝트 생성
 - Core 모듈: Network, DI, Navigation, Common (공유 인프라)
-- Feature 모듈: Home, Search, User, Settings (각각 독립 프레임워크)
+- Feature 모듈: Home, Search, User (각각 독립 프레임워크)
 - 모듈 간 의존성 단방향 강제 (Feature → Core, Feature ✕→ Feature)
 - Feature 모듈별 독립 빌드/테스트 가능하도록 타겟 분리
 
