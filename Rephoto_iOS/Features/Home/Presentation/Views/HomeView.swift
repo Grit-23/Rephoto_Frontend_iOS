@@ -101,8 +101,6 @@ private struct PhotoGridView: View {
     let sensitiveCount: Int
     let namespace: Namespace.ID
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
-
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
@@ -112,14 +110,7 @@ private struct PhotoGridView: View {
                     }
                 }
 
-                LazyVGrid(columns: columns, spacing: 2) {
-                    ForEach(photos) { photo in
-                        NavigationLink(value: photo) {
-                            PhotoGridTile(imageUrl: photo.imageUrl)
-                                .matchedTransitionSource(id: photo.photoId, in: namespace)
-                        }
-                    }
-                }
+                PhotoNavGrid(photos: photos, namespace: namespace)
             }
         }
     }

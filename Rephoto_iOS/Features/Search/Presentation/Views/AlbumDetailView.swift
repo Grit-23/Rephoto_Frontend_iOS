@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Nuke
 import NukeUI
 
 struct AlbumDetailView: View {
@@ -31,6 +32,8 @@ struct AlbumDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
             } else {
+                // 배너 카드가 이끄는 카드 컴포지션 화면이라, 그리드도 같은 16pt 여백을 따른다
+                // (홈·검색 결과의 edge-to-edge 그리드와 의도적으로 다름)
                 VStack(alignment: .leading, spacing: 20) {
                     AlbumBanner(title: album.tagName, photos: albumVM.albumPhotos)
 
@@ -40,7 +43,7 @@ struct AlbumDetailView: View {
                         .foregroundStyle(.labelPrimary)
                         .padding(.leading, 4)
 
-                    AlbumPhotoGrid(photos: albumVM.albumPhotos, namespace: namespace)
+                    PhotoNavGrid(photos: albumVM.albumPhotos, namespace: namespace, spacing: 8)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -119,7 +122,11 @@ private struct BannerCollage: View {
                 )
             } else {
                 ForEach(photos) { photo in
-                    LazyImage(url: photo.imageUrl) { state in
+                    // 사진 1장짜리 앨범이면 스트립을 화면 폭 전체로 채우므로 폭 기준을 크게 잡는다
+                    LazyImage(request: ImageRequest(
+                        url: photo.imageUrl,
+                        processors: [.resize(size: CGSize(width: 390, height: 140), contentMode: .aspectFill)]
+                    )) { state in
                         if let image = state.image {
                             image
                                 .resizable()
@@ -132,41 +139,6 @@ private struct BannerCollage: View {
                     .frame(height: 138)
                     .clipped()
                 }
-            }
-        }
-    }
-}
-
-// MARK: - AlbumPhotoGrid
-
-/// 앨범 사진 3열 그리드 — 타일 탭 시 사진 상세로 줌 전환
-private struct AlbumPhotoGrid: View {
-    let photos: [Photo]
-    let namespace: Namespace.ID
-
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
-
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(photos) { photo in
-                NavigationLink(value: photo) {
-                    Color.clear
-                        .aspectRatio(1, contentMode: .fit)
-                        .overlay {
-                            LazyImage(url: photo.imageUrl) { state in
-                                if let image = state.image {
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                } else {
-                                    Color.gray.opacity(0.2)
-                                }
-                            }
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .matchedTransitionSource(id: photo.photoId, in: namespace)
-                }
-                .buttonStyle(.plain)
             }
         }
     }
