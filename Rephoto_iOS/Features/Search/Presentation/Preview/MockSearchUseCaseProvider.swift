@@ -52,7 +52,12 @@ private enum MockAlbumFixtures {
 private struct MockGetAlbumsUseCase: GetAlbumsUseCaseProtocol {
     func execute() async throws -> [Album] {
         MockAlbumFixtures.groups.enumerated().map { index, group in
-            Album(tagId: index + 1, tagName: group.tagName)
+            Album(
+                tagId: index + 1,
+                tagName: group.tagName,
+                coverImageUrl: group.fileNames.first.map(MockPhotoFixtures.imageUrl(fileName:)),
+                photoCount: group.fileNames.count
+            )
         }
     }
 }

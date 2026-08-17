@@ -8,11 +8,17 @@
 import Foundation
 
 struct AlbumResponseDTO: Codable {
-    let userId: Int
     let tagId: Int
     let tagName: String
+    let coverImageUrl: String?
+    let photoCount: Int
 
     func toDomain() -> Album {
-        Album(tagId: tagId, tagName: tagName)
+        Album(
+            tagId: tagId,
+            tagName: tagName,
+            coverImageUrl: coverImageUrl.flatMap(URL.init(string:)),
+            photoCount: photoCount
+        )
     }
 }

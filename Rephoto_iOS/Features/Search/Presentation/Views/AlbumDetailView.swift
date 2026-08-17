@@ -171,16 +171,3 @@ private struct AlbumPhotoGrid: View {
         }
     }
 }
-
-#if DEBUG
-#Preview("Album Detail") {
-    @Previewable @Namespace var namespace
-    NavigationStack {
-        AlbumDetailView(
-            album: Album(tagId: 1, tagName: "커피"),
-            provider: MockSearchUseCaseProvider(),
-            namespace: namespace
-        )
-    }
-}
-#endif
