@@ -81,10 +81,7 @@ struct SearchView: View {
                     subtitle: "같은 태그를 가진 사진을 추가해보세요"
                 )
             } else {
-                AlbumGridSection(
-                    albums: albumVM.albums,
-                    previews: albumVM.albumPreviews
-                )
+                AlbumGridSection(albums: albumVM.albums)
             }
         } else if searchVM.searchResults.isEmpty {
             SearchEmptyStateView(
@@ -107,7 +104,6 @@ struct SearchView: View {
 /// "앨범 n개" 헤더 + 2열 앨범 카드 그리드
 private struct AlbumGridSection: View {
     let albums: [Album]
-    let previews: [Int: AlbumViewModel.AlbumPreview]
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
 
@@ -128,7 +124,7 @@ private struct AlbumGridSection: View {
                     // 값 기반 링크로 통일 — 뷰를 직접 넘기는 링크와 섞으면, 앨범 안에서
                     // 사진(value)을 push할 때 SwiftUI가 앨범(view)을 pop했다가 다시 덮는다
                     NavigationLink(value: album) {
-                        AlbumCard(album: album, preview: previews[album.tagId])
+                        AlbumCard(album: album)
                     }
                     .buttonStyle(.plain)
                 }
@@ -144,7 +140,6 @@ private struct AlbumGridSection: View {
 /// 앨범 카드 — 대표 사진 배경 + 하단 스크림 위 앨범명/장수
 private struct AlbumCard: View {
     let album: Album
-    let preview: AlbumViewModel.AlbumPreview?
 
     /// 대표 썸네일이 없을 때 태그별로 고정되는 배경 그라데이션 팔레트
     private static let gradients: [(Color, Color)] = [
@@ -173,11 +168,9 @@ private struct AlbumCard: View {
                     .font(.system(size: 20, weight: .bold))
                     .tracking(-0.3)
                     .foregroundStyle(.white)
-                if let preview {
-                    Text("\(preview.photoCount)장")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.85))
-                }
+                Text("\(album.photoCount)장")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.85))
             }
             .padding(.leading, 16)
             .padding(.bottom, 12)
@@ -189,10 +182,10 @@ private struct AlbumCard: View {
 
     @ViewBuilder
     private var background: some View {
-        if let thumbnailUrl = preview?.thumbnailUrl {
+        if let coverImageUrl = album.coverImageUrl {
             Color.clear
                 .overlay {
-                    LazyImage(url: thumbnailUrl) { state in
+                    LazyImage(url: coverImageUrl) { state in
                         if let image = state.image {
                             image
                                 .resizable()
