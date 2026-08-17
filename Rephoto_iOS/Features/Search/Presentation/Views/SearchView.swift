@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Nuke
 import NukeUI
 import Factory
 
@@ -185,7 +186,11 @@ private struct AlbumCard: View {
         if let coverImageUrl = album.coverImageUrl {
             Color.clear
                 .overlay {
-                    LazyImage(url: coverImageUrl) { state in
+                    // 2열 카드 크기만큼만 디코드 (170×150pt에 여유분)
+                    LazyImage(request: ImageRequest(
+                        url: coverImageUrl,
+                        processors: [.resize(size: CGSize(width: 200, height: 160), contentMode: .aspectFill)]
+                    )) { state in
                         if let image = state.image {
                             image
                                 .resizable()
@@ -210,65 +215,34 @@ private struct SearchResultGrid: View {
     let photosById: [Int: Photo]
     let namespace: Namespace.ID
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
-
     var body: some View {
+        // 그리드는 홈과 동일하게 화면 끝까지(edge-to-edge), 헤더만 여백 유지
         VStack(alignment: .leading, spacing: 14) {
             Text("‘\(query)’ 검색 결과 · 사진 \(results.count)장")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.labelSecondary)
-                .padding(.horizontal, 4)
+                .padding(.horizontal, 20)
 
-            LazyVGrid(columns: columns, spacing: 8) {
-                ForEach(results) { item in
-                    NavigationLink(value: photo(for: item)) {
-                        SearchResultTile(imageUrl: item.imageUrl)
-                            .matchedTransitionSource(id: item.photoId, in: namespace)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+            PhotoNavGrid(photos: resolvedPhotos, namespace: namespace)
         }
-        .padding(.horizontal, 16)
         .padding(.top, 8)
     }
 
-    /// 홈 사진 색인에서 전체 메타데이터를 찾고, 없으면 검색 결과 정보만으로 구성
-    private func photo(for result: SearchResult) -> Photo {
-        photosById[result.photoId] ?? Photo(
-            photoId: result.photoId,
-            imageUrl: result.imageUrl,
-            latitude: 0,
-            longitude: 0,
-            createdAt: Date(),
-            fileName: "",
-            tags: [],
-            isSensitive: false
-        )
-    }
-}
-
-// MARK: - SearchResultTile
-
-/// 검색 결과 정사각 썸네일 타일
-private struct SearchResultTile: View {
-    let imageUrl: URL
-
-    var body: some View {
-        Color.clear
-            .aspectRatio(1, contentMode: .fit)
-            .overlay {
-                LazyImage(url: imageUrl) { state in
-                    if let image = state.image {
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    } else {
-                        Color.gray.opacity(0.2)
-                    }
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+    /// 홈 사진 색인에서 전체 메타데이터를 찾고, 없으면 검색 결과 정보만으로 구성.
+    /// photoId를 identity로 쓰므로 SearchResult 기반 ForEach와 행 identity가 동일하다
+    private var resolvedPhotos: [Photo] {
+        results.map { result in
+            photosById[result.photoId] ?? Photo(
+                photoId: result.photoId,
+                imageUrl: result.imageUrl,
+                latitude: 0,
+                longitude: 0,
+                createdAt: Date(),
+                fileName: "",
+                tags: [],
+                isSensitive: false
+            )
+        }
     }
 }
 
