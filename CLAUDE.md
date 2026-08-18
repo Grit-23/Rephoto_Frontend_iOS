@@ -18,7 +18,10 @@
 - **Factory** — DI (`@Injected`, `AppContainer`). DEBUG 빌드에서 Mock provider 자동 주입
 - **Nuke** — 이미지 비동기 로딩 & 캐싱
 - **SPM** — 패키지 관리
-- 빌드 설정에 **default actor isolation = MainActor** 적용됨 — `@Observable` 클래스에 `@MainActor`를 명시하지 않아도 메인 액터 격리됨. 리뷰 시 지적하지 말 것
+- **동시성 격리 설정** — 앱 타겟은 `SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated`(명시 지정). 즉 `@Observable` 클래스가 자동으로 메인 액터 격리되지 **않으며**, ViewModel 등에는 `@MainActor`를 직접 붙인다
+  - Xcode 26 신규 프로젝트 기본값은 `MainActor`(SE-0466)지만 기존 프로젝트는 마이그레이션되지 않아 `nonisolated`가 유지됨
+  - 단일 앱 타겟이라 `MainActor`로 켜면 Presentation뿐 아니라 Data 레이어(Repository·DTO 매핑)까지 MainActor로 추론되어 디코딩이 메인에서 돈다. Apple 권장대로 "앱·UI = MainActor / 비UI = nonisolated"로 나누려면 Step 4 멀티모듈 분리가 선행되어야 함
+  - ⚠️ **타겟 간 설정 불일치** — `SWIFT_APPROACHABLE_CONCURRENCY`가 테스트 타겟에만 `YES`(앱 타겟은 미설정 → `NO`). SE-0461(nonisolated async 함수가 호출자 액터에서 실행)이 테스트에서만 적용되므로, 격리 동작을 검증하는 테스트는 앱과 다르게 동작할 수 있다. 정리 대상
 
 ## 프로젝트 구조 (현재)
 
