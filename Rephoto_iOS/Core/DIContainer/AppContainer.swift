@@ -87,6 +87,26 @@ extension Container: @retroactive AutoRegistering {
         }
     }
 
+    // MARK: - Error
+
+    /// 전역 에러 Alert의 단일 수집 지점. @MainActor 타입이라 메인 스레드 해석을 전제로 한다.
+    ///
+    /// 세션 만료 훅은 `SessionStore`(Feature 계층)를 Core가 참조하지 않도록
+    /// 여기 조립 시점에 주입한다.
+    var errorHandler: Factory<ErrorHandler> {
+        self {
+            MainActor.assumeIsolated {
+                let handler = ErrorHandler()
+                // sessionStore를 즉시 resolve하면 두 싱글턴이 서로를 생성하며 순환하므로,
+                // 훅이 실제로 불릴 때 해석하도록 미룬다
+                handler.onSessionExpired = {
+                    Container.shared.sessionStore().forceLogout()
+                }
+                return handler
+            }
+        }.singleton
+    }
+
     // MARK: - Session
 
     /// 앱 전역 세션. @MainActor 타입이므로 메인 스레드 해석을 전제로 한다 (SwiftUI 뷰 초기화 시점).
