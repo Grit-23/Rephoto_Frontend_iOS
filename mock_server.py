@@ -6,7 +6,9 @@ DB 없이 인메모리 상태로 동작하며, 태그 추가/수정/삭제·사�
 AI(태그·설명 생성, 자연어 검색)는 미구현 — 업로드 사진은 빈 태그 + 자리표시 설명,
 검색은 태그·설명 문자열 부분일치로 대체한다.
 
-실행:  python3 mock_server.py [포트] [응답지연ms]   (기본 8080, 지연 0)
+실행:  python3 mock_server.py [포트] [응답지연ms] [호스트]   (기본 8080, 0, 127.0.0.1)
+       시뮬레이터는 기본값으로 붙는다. 실기기로 붙일 때만 호스트를 0.0.0.0 으로
+       — /debug/ 와 /images/ 는 인증 면제라 LAN에 열면 아무나 접근할 수 있다
 이미지: Rephoto_iOS/Resources/MockImages/ 를 /images/<파일명> 으로 정적 서빙
 
 앱을 이 서버에 붙이려면 아래 두 가지를 직접 바꿔야 한다(자동 전환 스위치는 없다).
@@ -39,6 +41,14 @@ from urllib.parse import quote, unquote, urlsplit
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
 DELAY_MS = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+# 기본은 루프백. /debug/·/images/는 인증 면제라 LAN에 열면 같은 네트워크의 누구나
+# 픽스처를 읽고 세션 만료를 유발할 수 있다. 실기기 테스트가 필요할 때만 0.0.0.0으로
+HOST = sys.argv[3] if len(sys.argv) > 3 else "127.0.0.1"
+
+if DELAY_MS < 0:
+    # time.sleep()이 ValueError를 던지는데 그 호출은 try 밖이라 모든 요청이
+    # 응답 없이 죽는다. 원인 찾기 어려운 실패라 시작 시점에 막는다
+    sys.exit("응답 지연은 0 이상이어야 합니다.")
 MOCK_IMAGES_DIR = Path(__file__).resolve().parent / "Rephoto_iOS" / "Resources" / "MockImages"
 
 # MockPhotoFixtures.entries 와 1:1 (photoId = index + 1, 최신순)
@@ -170,8 +180,16 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def read_body(self):
-        length = int(self.headers.get("Content-Length") or 0)
-        return self.rfile.read(length) if length else b""
+        """요청 본문을 한 번만 읽어 캐시한다.
+
+        route()가 STORE.lock을 잡기 전에 미리 호출한다 — 락을 쥔 채 소켓을 읽으면
+        Content-Length만 보내고 본문 전송을 멈춘 클라이언트 하나가 나머지 모든
+        요청을 락에서 대기시킨다.
+        """
+        if self._body is None:
+            length = int(self.headers.get("Content-Length") or 0)
+            self._body = self.rfile.read(length) if length else b""
+        return self._body
 
     def read_json(self):
         body = self.read_body()
@@ -216,8 +234,36 @@ class Handler(BaseHTTPRequestHandler):
 
     # --- routing -------------------------------------------------------
 
+    def serve_image(self, name):
+        """이미지는 락 밖에서 전송한다.
+
+        수 MB 바이트 쓰기를 락 안에서 하면 그리드 썸네일 요청이 한 줄로 직렬화되어
+        ThreadingHTTPServer를 쓰는 의미가 없어진다. 관찰 도구가 관찰 대상을 왜곡하는 셈.
+        공유 상태는 uploaded_images 조회 한 번뿐이라 그 구간만 락으로 감싼다.
+        """
+        with STORE.lock:
+            data = STORE.uploaded_images.get(name)
+
+        if data is None:
+            file_path = (MOCK_IMAGES_DIR / name).resolve()
+            if file_path.is_relative_to(MOCK_IMAGES_DIR) and file_path.is_file():
+                data = file_path.read_bytes()
+        if data is None:
+            return self.send_json({"error": "image not found"}, 404)
+        self.send_bytes(data, "image/jpeg")
+
     def route(self):
         method, path = self.command, urlsplit(self.path).path
+
+        # 본문 읽기와 이미지 전송은 락 밖에서 끝낸다 (read_body·serve_image 주석 참고).
+        # 두 경로 모두 원래 인증 면제였으므로 순서를 앞당겨도 동작은 같다
+        if method in ("POST", "PUT"):
+            self.read_body()
+
+        image_match = re.fullmatch(r"/images/(.+)", path)
+        if method == "GET" and image_match:
+            return self.serve_image(unquote(image_match.group(1)))
+
         with STORE.lock:
             # 인증: 기본은 아무 토큰이나 통과. /debug/expire* 호출 후에만 검사 시작
             public = (path in ("/login", "/join", "/auth/refresh")
@@ -233,7 +279,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"accessToken": "mock-access-token",
                                        "refreshToken": "mock-refresh-token"})
             if method == "POST" and path == "/auth/refresh":
-                self.read_body()
+                # 리프레시 토큰을 검사한다 — 안 보내도 통과하면 클라이언트가 토큰을
+                # 빼먹는 버그를 이 서버로는 잡을 수 없다.
+                # TokenRefreshServiceImpl의 본문 형식: {"Authorization": refreshToken}
+                try:
+                    sent = self.read_json().get("Authorization")
+                except json.JSONDecodeError:
+                    sent = None
+                if sent != "mock-refresh-token":
+                    return self.send_json({"error": "invalid refresh token"}, 401)
                 if not STORE.refresh_enabled:
                     return self.send_json({"error": "refresh token expired"}, 401)
                 token = STORE.required_access or "mock-access-token"
@@ -362,21 +416,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json([self.photo_dto(p) for p in self.photos_desc()
                                        if p["photoId"] in pids and not p["isSensitive"]])
 
-            m = re.fullmatch(r"/images/(.+)", path)
-            if method == "GET" and m:
-                name = unquote(m.group(1))
-                data = STORE.uploaded_images.get(name)
-                if data is None:
-                    file_path = (MOCK_IMAGES_DIR / name).resolve()
-                    if file_path.is_relative_to(MOCK_IMAGES_DIR) and file_path.is_file():
-                        data = file_path.read_bytes()
-                if data is None:
-                    return self.send_json({"error": "image not found"}, 404)
-                return self.send_bytes(data, "image/jpeg")
-
         self.send_json({"error": f"no route: {method} {path}"}, 404)
 
     def dispatch(self):
+        self._body = None
         if DELAY_MS:
             time.sleep(DELAY_MS / 1000)  # 로딩 인디케이터·디바운스 관찰용 (lock 밖에서 대기)
         try:
@@ -395,13 +438,13 @@ if __name__ == "__main__":
     sys.stdout.reconfigure(line_buffering=True)  # 파일로 리다이렉트해도 요청 로그가 즉시 보이게
     if not MOCK_IMAGES_DIR.is_dir():
         sys.exit(f"MockImages 디렉토리를 찾을 수 없음: {MOCK_IMAGES_DIR}")
-    print(f"Rephoto 목 서버 시작 — http://127.0.0.1:{PORT}")
+    print(f"Rephoto 목 서버 시작 — http://{HOST}:{PORT}")
     print(f"이미지 디렉토리: {MOCK_IMAGES_DIR}")
     if DELAY_MS:
         print(f"응답 지연: {DELAY_MS}ms")
     print("디버그: POST /debug/expire (401→리프레시), POST /debug/expire-all (forceLogout)")
     print("종료: Ctrl+C")
     try:
-        ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+        ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
     except KeyboardInterrupt:
         print("\n종료됨")
