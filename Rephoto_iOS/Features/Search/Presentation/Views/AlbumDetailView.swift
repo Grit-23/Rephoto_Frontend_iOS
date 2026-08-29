@@ -42,7 +42,12 @@ struct AlbumDetailView: View {
                         .foregroundStyle(.labelPrimary)
                         .padding(.leading, 4)
 
-                    PhotoNavGrid(photos: albumVM.albumPhotos, namespace: namespace, spacing: 8)
+                    PhotoNavGrid(
+                        items: albumVM.albumPhotos,
+                        imageUrl: \.imageUrl,
+                        namespace: namespace,
+                        spacing: 8
+                    )
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)

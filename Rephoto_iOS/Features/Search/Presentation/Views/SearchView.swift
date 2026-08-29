@@ -219,7 +219,7 @@ private struct SearchResultGrid: View {
                 .foregroundStyle(.labelSecondary)
                 .padding(.horizontal, 20)
 
-            PhotoNavGrid(photos: resolvedPhotos, namespace: namespace)
+            PhotoNavGrid(items: resolvedPhotos, imageUrl: \.imageUrl, namespace: namespace)
         }
         .padding(.top, 8)
     }
