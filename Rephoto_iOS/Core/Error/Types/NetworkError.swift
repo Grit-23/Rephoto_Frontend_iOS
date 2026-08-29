@@ -50,8 +50,10 @@ extension NetworkError {
     /// 전송 계층 실패(`URLError`)를 대응하는 전용 케이스로 변환한다.
     ///
     /// 요청이 서버에 도달하지 못한 실패이므로 저장된 토큰의 유효성과는 무관하다.
-    /// 전용 케이스가 없는 코드(취소, DNS 실패 등)는 `nil`을 반환해
-    /// 호출부가 원본 에러를 그대로 전파할 수 있게 한다.
+    ///
+    /// 전용 케이스가 없는 코드(취소, DNS 실패 등)는 `nil`을 반환한다 — 억지로 이 타입에
+    /// 끼워 맞추면 `errorCode`가 HTTP 상태 코드 자리에 들어가 문구·재시도 판단이 어긋난다.
+    /// 판단은 호출부(``AppError/from(_:)``)에 맡긴다.
     static func transientFailure(from error: URLError) -> NetworkError? {
         switch error.code {
         case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:

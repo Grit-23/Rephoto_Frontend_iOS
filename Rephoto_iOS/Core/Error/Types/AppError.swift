@@ -140,11 +140,13 @@ enum AppError: Error, LocalizedError, Equatable {
             return .domain(domainError)
         }
         if let urlError = error as? URLError {
-            // 전용 케이스가 없는 코드(DNS 실패 등)는 상태 코드를 살려 httpError로 보낸다
-            return .network(
-                NetworkError.transientFailure(from: urlError)
-                    ?? .httpError(statusCode: urlError.errorCode, data: Data())
-            )
+            // 전용 케이스가 없는 코드(DNS 실패 등)는 분류 실패로 남긴다.
+            // URLError.errorCode는 HTTP 상태 코드가 아니므로(cannotFindHost = -1003)
+            // httpError에 넣으면 상태 코드 기반 문구·재시도 판단이 전부 어긋난다
+            guard let networkError = NetworkError.transientFailure(from: urlError) else {
+                return .unknown(message: urlError.localizedDescription)
+            }
+            return .network(networkError)
         }
         if let decodingError = error as? DecodingError {
             return .repository(.decodingError(detail: describe(decodingError)))
@@ -162,7 +164,7 @@ enum AppError: Error, LocalizedError, Equatable {
         case .valueNotFound(let type, let context):
             return "Value not found: \(type) at \(path(context.codingPath))"
         case .dataCorrupted(let context):
-            return "Data corrupted: \(context.debugDescription)"
+            return "Data corrupted at \(path(context.codingPath)): \(context.debugDescription)"
         @unknown default:
             return "Unknown decoding error"
         }

@@ -47,7 +47,12 @@ final class LoginViewModel {
         do {
             try await session.login(id: loginId, password: password)
         } catch let caught {
-            error = AppError.from(caught)
+            // 취소는 표시할 실패가 아니다 — .cancelled를 담으면 isShowingError가 true가 되면서
+            // 문구 없는 Alert이 뜬다
+            let appError = AppError.from(caught)
+            if !appError.isCancellation {
+                error = appError
+            }
         }
 
         isLoading = false
