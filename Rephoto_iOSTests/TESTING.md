@@ -126,8 +126,8 @@ Home / User 대비 로직 밀도가 낮아 후순위. 두 피처의 `APITarget` 
 `Settings`는 아직 placeholder다.
 
 **DTO 매핑** — `toDomain()`의 정상 경로는 `PhotoRepositoryTests`와 `DecodingPerformanceTests`가
-간접적으로 지나간다. URL·날짜 파싱 실패 시 `RepositoryError.decodingFailed`로 떨어지는
-경로는 아직 직접 검증하지 않았다.
+간접적으로 지나간다. URL·날짜 파싱 실패 시 `RepositoryError.invalidResponse(detail:)`로
+떨어지는 경로는 아직 직접 검증하지 않았다.
 
 ---
 
