@@ -7,6 +7,7 @@
 
 import SwiftUI
 import PhotosUI
+import Factory
 
 struct HomeView: View {
     @State private var vm: HomeViewModel
@@ -15,20 +16,22 @@ struct HomeView: View {
     @Namespace private var photoZoom
 
     init(provider: HomeUseCaseProviderProtocol) {
-        self._vm = State(initialValue: HomeViewModel(provider: provider))
+        self._vm = State(initialValue: HomeViewModel(
+            provider: provider,
+            errorHandler: Container.shared.errorHandler()
+        ))
     }
 
     var body: some View {
-        @Bindable var vm = vm
-        return NavigationStack {
+        NavigationStack {
             Group {
-                if vm.isLoading && vm.photos.isEmpty {
+                if vm.isLoading && !vm.hasPhotos {
                     PhotoGridSkeletonView()
-                } else if vm.errorMessage != nil && vm.photos.isEmpty {
-                    HomeErrorStateView {
-                        Task { await vm.fetchPhotos() }
+                } else if let loadError = vm.loadError, !vm.hasPhotos {
+                    ErrorStateView(error: loadError) {
+                        await vm.fetchPhotos()
                     }
-                } else if vm.photos.isEmpty {
+                } else if !vm.hasPhotos {
                     HomeEmptyStateView(selection: $selectedPickerItems)
                 } else {
                     PhotoGridView(
@@ -38,6 +41,9 @@ struct HomeView: View {
                     )
                 }
             }
+            // 에러·빈 상태 뷰는 콘텐츠 크기만큼만 잡히므로, 배경이 화면 전체를 덮도록
+            // 컨테이너를 먼저 최대 크기로 늘린 뒤 배경을 깐다
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.base.ignoresSafeArea())
             .navigationTitle("앨범")
             .navigationDestination(for: Photo.self) { photo in
@@ -84,11 +90,6 @@ struct HomeView: View {
                     await vm.handlePickedPhotos(items)
                     selectedPickerItems = []
                 }
-            }
-            .alert("오류", isPresented: $vm.isShowingErrorAlert) {
-                Button("확인", role: .cancel) {}
-            } message: {
-                Text(vm.errorMessage ?? "")
             }
         }
     }

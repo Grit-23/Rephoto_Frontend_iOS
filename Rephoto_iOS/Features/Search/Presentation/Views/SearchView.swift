@@ -64,34 +64,61 @@ struct SearchView: View {
         searchVM.query.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// 검색어가 비어 있으면 앨범 목록, 아니면 검색 결과를 보여준다.
+    /// 두 경로 모두 `.failed`를 `.loaded([])`와 분리해 다루므로,
+    /// 네트워크 실패가 "없어요"로 둔갑하지 않는다.
     @ViewBuilder
     private var content: some View {
-        if searchVM.isLoading {
+        if trimmedQuery.isEmpty {
+            albumContent
+        } else {
+            searchContent
+        }
+    }
+
+    @ViewBuilder
+    private var albumContent: some View {
+        switch albumVM.albums {
+        case .idle, .loading:
+            ProgressView("앨범 불러오는 중…")
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding()
+        case .failed(let error):
+            ErrorStateView(error: error) {
+                await albumVM.fetchAlbums()
+            }
+            .padding(.top, 80)
+        case .loaded(let albums) where albums.isEmpty:
+            SearchEmptyStateView(
+                title: "아직 앨범이 없어요",
+                subtitle: "같은 태그를 가진 사진을 추가해보세요"
+            )
+        case .loaded(let albums):
+            AlbumGridSection(albums: albums)
+        }
+    }
+
+    @ViewBuilder
+    private var searchContent: some View {
+        switch searchVM.searchResults {
+        case .idle, .loading:
             ProgressView("검색 중…")
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding()
-        } else if trimmedQuery.isEmpty {
-            if albumVM.isLoading {
-                ProgressView("앨범 불러오는 중…")
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding()
-            } else if albumVM.albums.isEmpty {
-                SearchEmptyStateView(
-                    title: "아직 앨범이 없어요",
-                    subtitle: "같은 태그를 가진 사진을 추가해보세요"
-                )
-            } else {
-                AlbumGridSection(albums: albumVM.albums)
+        case .failed(let error):
+            ErrorStateView(error: error) {
+                await searchVM.search(query: trimmedQuery)
             }
-        } else if searchVM.searchResults.isEmpty {
+            .padding(.top, 80)
+        case .loaded(let results) where results.isEmpty:
             SearchEmptyStateView(
                 title: "‘\(trimmedQuery)’에 대한 결과가 없어요",
                 subtitle: "다른 검색어나 태그로 다시 찾아보세요"
             )
-        } else {
+        case .loaded(let results):
             SearchResultGrid(
                 query: trimmedQuery,
-                results: searchVM.searchResults,
+                results: results,
                 photosById: searchVM.photosById,
                 namespace: photoZoom
             )

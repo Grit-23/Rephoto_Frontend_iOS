@@ -21,20 +21,21 @@ struct AlbumDetailView: View {
 
     var body: some View {
         ScrollView {
-            if albumVM.isLoading {
+            switch albumVM.albumPhotos {
+            case .idle, .loading:
                 ProgressView()
                     .frame(maxWidth: .infinity)
                     .padding()
-            } else if let errorMessage = albumVM.errorMessage {
-                Text(errorMessage)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-            } else {
+            case .failed(let error):
+                ErrorStateView(error: error) {
+                    await albumVM.fetchAlbumPhotos(tagId: album.tagId)
+                }
+                .padding(.top, 80)
+            case .loaded(let photos):
                 // 배너 카드가 이끄는 카드 컴포지션 화면이라, 그리드도 같은 16pt 여백을 따른다
                 // (홈·검색 결과의 edge-to-edge 그리드와 의도적으로 다름)
                 VStack(alignment: .leading, spacing: 20) {
-                    AlbumBanner(title: album.tagName, photos: albumVM.albumPhotos)
+                    AlbumBanner(title: album.tagName, photos: photos)
 
                     Text("사진")
                         .font(.system(size: 20, weight: .bold))
@@ -43,7 +44,7 @@ struct AlbumDetailView: View {
                         .padding(.leading, 4)
 
                     PhotoNavGrid(
-                        items: albumVM.albumPhotos,
+                        items: photos,
                         imageUrl: \.imageUrl,
                         namespace: namespace,
                         spacing: 8

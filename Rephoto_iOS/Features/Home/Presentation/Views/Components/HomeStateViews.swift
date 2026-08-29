@@ -64,33 +64,5 @@ struct HomeEmptyStateView: View {
     }
 }
 
-// MARK: - HomeErrorStateView
-
-struct HomeErrorStateView: View {
-    let onRetry: () -> Void
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "wifi.exclamationmark")
-                .font(.system(size: 44))
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 8)
-            Text("사진을 불러오지 못했어요")
-                .font(.title3.bold())
-            Text("네트워크 연결을 확인하고 다시 시도해주세요")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Button(action: onRetry) {
-                Label("다시 시도", systemImage: "arrow.clockwise")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .glassEffect(.regular.interactive().tint(.mainGreen), in: Capsule())
-            }
-            .padding(.top, 12)
-        }
-        .padding(32)
-    }
-}
+// 에러 상태 뷰는 Core/UIComponents/ErrorStateView로 승격됨 —
+// AppError가 아이콘·문구·재시도 버튼 유무를 스스로 결정하므로 화면별 사본이 필요 없다

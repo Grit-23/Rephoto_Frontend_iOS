@@ -11,6 +11,9 @@ import PhotosUI
 @Observable
 final class HomeViewModel {
     let provider: HomeUseCaseProviderProtocol
+    /// 업로드처럼 작업 흐름이 끊기는 실패를 전역 Alert으로 넘기는 창구.
+    /// @MainActor 격리 타입이라 Sendable이므로 nonisolated 클래스가 보관해도 안전하다.
+    private let errorHandler: ErrorHandler
 
     struct UploadProgress: Equatable {
         var completed: Int
@@ -30,33 +33,46 @@ final class HomeViewModel {
     private(set) var visiblePhotos: [Photo] = []
     private(set) var sensitivePhotos: [Photo] = []
     private(set) var sensitiveCount: Int = 0
-    /// `isShowingErrorAlert`가 `photos`를 직접 읽지 않도록 캐싱한다.
+    /// 뷰가 `photos`를 직접 읽지 않고 "사진이 있는가"만 알 수 있게 캐싱한다.
     /// 계산 프로퍼티에서 `photos`를 읽으면 관찰 의존성이 배열 전체로 전이되어,
-    /// 파생 컬렉션을 캐싱해 좁혀둔 무효화 범위가 알림 경로를 통해 다시 넓어진다.
+    /// 파생 컬렉션을 캐싱해 좁혀둔 무효화 범위가 다시 넓어진다.
     private(set) var hasPhotos: Bool = false
     private(set) var isLoading: Bool = false
-    private(set) var errorMessage: String?
     private(set) var uploadProgress: UploadProgress?
 
-    // 사진이 있는 상태의 실패(업로드 등)만 알림으로 표시 — 빈 화면 에러는 전체 화면 상태가 담당.
-    // KeyPath 기반 Binding($vm.isShowingErrorAlert)으로 쓰기 위한 양방향 프로퍼티
-    var isShowingErrorAlert: Bool {
-        get { errorMessage != nil && hasPhotos }
-        set { if !newValue { errorMessage = nil } }
-    }
+    /// 목록 조회 실패. 화면을 채우는 에러 상태(``ErrorStateView``)로 표시한다.
+    ///
+    /// 사진 목록은 `Loadable`로 감싸지 않는다 — 파생 컬렉션 didSet 캐싱으로 좁혀둔
+    /// 관찰 범위가, 배열을 품은 단일 상태값을 뷰가 읽는 순간 다시 넓어지기 때문이다.
+    private(set) var loadError: AppError?
 
-    init(provider: HomeUseCaseProviderProtocol) {
+    init(provider: HomeUseCaseProviderProtocol, errorHandler: ErrorHandler) {
         self.provider = provider
+        self.errorHandler = errorHandler
     }
 
     @MainActor
     func fetchPhotos() async {
         isLoading = true
-        errorMessage = nil
+        loadError = nil
         do {
             photos = try await provider.makeGetPhotosUseCase().execute()
         } catch {
-            errorMessage = error.localizedDescription
+            guard !error.isCancellation else {
+                isLoading = false
+                return
+            }
+            let appError = AppError.from(error)
+            if hasPhotos {
+                // 이미 보여줄 사진이 있으면 화면을 비우지 않고 Alert으로만 알린다
+                errorHandler.handle(appError, context: ErrorContext(
+                    feature: "Home",
+                    action: "fetchPhotos",
+                    retryAction: { [weak self] in await self?.fetchPhotos() }
+                ))
+            } else {
+                loadError = appError
+            }
         }
         isLoading = false
     }
@@ -67,7 +83,6 @@ final class HomeViewModel {
         // 업로드 진행 중 재선택 시 중복 실행 방지 — 먼저 끝난 쪽의 defer가
         // 진행 중인 배너 상태를 지워버리는 충돌을 막는다
         guard uploadProgress == nil else { return }
-        errorMessage = nil
         uploadProgress = UploadProgress(completed: 0, total: pickerItems.count)
         defer { uploadProgress = nil }
 
@@ -98,7 +113,12 @@ final class HomeViewModel {
             }
             await fetchPhotos()
         } catch {
-            errorMessage = error.localizedDescription
+            // 업로드 실패는 사용자가 시작한 작업이 끊긴 경우 — 전역 Alert + 재시도
+            errorHandler.handle(error, context: ErrorContext(
+                feature: "Home",
+                action: "uploadPhotos",
+                retryAction: { [weak self] in await self?.handlePickedPhotos(pickerItems) }
+            ))
         }
     }
 }
