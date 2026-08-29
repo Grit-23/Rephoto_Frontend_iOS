@@ -19,7 +19,7 @@ struct SensitivePhotosView: View {
     // 알림 표시 여부를 별도 @State로 둬야 클로저 없이 KeyPath 바인딩($isShowingAuthAlert)을 쓸 수 있다.
     // 두 값은 presentAuthError(_:)에서만 함께 갱신한다.
     @State private var isShowingAuthAlert = false
-    @State private var authErrorMessage: String?
+    @State private var authError: AppError?
     @Environment(\.scenePhase) private var scenePhase
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
@@ -57,15 +57,17 @@ struct SensitivePhotosView: View {
                 isUnlocked = false
             }
         }
-        .alert("잠금 해제 실패", isPresented: $isShowingAuthAlert, presenting: authErrorMessage) { _ in
+        .alert("잠금 해제 실패", isPresented: $isShowingAuthAlert, presenting: authError) { _ in
             Button("확인", role: .cancel) {}
-        } message: { message in
-            Text(message)
+        } message: { error in
+            Text(error.userMessage)
         }
     }
 
-    private func presentAuthError(_ message: String) {
-        authErrorMessage = message
+    /// 인증 실패는 사용자가 기기 설정에서 해결해야 하는 도메인 규칙 위반이므로
+    /// 전역 ErrorHandler가 아니라 이 화면이 직접 안내한다.
+    private func presentAuthError(_ reason: String?) {
+        authError = .domain(.biometricUnavailable(reason: reason))
         isShowingAuthAlert = true
     }
 
@@ -79,7 +81,7 @@ struct SensitivePhotosView: View {
             // Face ID 테스트: Simulator 메뉴 Features > Face ID > Enrolled 후 Matching Face
             withAnimation { isUnlocked = true }
             #else
-            presentAuthError(error?.localizedDescription ?? "이 기기에서는 인증을 사용할 수 없어요")
+            presentAuthError(error?.localizedDescription)
             #endif
             return
         }

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import NukeUI
+import Factory
 
 struct PhotoInfoView: View {
     let photo: Photo
@@ -18,7 +19,10 @@ struct PhotoInfoView: View {
 
     init(photo: Photo, provider: HomeUseCaseProviderProtocol) {
         self.photo = photo
-        self._vm = State(initialValue: PhotoInfoViewModel(provider: provider))
+        self._vm = State(initialValue: PhotoInfoViewModel(
+            provider: provider,
+            errorHandler: Container.shared.errorHandler()
+        ))
     }
 
     var body: some View {

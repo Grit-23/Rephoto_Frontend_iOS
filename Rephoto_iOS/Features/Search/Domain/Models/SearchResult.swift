@@ -7,7 +7,8 @@
 
 import Foundation
 
-struct SearchResult: Identifiable, Sendable {
+// Equatable은 Loadable<[SearchResult]> 상태 비교에 필요하다
+struct SearchResult: Identifiable, Sendable, Equatable {
     let imageUrl: URL
     let photoId: Int
     var id: Int { photoId }

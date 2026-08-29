@@ -11,10 +11,9 @@ import Foundation
 final class AlbumViewModel {
     let provider: SearchUseCaseProviderProtocol
 
-    private(set) var albums: [Album] = []
-    private(set) var albumPhotos: [Photo] = []
-    private(set) var isLoading = false
-    private(set) var errorMessage: String?
+    /// "앨범이 없음"과 "앨범을 못 불러옴"이 섞이지 않도록 Loadable로 상태를 나눈다
+    private(set) var albums: Loadable<[Album]> = .idle
+    private(set) var albumPhotos: Loadable<[Photo]> = .idle
 
     init(provider: SearchUseCaseProviderProtocol) {
         self.provider = provider
@@ -22,26 +21,23 @@ final class AlbumViewModel {
 
     @MainActor
     func fetchAlbums() async {
-        isLoading = true
-        errorMessage = nil
+        albums = .loading
         do {
-            albums = try await provider.getAlbums().execute()
+            albums = .loaded(try await provider.getAlbums().execute())
         } catch {
-            errorMessage = error.localizedDescription
+            guard !error.isCancellation else { return }
+            albums = .failed(AppError.from(error))
         }
-        isLoading = false
     }
 
     @MainActor
     func fetchAlbumPhotos(tagId: Int) async {
-        isLoading = true
-        errorMessage = nil
+        albumPhotos = .loading
         do {
-            albumPhotos = try await provider.getAlbumPhotos().execute(tagId: tagId)
+            albumPhotos = .loaded(try await provider.getAlbumPhotos().execute(tagId: tagId))
         } catch {
-            errorMessage = error.localizedDescription
+            guard !error.isCancellation else { return }
+            albumPhotos = .failed(AppError.from(error))
         }
-        isLoading = false
     }
 }
-

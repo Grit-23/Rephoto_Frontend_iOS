@@ -15,10 +15,20 @@ final class LoginViewModel {
     var loginId: String = ""
     var password: String = ""
     private(set) var isLoading = false
-    var errorMessage: String?
+
+    /// 로그인 화면은 입력 폼이라 전역 Alert 대신 화면 안에서 에러를 안고 간다.
+    /// 사용자가 값을 고쳐 바로 다시 시도할 수 있어야 하기 때문이다.
+    var error: AppError?
+
     var isShowingError: Bool {
-        get { errorMessage != nil }
-        set { if !newValue { errorMessage = nil } }
+        get { error != nil }
+        set { if !newValue { error = nil } }
+    }
+
+    /// Alert 본문에 쓰는 사용자용 문구.
+    /// 표시 시점에 해석되도록 `LocalizedStringResource`로 넘긴다.
+    var errorMessage: LocalizedStringResource? {
+        error?.userMessage
     }
 
     init(session: SessionStore) {
@@ -27,17 +37,17 @@ final class LoginViewModel {
 
     func login() async {
         guard !loginId.isEmpty, !password.isEmpty else {
-            errorMessage = "아이디와 비밀번호를 입력해주세요."
+            error = .domain(.emptyCredentials)
             return
         }
 
         isLoading = true
-        errorMessage = nil
+        error = nil
 
         do {
             try await session.login(id: loginId, password: password)
-        } catch {
-            errorMessage = "로그인 실패: \(error.localizedDescription)"
+        } catch let caught {
+            error = AppError.from(caught)
         }
 
         isLoading = false
