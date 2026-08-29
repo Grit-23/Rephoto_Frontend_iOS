@@ -19,10 +19,10 @@ struct PhotoResponseDTO: Decodable {
 
     func toDomain() throws -> Photo {
         guard let url = URL(string: imageUrl) else {
-            throw RepositoryError.decodingFailed
+            throw RepositoryError.invalidResponse(detail: "imageUrl 파싱 실패: \(imageUrl)")
         }
         guard let date = ISO8601DateFormatter().date(from: createdAt) else {
-            throw RepositoryError.decodingFailed
+            throw RepositoryError.invalidResponse(detail: "createdAt 파싱 실패: \(createdAt)")
         }
 
         return Photo(
