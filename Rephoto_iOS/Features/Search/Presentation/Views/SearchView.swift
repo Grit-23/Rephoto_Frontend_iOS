@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Nuke
 import NukeUI
 import Factory
 
@@ -187,10 +186,7 @@ private struct AlbumCard: View {
             Color.clear
                 .overlay {
                     // 2열 카드 크기만큼만 디코드 (170×150pt에 여유분)
-                    LazyImage(request: ImageRequest(
-                        url: coverImageUrl,
-                        processors: [.resize(size: CGSize(width: 200, height: 160), contentMode: .aspectFill)]
-                    )) { state in
+                    LazyImage(request: ThumbnailTier.card.request(coverImageUrl)) { state in
                         if let image = state.image {
                             image
                                 .resizable()
@@ -223,7 +219,7 @@ private struct SearchResultGrid: View {
                 .foregroundStyle(.labelSecondary)
                 .padding(.horizontal, 20)
 
-            PhotoNavGrid(photos: resolvedPhotos, namespace: namespace)
+            PhotoNavGrid(items: resolvedPhotos, imageUrl: \.imageUrl, namespace: namespace)
         }
         .padding(.top, 8)
     }

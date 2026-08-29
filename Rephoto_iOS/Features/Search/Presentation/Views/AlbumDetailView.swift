@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Nuke
 import NukeUI
 
 struct AlbumDetailView: View {
@@ -43,7 +42,12 @@ struct AlbumDetailView: View {
                         .foregroundStyle(.labelPrimary)
                         .padding(.leading, 4)
 
-                    PhotoNavGrid(photos: albumVM.albumPhotos, namespace: namespace, spacing: 8)
+                    PhotoNavGrid(
+                        items: albumVM.albumPhotos,
+                        imageUrl: \.imageUrl,
+                        namespace: namespace,
+                        spacing: 8
+                    )
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -122,11 +126,10 @@ private struct BannerCollage: View {
                 )
             } else {
                 ForEach(photos) { photo in
-                    // 사진 1장짜리 앨범이면 스트립을 화면 폭 전체로 채우므로 폭 기준을 크게 잡는다
-                    LazyImage(request: ImageRequest(
-                        url: photo.imageUrl,
-                        processors: [.resize(size: CGSize(width: 390, height: 140), contentMode: .aspectFill)]
-                    )) { state in
+                    // 앨범 카드 커버와 같은 티어를 써서 캐시를 공유한다 — 목록에서 이미 받아둔
+                    // 비트맵을 상세 배너가 재사용한다. 사진 1~2장 앨범은 스트립이 티어보다
+                    // 넓어져 흐려지지만, 스크림·타이틀이 덮는 배경이라 감수한다
+                    LazyImage(request: ThumbnailTier.card.request(photo.imageUrl)) { state in
                         if let image = state.image {
                             image
                                 .resizable()

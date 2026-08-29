@@ -110,7 +110,7 @@ private struct PhotoGridView: View {
                     }
                 }
 
-                PhotoNavGrid(photos: photos, namespace: namespace)
+                PhotoNavGrid(items: photos, imageUrl: \.imageUrl, namespace: namespace)
             }
         }
     }
