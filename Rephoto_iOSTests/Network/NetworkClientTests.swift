@@ -170,6 +170,45 @@ extension StubURLProtocolSuites {
             #expect(refreshToken == nil, "refresh token까지 삭제돼야 재실행 시 자동 로그인되지 않는다")
         }
 
+        @Test("갱신 서버가 401로 거절하면 세션 종료로 처리해 토큰을 삭제하고 통지한다")
+        func endsSessionWhenRefreshRejectedWith401() async throws {
+            let store = MockTokenStore(accessToken: "old", refreshToken: "r")
+            let refresh = FailingRefreshService(error: TokenRefreshError.serverError(statusCode: 401))
+            let client = makeClient(tokenStore: store, refreshService: refresh)
+            StubURLProtocol.handler = { req in (Self.response(req.url, 401), Data("{}".utf8)) }
+
+            let counter = CallCounter()
+            await client.setOnRefreshFailed { counter.increment() }
+
+            await #expect(throws: NetworkError.unauthorized) {
+                _ = try await client.request(self.request(path: "/photos"))
+            }
+
+            #expect(counter.value == 1)
+            let refreshToken = await store.getRefreshToken()
+            #expect(refreshToken == nil)
+        }
+
+        /// 서버 장애 한 번에 전원이 로그아웃되면 안 된다 — 세션은 여전히 유효할 수 있다.
+        @Test("갱신이 5xx로 실패하면 토큰을 유지하고 통지 없이 httpError를 던진다")
+        func keepsSessionWhenRefreshFailsTransiently() async throws {
+            let store = MockTokenStore(accessToken: "old", refreshToken: "r")
+            let refresh = FailingRefreshService(error: TokenRefreshError.serverError(statusCode: 500))
+            let client = makeClient(tokenStore: store, refreshService: refresh)
+            StubURLProtocol.handler = { req in (Self.response(req.url, 401), Data("{}".utf8)) }
+
+            let counter = CallCounter()
+            await client.setOnRefreshFailed { counter.increment() }
+
+            await #expect(throws: NetworkError.httpError(statusCode: 500, data: Data())) {
+                _ = try await client.request(self.request(path: "/photos"))
+            }
+
+            #expect(counter.value == 0, "일시적 실패는 세션 종료 통지를 보내면 안 된다")
+            let refreshToken = await store.getRefreshToken()
+            #expect(refreshToken == "r", "일시적 실패로 토큰을 지우면 안 된다")
+        }
+
         // MARK: - ⭐ Thundering-herd 방지
 
         @Test("동시에 20개 요청이 모두 401을 받아도 토큰 갱신은 정확히 1회만 수행된다")
@@ -305,6 +344,15 @@ actor SpyRefreshService: TokenRefreshService {
 }
 
 
+
+/// 지정한 에러로 항상 실패하는 토큰 갱신 서비스. 실제 구현이 던지는 `TokenRefreshError` 분기 검증용.
+struct FailingRefreshService: TokenRefreshService {
+    let error: Error
+
+    func refresh(_ refreshToken: String) async throws -> TokenPair {
+        throw error
+    }
+}
 
 /// 호출마다 다른 결과를 내는 토큰 갱신 서비스. nil이면 실패를 던진다.
 /// 대본을 다 쓰면 마지막 결과를 반복한다.

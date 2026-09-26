@@ -108,16 +108,19 @@ extension NetworkClient {
             // 재시도 호출은 do 블록 밖에 둔다.
             // 안에 두면 재귀 호출이 한도 초과로 던진 unauthorized까지 아래 catch에 걸려
             // 세션 종료 처리 경로를 한 번 더 타게 된다.
+            //
+            // 세션 종료(토큰 삭제 + 통지)는 refresh token이 없거나 서버가 401로 거절한 경우만이다.
+            // 5xx 같은 일시적 실패에서 토큰을 지우면 서버 장애 한 번에 전원이 로그아웃된다.
             do {
                 _ = try await refreshToken()
-            } catch is NetworkError {
+            } catch NetworkError.unauthorized, TokenRefreshError.serverError(statusCode: 401) {
                 await notifyRefreshFailed()
                 throw NetworkError.unauthorized
-            } catch is TokenRefreshError {
-                await notifyRefreshFailed()
-                throw NetworkError.unauthorized
-            } catch {
-                throw error
+            } catch TokenRefreshError.serverError(let statusCode) {
+                // 일반 요청의 서버 오류와 같은 경로로 흘려 상태 코드 기반 문구·재시도 판단을 받게 한다
+                throw NetworkError.httpError(statusCode: statusCode, data: Data())
+            } catch TokenRefreshError.invalidResponse {
+                throw NetworkError.invalidResponse
             }
 
             return try await performRequest(urlRequest, retryCount: retryCount + 1)
