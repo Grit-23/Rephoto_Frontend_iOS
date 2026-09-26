@@ -8,6 +8,7 @@
 import Foundation
 
 @Observable
+@MainActor
 final class AlbumViewModel {
     let provider: SearchUseCaseProviderProtocol
 
@@ -19,7 +20,6 @@ final class AlbumViewModel {
         self.provider = provider
     }
 
-    @MainActor
     func fetchAlbums() async {
         albums = .loading
         do {
@@ -30,7 +30,6 @@ final class AlbumViewModel {
         }
     }
 
-    @MainActor
     func fetchAlbumPhotos(tagId: Int) async {
         albumPhotos = .loading
         do {

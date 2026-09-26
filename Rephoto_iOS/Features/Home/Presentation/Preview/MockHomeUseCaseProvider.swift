@@ -182,10 +182,10 @@ private struct MockGetPhotosUseCase: GetPhotosUseCaseProtocol {
 }
 
 private struct MockUploadPhotosUseCase: UploadPhotosUseCaseProtocol {
-    func execute(items: [PhotoUploadItem], onItemUploaded: ((Int) -> Void)?) async throws {
+    func execute(items: [PhotoUploadItem], onItemUploaded: (@MainActor @Sendable (Int) -> Void)?) async throws {
         for index in items.indices {
             try? await Task.sleep(for: .milliseconds(400))
-            onItemUploaded?(index + 1)
+            await onItemUploaded?(index + 1)
         }
     }
 }
