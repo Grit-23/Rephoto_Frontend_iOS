@@ -48,7 +48,8 @@ final class SessionStore {
         forceLogout()
     }
 
-    /// 토큰 리프레시 실패 등으로 인한 강제 로그아웃 (로컬 상태만 정리).
+    /// 토큰 리프레시 실패 등으로 인한 강제 로그아웃 (화면 상태만 정리).
+    /// 저장된 토큰은 `NetworkClient`가 이 통지를 보내기 전에 이미 지운다.
     func forceLogout() {
         userInfo = nil
         isLoggedIn = false

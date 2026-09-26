@@ -101,7 +101,7 @@ extension NetworkClient {
         // 401 에러 응답 처리
         if authPolicy.isUnauthorizedResponse(httpResponse) {
             guard retryCount < maxRetryCount else {
-                notifyRefreshFailed()
+                await notifyRefreshFailed()
                 throw NetworkError.unauthorized
             }
 
@@ -111,10 +111,10 @@ extension NetworkClient {
             do {
                 _ = try await refreshToken()
             } catch is NetworkError {
-                notifyRefreshFailed()
+                await notifyRefreshFailed()
                 throw NetworkError.unauthorized
             } catch is TokenRefreshError {
-                notifyRefreshFailed()
+                await notifyRefreshFailed()
                 throw NetworkError.unauthorized
             } catch {
                 throw error
@@ -136,9 +136,14 @@ extension NetworkClient {
     /// 갱신 Task는 하나로 합쳐지지만 그 실패는 대기하던 요청 전원에게 전달된다.
     /// 각자 콜백을 부르면 동시 401 N건에 통지가 N번 나가므로, 여기서 한 번으로 접는다.
     /// 재귀 재시도와 재시도 한도 소진 경로도 같은 이유로 이 함수를 거친다.
-    private func notifyRefreshFailed() {
+    ///
+    /// 통지 전에 저장된 토큰을 지운다. 화면 상태만 로그아웃되고 토큰이 남으면,
+    /// 다음 실행 때 자동 로그인 → 401 → 다시 로그인 화면으로 튕긴다.
+    private func notifyRefreshFailed() async {
         guard !hasNotifiedRefreshFailure else { return }
+        // await 전에 플래그를 세워, 삭제를 기다리는 동안 합류한 다른 요청이 중복 통지하지 않게 한다
         hasNotifiedRefreshFailure = true
+        try? await tokenStore.clear()
         onRefreshFailed?()
     }
 

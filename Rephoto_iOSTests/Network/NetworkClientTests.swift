@@ -152,6 +152,24 @@ extension StubURLProtocolSuites {
             #expect(refreshCount == 1, "재시도 한도 안에서 갱신은 1회만 시도된다")
         }
 
+        /// 화면만 로그아웃되고 토큰이 남으면 재실행 시 자동 로그인 → 401 → 로그인 화면으로 튕긴다.
+        @Test("갱신 실패로 세션이 끝나면 저장된 토큰을 삭제한다")
+        func clearsStoredTokensWhenRefreshFails() async throws {
+            let store = MockTokenStore(accessToken: "old", refreshToken: "r")
+            let refresh = SpyRefreshService(success: nil) // 실패
+            let client = makeClient(tokenStore: store, refreshService: refresh)
+            StubURLProtocol.handler = { req in (Self.response(req.url, 401), Data("{}".utf8)) }
+
+            await #expect(throws: NetworkError.unauthorized) {
+                _ = try await client.request(self.request(path: "/photos"))
+            }
+
+            let loggedIn = await client.isLoggedIn()
+            #expect(!loggedIn)
+            let refreshToken = await store.getRefreshToken()
+            #expect(refreshToken == nil, "refresh token까지 삭제돼야 재실행 시 자동 로그인되지 않는다")
+        }
+
         // MARK: - ⭐ Thundering-herd 방지
 
         @Test("동시에 20개 요청이 모두 401을 받아도 토큰 갱신은 정확히 1회만 수행된다")
@@ -207,7 +225,7 @@ extension StubURLProtocolSuites {
                 }
             }
 
-            // 통지는 요청이 throw하기 전에 동기로 끝나므로, 그룹이 끝난 시점에 카운트는 확정이다.
+            // 통지는 요청이 throw하기 전에 끝나므로, 그룹이 끝난 시점에 카운트는 확정이다.
             #expect(counter.value == 1, "동시 401 20건이 같은 갱신 실패를 공유해도 통지는 1회여야 한다")
             let refreshCount = await refresh.count()
             #expect(refreshCount == 1, "갱신 시도 자체도 1회여야 한다")
