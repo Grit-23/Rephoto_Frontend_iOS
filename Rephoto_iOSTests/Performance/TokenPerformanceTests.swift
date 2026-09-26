@@ -30,13 +30,17 @@ final class TokenPerformanceTests: XCTestCase {
         measure(metrics: [XCTClockMetric()]) {
             let exp = expectation(description: "save")
             Task {
-                for i in 0..<1000 {
-                    try await self.store.save(
-                        accessToken: "access-token-\(i)",
-                        refreshToken: "refresh-token-\(i)"
-                    )
+                defer { exp.fulfill() }
+                do {
+                    for i in 0..<1000 {
+                        try await self.store.save(
+                            accessToken: "access-token-\(i)",
+                            refreshToken: "refresh-token-\(i)"
+                        )
+                    }
+                } catch {
+                    XCTFail("save 실패: \(error)")
                 }
-                exp.fulfill()
             }
             wait(for: [exp], timeout: 30)
         }
@@ -86,16 +90,20 @@ final class TokenPerformanceTests: XCTestCase {
         measure(metrics: [XCTClockMetric()]) {
             let exp = expectation(description: "refresh")
             Task {
-                for i in 0..<500 {
-                    _ = await self.store.getAccessToken()
-                    _ = await self.store.getRefreshToken()
-                    _ = await self.store.getAccessToken() != nil
-                    try await self.store.save(
-                        accessToken: "refreshed-access-\(i)",
-                        refreshToken: "refreshed-refresh-\(i)"
-                    )
+                defer { exp.fulfill() }
+                do {
+                    for i in 0..<500 {
+                        _ = await self.store.getAccessToken()
+                        _ = await self.store.getRefreshToken()
+                        _ = await self.store.getAccessToken() != nil
+                        try await self.store.save(
+                            accessToken: "refreshed-access-\(i)",
+                            refreshToken: "refreshed-refresh-\(i)"
+                        )
+                    }
+                } catch {
+                    XCTFail("refresh 사이클 실패: \(error)")
                 }
-                exp.fulfill()
             }
             wait(for: [exp], timeout: 60)
         }
@@ -108,11 +116,15 @@ final class TokenPerformanceTests: XCTestCase {
         measure(metrics: [XCTClockMetric()]) {
             let exp = expectation(description: "clear")
             Task {
-                for i in 0..<1000 {
-                    try await self.store.save(accessToken: "a-\(i)", refreshToken: "r-\(i)")
-                    try await self.store.clear()
+                defer { exp.fulfill() }
+                do {
+                    for i in 0..<1000 {
+                        try await self.store.save(accessToken: "a-\(i)", refreshToken: "r-\(i)")
+                        try await self.store.clear()
+                    }
+                } catch {
+                    XCTFail("save/clear 실패: \(error)")
                 }
-                exp.fulfill()
             }
             wait(for: [exp], timeout: 30)
         }

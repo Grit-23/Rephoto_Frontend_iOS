@@ -38,7 +38,9 @@ final class UserRepository: UserRepositoryProtocol {
     }
 
     func logout() async throws {
-        _ = try await adapter.request(UserAPITarget.logout)
+        // 서버 로그아웃은 best-effort — 오프라인 등으로 실패해도 로컬 토큰은 반드시 지운다.
+        // 여기서 throw하면 토큰이 Keychain에 남아 다음 실행 때 자동 로그인된다.
+        _ = try? await adapter.request(UserAPITarget.logout)
         try await networkClient.logout()
     }
 

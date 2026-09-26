@@ -14,7 +14,7 @@ final class UploadPhotosUseCase: UploadPhotosUseCaseProtocol {
         self.repository = repository
     }
 
-    func execute(items: [PhotoUploadItem], onItemUploaded: ((Int) -> Void)?) async throws {
+    func execute(items: [PhotoUploadItem], onItemUploaded: (@MainActor @Sendable (Int) -> Void)?) async throws {
         guard !items.isEmpty else { return }
         try await repository.uploadPhotos(items: items, onItemUploaded: onItemUploaded)
     }

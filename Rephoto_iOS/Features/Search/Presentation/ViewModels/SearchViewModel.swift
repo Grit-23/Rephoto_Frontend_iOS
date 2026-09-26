@@ -8,6 +8,7 @@
 import Foundation
 
 @Observable
+@MainActor
 final class SearchViewModel {
     let provider: SearchUseCaseProviderProtocol
     private let getPhotosUseCase: GetPhotosUseCaseProtocol
@@ -27,7 +28,6 @@ final class SearchViewModel {
         self.getPhotosUseCase = getPhotosUseCase
     }
 
-    @MainActor
     func search(query: String) async {
         searchGeneration += 1
         let generation = searchGeneration
@@ -51,13 +51,11 @@ final class SearchViewModel {
         }
     }
 
-    @MainActor
     func clearResults() {
         searchGeneration += 1  // 진행 중 요청 무효화
         searchResults = .idle
     }
 
-    @MainActor
     func loadPhotoIndex() async {
         do {
             let photos = try await getPhotosUseCase.execute()

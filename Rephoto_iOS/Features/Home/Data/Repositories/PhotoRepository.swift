@@ -26,7 +26,7 @@ final class PhotoRepository: PhotoRepositoryProtocol {
         _ = try await adapter.request(PhotosAPITarget.deletePhoto(photoId: photoId))
     }
 
-    func uploadPhotos(items: [PhotoUploadItem], onItemUploaded: ((Int) -> Void)?) async throws {
+    func uploadPhotos(items: [PhotoUploadItem], onItemUploaded: (@MainActor @Sendable (Int) -> Void)?) async throws {
         guard !items.isEmpty else { return }
 
         let adapter = self.adapter
@@ -50,8 +50,8 @@ final class PhotoRepository: PhotoRepositoryProtocol {
             var results: [PhotoMetadataDTO] = []
             for try await dto in group {
                 results.append(dto)
-                // 병렬 업로드 완료분을 수집 루프(호출자 격리 컨텍스트)에서 보고
-                onItemUploaded?(results.count)
+                // 수집 루프는 nonisolated라 전역 executor에서 돈다 — 진행률은 UI 상태이므로 메인 액터로 넘겨 보고
+                await onItemUploaded?(results.count)
             }
             return results
         }

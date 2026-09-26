@@ -8,6 +8,7 @@
 import Foundation
 
 @Observable
+@MainActor
 final class PhotoInfoViewModel {
     private let provider: HomeUseCaseProviderProtocol
     /// 태그·설명 변경 실패는 이전까지 어떤 화면에도 표시되지 않고 삼켜졌다.
@@ -23,7 +24,6 @@ final class PhotoInfoViewModel {
         self.errorHandler = errorHandler
     }
 
-    @MainActor
     func deletePhoto(photoId: Int) async {
         do {
             try await provider.makeDeletePhotoUseCase().execute(photoId: photoId)
@@ -35,7 +35,6 @@ final class PhotoInfoViewModel {
         }
     }
 
-    @MainActor
     func fetchTags(photoId: Int) async {
         do {
             tags = try await provider.makeGetTagsUseCase().execute(photoId: photoId)
@@ -46,7 +45,6 @@ final class PhotoInfoViewModel {
         }
     }
 
-    @MainActor
     func addTag(photoId: Int, tagName: String) async {
         do {
             let newTag = try await provider.makeAddTagUseCase().execute(photoId: photoId, tagName: tagName)
@@ -58,7 +56,6 @@ final class PhotoInfoViewModel {
         }
     }
 
-    @MainActor
     func updateTag(photoTagId: Int, newTagName: String) async {
         do {
             let updated = try await provider.makeUpdateTagUseCase().execute(photoTagId: photoTagId, tagName: newTagName)
@@ -72,7 +69,6 @@ final class PhotoInfoViewModel {
         }
     }
 
-    @MainActor
     func deleteTag(photoTagId: Int) async {
         do {
             try await provider.makeDeleteTagUseCase().execute(photoTagId: photoTagId)
@@ -84,7 +80,6 @@ final class PhotoInfoViewModel {
         }
     }
 
-    @MainActor
     func getDescription(photoId: Int) async {
         do {
             description = try await provider.makeGetDescriptionUseCase().execute(photoId: photoId)
@@ -97,7 +92,6 @@ final class PhotoInfoViewModel {
 
     // MARK: - Private
 
-    @MainActor
     private func report(
         _ error: Error,
         action: String,

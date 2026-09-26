@@ -9,10 +9,10 @@ import SwiftUI
 import PhotosUI
 
 @Observable
+@MainActor
 final class HomeViewModel {
     let provider: HomeUseCaseProviderProtocol
     /// 업로드처럼 작업 흐름이 끊기는 실패를 전역 Alert으로 넘기는 창구.
-    /// @MainActor 격리 타입이라 Sendable이므로 nonisolated 클래스가 보관해도 안전하다.
     private let errorHandler: ErrorHandler
 
     struct UploadProgress: Equatable {
@@ -51,7 +51,6 @@ final class HomeViewModel {
         self.errorHandler = errorHandler
     }
 
-    @MainActor
     func fetchPhotos() async {
         isLoading = true
         loadError = nil
@@ -77,7 +76,6 @@ final class HomeViewModel {
         isLoading = false
     }
 
-    @MainActor
     func handlePickedPhotos(_ pickerItems: [PhotosPickerItem]) async {
         guard !pickerItems.isEmpty else { return }
         // 업로드 진행 중 재선택 시 중복 실행 방지 — 먼저 끝난 쪽의 defer가

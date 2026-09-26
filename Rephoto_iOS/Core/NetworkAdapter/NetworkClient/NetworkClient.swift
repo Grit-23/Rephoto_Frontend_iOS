@@ -101,23 +101,26 @@ extension NetworkClient {
         // 401 에러 응답 처리
         if authPolicy.isUnauthorizedResponse(httpResponse) {
             guard retryCount < maxRetryCount else {
-                notifyRefreshFailed()
+                await notifyRefreshFailed()
                 throw NetworkError.unauthorized
             }
 
             // 재시도 호출은 do 블록 밖에 둔다.
             // 안에 두면 재귀 호출이 한도 초과로 던진 unauthorized까지 아래 catch에 걸려
             // 세션 종료 처리 경로를 한 번 더 타게 된다.
+            //
+            // 세션 종료(토큰 삭제 + 통지)는 refresh token이 없거나 서버가 401로 거절한 경우만이다.
+            // 5xx 같은 일시적 실패에서 토큰을 지우면 서버 장애 한 번에 전원이 로그아웃된다.
             do {
                 _ = try await refreshToken()
-            } catch is NetworkError {
-                notifyRefreshFailed()
+            } catch NetworkError.unauthorized, TokenRefreshError.serverError(statusCode: 401) {
+                await notifyRefreshFailed()
                 throw NetworkError.unauthorized
-            } catch is TokenRefreshError {
-                notifyRefreshFailed()
-                throw NetworkError.unauthorized
-            } catch {
-                throw error
+            } catch TokenRefreshError.serverError(let statusCode) {
+                // 일반 요청의 서버 오류와 같은 경로로 흘려 상태 코드 기반 문구·재시도 판단을 받게 한다
+                throw NetworkError.httpError(statusCode: statusCode, data: Data())
+            } catch TokenRefreshError.invalidResponse {
+                throw NetworkError.invalidResponse
             }
 
             return try await performRequest(urlRequest, retryCount: retryCount + 1)
@@ -136,9 +139,14 @@ extension NetworkClient {
     /// 갱신 Task는 하나로 합쳐지지만 그 실패는 대기하던 요청 전원에게 전달된다.
     /// 각자 콜백을 부르면 동시 401 N건에 통지가 N번 나가므로, 여기서 한 번으로 접는다.
     /// 재귀 재시도와 재시도 한도 소진 경로도 같은 이유로 이 함수를 거친다.
-    private func notifyRefreshFailed() {
+    ///
+    /// 통지 전에 저장된 토큰을 지운다. 화면 상태만 로그아웃되고 토큰이 남으면,
+    /// 다음 실행 때 자동 로그인 → 401 → 다시 로그인 화면으로 튕긴다.
+    private func notifyRefreshFailed() async {
         guard !hasNotifiedRefreshFailure else { return }
+        // await 전에 플래그를 세워, 삭제를 기다리는 동안 합류한 다른 요청이 중복 통지하지 않게 한다
         hasNotifiedRefreshFailure = true
+        try? await tokenStore.clear()
         onRefreshFailed?()
     }
 
