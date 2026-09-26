@@ -16,9 +16,12 @@ extension StubURLProtocolSuites {
     final class PhotoRepositoryTests {
 
         private var tempFiles: [URL] = []
+        private var sessions: [URLSession] = []
 
         deinit {
             for url in tempFiles { try? FileManager.default.removeItem(at: url) }
+            // 실패로 취소된 동시 요청이 다음 테스트의 핸들러로 흘러들지 않게 세션째 끊는다
+            for session in sessions { session.invalidateAndCancel() }
         }
 
         // MARK: - Helpers
@@ -26,6 +29,7 @@ extension StubURLProtocolSuites {
         private func makeSUT() -> PhotoRepository {
             StubURLProtocol.reset()
             let session = StubURLProtocol.session()
+            sessions.append(session)
             let baseURL = URL(string: "https://api.test")!
             let networkClient = NetworkClient(
                 session: session,
@@ -39,7 +43,8 @@ extension StubURLProtocolSuites {
         private func makeUploadItem(id: Int) throws -> PhotoUploadItem {
             let url = FileManager.default.temporaryDirectory
                 .appendingPathComponent("test_upload_\(id)_\(UUID().uuidString).jpg")
-            try Data("fake image data \(id)".utf8).write(to: url)
+            // 파일명(UUID 포함)을 내용에 넣어 테스트·반복 간에 바디가 겹치지 않게 한다
+            try Data("fake image data \(id) \(url.lastPathComponent)".utf8).write(to: url)
             tempFiles.append(url)
             return PhotoUploadItem(
                 latitude: 37.5,
@@ -57,6 +62,22 @@ extension StubURLProtocolSuites {
 
         private nonisolated static func errorResponse(for request: URLRequest, code: Int) -> HTTPURLResponse {
             HTTPURLResponse(url: request.url!, statusCode: code, httpVersion: nil, headerFields: nil)!
+        }
+
+        /// URLProtocol에 도달한 요청은 바디가 `httpBodyStream`으로 바뀌어 올 수 있어 둘 다 읽는다.
+        private nonisolated static func bodyData(of request: URLRequest) -> Data {
+            if let body = request.httpBody { return body }
+            guard let stream = request.httpBodyStream else { return Data() }
+            stream.open()
+            defer { stream.close() }
+            var data = Data()
+            var buffer = [UInt8](repeating: 0, count: 4096)
+            while stream.hasBytesAvailable {
+                let read = stream.read(&buffer, maxLength: buffer.count)
+                guard read > 0 else { break }
+                data.append(buffer, count: read)
+            }
+            return data
         }
 
         // MARK: - Tests
@@ -102,9 +123,10 @@ extension StubURLProtocolSuites {
         func anyS3FailureThrowsAndSkipsBatchSave() async throws {
             let sut = makeSUT()
             let items = try (0..<3).map { try makeUploadItem(id: $0) }
-
-            let lock = NSLock()
-            nonisolated(unsafe) var failureEmitted = false
+            // 실패 대상은 도착 순서가 아니라 내용으로 고른다.
+            // "첫 요청만 500" 방식은 이전 테스트에서 취소된 요청이 늦게 도착해 그 1회를 가져가면
+            // 이번 업로드가 전부 성공해 batch까지 호출되는 flaky가 있었다.
+            let failingMarker = try Data(contentsOf: items[1].imageUrl)
 
             StubURLProtocol.handler = { request in
                 let path = request.url?.path ?? ""
@@ -112,14 +134,8 @@ extension StubURLProtocolSuites {
                     // 호출되면 안 되는 경로 — 아래 count 검증으로 잡는다.
                     throw URLError(.unknown)
                 }
-                // 첫 S3 요청만 500을 반환해 한 건 실패를 보장한다.
-                let shouldFail: Bool = lock.withLock {
-                    if !failureEmitted {
-                        failureEmitted = true
-                        return true
-                    }
-                    return false
-                }
+                // 특정 item의 S3 요청만 500을 반환해 한 건 실패를 보장한다.
+                let shouldFail = Self.bodyData(of: request).range(of: failingMarker) != nil
                 if shouldFail {
                     return (Self.errorResponse(for: request, code: 500), Data("server error".utf8))
                 }
