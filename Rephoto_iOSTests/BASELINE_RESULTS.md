@@ -57,7 +57,7 @@ C_cgdraw가 이론값과 0.2% 일치, D가 출력 JPEG 크기와 일치, A/B의 
 > 호스트: Apple M4 (Mac16,12), macOS
 > 리팩토링 후 동일 테스트 실행 시 이 값과 비교됨
 
-> **2026-07-23 스위트 정리**: 현재 스위트(19개, `TEST_GUIDE.md` 참조)에 남은 테스트의 기록만 유지한다.
+> **2026-07-23 스위트 정리**: 현재 회귀 감시 스위트(19개, xcbaseline 기록 17개 — `TEST_GUIDE.md` 참조)에 남은 테스트의 기록만 유지한다.
 > 삭제된 테스트(`DateFormatter`/`PhotoLoading`/`CacheHash`/`ImageCompression` 전체, 소규모·500급 티어 등)의 측정 기록은 git 히스토리의 이 파일 이전 버전에서 확인할 수 있다.
 > Memory 메트릭 baseline은 신뢰성 문제(physical 0.0kB, peak는 프로세스 전체값)로 비교 대상에서 제외 — `MemoryPerformanceTests`는 baseline 없이 측정값 확인용으로만 유지.
 > 남은 테스트의 새 baseline은 재기록 필요 (`Cmd + U` → Test Report → Set Baseline).

@@ -11,8 +11,8 @@ import Testing
 
 /// PhotosAPITarget의 엔드포인트 계약 검증.
 ///
-/// 서버 스펙(path/method/바디 구성)이 바뀌면 컴파일은 통과해도 런타임에서만 깨지므로,
-/// 순수 함수인 target 선언 자체를 값으로 고정해 스펙 변경의 1차 방어선을 만든다.
+/// 클라이언트 엔드포인트 명세(path/method/바디 구성)가 바뀌면 컴파일은 통과해도 런타임에서만 깨지므로,
+/// 순수 함수인 target 선언 자체를 값으로 고정해 의도치 않은 변경을 잡는다.
 @Suite("PhotosAPITarget — 엔드포인트 계약")
 struct PhotosAPITargetTests {
 

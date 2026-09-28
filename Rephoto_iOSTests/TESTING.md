@@ -5,36 +5,47 @@
 
 벤치마크의 측정 방법과 수치는 [`TEST_GUIDE.md`](TEST_GUIDE.md) / [`BASELINE_RESULTS.md`](BASELINE_RESULTS.md)에 따로 있다.
 
+백엔드는 운영이 종료됐다. 리팩토링은 로컬 목 서버 `mock_server.py`를 API 명세로 삼아 진행했고,
+일부 경로·필드는 원 서버와 다르다. 아래 계약 테스트가 고정하는 것은 이 명세 기준의 클라이언트 선언이다.
+
 ---
 
 ## 무엇을 테스트하는가
 
-### 네트워크 코어 — `Network/` (32 케이스)
+### 네트워크 코어 — `Network/` (41 케이스)
 
 | 스위트 | 검증 대상 |
 |---|---|
-| `NetworkClient` (11) | Bearer 주입 / 공개 경로 제외, 401 후 갱신·재시도, 갱신 실패 시 `onRefreshFailed`, **동시 401 20건에도 갱신 정확히 1회**(thundering-herd 방지), **실패 통지는 세션당 1회**(`hasNotifiedRefreshFailure` — 갱신 Task는 dedup으로 1개가 되지만 그 실패는 대기 중인 요청 전원에게 전달되므로 통지도 접는다) 및 **세션 복구 후 재통지** |
-| `NetworkAdapter` (8) | `APITargetType` → `URLRequest` 조립. `.plain` / `.jsonEncodable` / `.multipart` 3경로와 헤더 우선순위 |
-| `KeychainTokenStore` (6) | 저장·조회·덮어쓰기·삭제, service 격리, actor 직렬화 하 동시 접근 |
+| `NetworkClient` (16) | Bearer 주입 / 공개 경로 제외, 401 후 갱신·재시도, 갱신 실패 시 `onRefreshFailed`, **동시 401 20건에도 갱신 정확히 1회**(thundering-herd 방지), **실패 통지는 세션당 1회**(`hasNotifiedRefreshFailure` — 갱신 Task는 dedup으로 1개가 되지만 그 실패는 대기 중인 요청 전원에게 전달되므로 통지도 접는다) 및 **세션 복구 후 재통지**, 갱신 실패 유형별 토큰 삭제/유지, **로그아웃–갱신 경합**(응답 도착 후 logout → 저장 건너뜀 / 저장 단계 logout → 갱신 종료 뒤 clear) |
+| `NetworkAdapter` (7) | `APITargetType` → `URLRequest` 조립. `.plain` / `.jsonEncodable` / `.multipart` 3경로와 헤더 우선순위 |
+| `KeychainTokenStore` (6) | 저장·조회·덮어쓰기·삭제, service 격리, actor 직렬화 하 동시 접근(쌍의 index 일치로 검증) |
 | `DefaultAuthenticationPolicy` (4) | 공개/보호 경로 판정. `/relogin` `/joint` 같은 유사 경로가 공개로 새지 않는지 |
 | `PhotoRepository` (3) | 업로드 오케스트레이션 — 빈 입력 단락, 성공 시 S3 N회 + batch 1회, 부분 실패 시 batch 미호출 |
+| `TokenRefreshServiceImpl` (3) | 실제 갱신 요청 계약 — `POST /auth/refresh` · JSON 헤더 · 바디 키 `Authorization`, 응답 → `TokenPair`, 비 2xx → `serverError(statusCode:)`. 백엔드 API 요청 중 유일하게 `NetworkAdapter`를 거치지 않는 요청(이미지 다운로드는 Nuke가 별도로 처리) |
+| `UserRepository` (2) | 로그아웃 시 서버 호출 성공·실패 모두 로컬 토큰 삭제 |
 
 여기가 깨지면 화면 전체가 함께 죽는다. 최우선으로 둔다.
 
-### API 계약 — `Features/*/Data/*APITargetTests.swift` (37 케이스)
+### 클라이언트 엔드포인트 명세 — `Features/*/Data/*APITargetTests.swift` (35 케이스)
 
 `APITarget` 6종(`Photos` / `Tag` / `Description` / `Search` / `Album` / `User`)의
 `path` · `method` · `task` · `headers`를 값으로 고정한다.
 
-서버 스펙이 바뀌어도 컴파일은 통과하고 런타임에서야 깨지는 계층이다.
-순수 함수라 실행 비용이 거의 0(6개 스위트 합계 20ms 미만)이면서 스펙 변경의 1차 방어선이 된다.
+선언이 바뀌어도 컴파일은 통과하고 런타임에서야 깨지는 계층이다.
+순수 함수라 실행 비용이 거의 0(6개 스위트 합계 20ms 미만)인 테스트로 의도치 않은 변경을 잡는다.
+서버 쪽 계약을 검증하는 것은 아니다 — 고정하는 것은 클라이언트가 보내기로 한 명세다.
 
 특히 값으로 묶어둘 이유가 있는 지점:
 
 - `UserAPITarget` — `getUser` / `updateUser` / `deleteUser`가 `/users` 하나를 공유하고 method로만 갈린다
-- `UserAPITarget` — `/login` `/join` `/auth/refresh`는 `DefaultAuthenticationPolicy`가 공개 경로로 판정하는 값이다. path가 틀어지면 토큰 주입 여부까지 함께 틀어진다
-- `RefreshTokenRequestDTO` — 서버가 바디 키로 `Authorization`을 기대한다. 틀어지면 갱신이 조용히 실패하고 전 화면이 강제 로그아웃된다
+- `UserAPITarget` — `/login` `/join`은 `DefaultAuthenticationPolicy`가 공개 경로로 판정하는 값이다. path가 틀어지면 토큰 주입 여부까지 함께 틀어진다
+- 토큰 갱신 요청은 `APITarget`을 거치지 않고 `TokenRefreshServiceImpl`이 직접 보낸다. 서버가 기대하는 바디 키 `Authorization`은 `Network/TokenRefreshServiceTests`에서 고정한다 — 틀어지면 갱신이 조용히 실패하고 전 화면이 강제 로그아웃된다
 - `PhotosAPITarget.s3Upload` — 유일하게 `headers`를 `nil`로 내려 어댑터가 boundary 포함 Content-Type을 설정하게 위임한다
+
+### 응답 DTO 계약 — `Features/Search/Data/AlbumResponseDTOTests.swift` (6 케이스)
+
+`GET /albums` 응답의 `coverImageUrl` · `photoCount`(#66 N+1 제거로 추가) 디코딩을 camelCase 그대로 고정한다.
+`AlbumRepository`가 기본 설정 `JSONDecoder()`를 쓰므로 키 하나가 틀어지면 앨범 목록이 통째로 빈다.
 
 ### Presentation 상태 전이 — `Presentation/` (12 케이스)
 
@@ -47,8 +58,9 @@
 
 8개 클래스 37개 측정. 회귀 판정 기준은 [`BASELINE_RESULTS.md`](BASELINE_RESULTS.md),
 측정 방법과 스위트 정리 이력은 [`TEST_GUIDE.md`](TEST_GUIDE.md)에 있다.
-(이 중 19개가 baseline 대조 대상이고, `HomeDerivedCollectionPerformanceTests` ·
-`UploadMemoryBenchmark` · `DecodeVariantBenchTests`는 A/B 실측·측정 전용이라 카운트에서 제외한다.)
+(이 중 19개가 회귀 감시 스위트이고 xcbaseline에는 17개가 기록돼 있다 — `MemoryPerformanceTests`는
+비교 제외라 3개 중 1개만 남은 상태. `HomeDerivedCollectionPerformanceTests` ·
+`UploadMemoryBenchmark` · `DecodeVariantBenchTests` 18개는 A/B 실측·측정 전용이라 카운트에서 제외한다.)
 
 #### `DecodeVariantBenchTests` — 디코드 변형 대조 (4개)
 
@@ -74,7 +86,7 @@
 
 ##### 측정 설계에서 반드시 지켜야 할 세 가지
 
-1인 개발이라 잊기 쉬운데, 이 세 가지를 어기면 수치가 조용히 틀린다.
+이 세 가지를 어기면 수치가 조용히 틀린다.
 
 **① 집계는 중앙값이 아니라 `max`.** `phys_footprint`는 `free()` 직후 바로 내려가지 않고,
 프레임워크가 디코드 결과를 내부 캐시에 들고 있기도 한다. 그래서 2회차부터 보유·캐시된 페이지를
@@ -121,12 +133,13 @@ done
 `TaskGroup` 병렬 업로드와 부분 실패 처리를 담고 있다.
 다만 그 오케스트레이션은 `PhotoRepositoryTests`가 이미 한 겹 덮고 있다.
 
-**Search / Settings 피처의 ViewModel** — `SearchViewModel` / `AlbumViewModel`은
-Home / User 대비 로직 밀도가 낮아 후순위. 두 피처의 `APITarget` 계약은 위에서 덮었다.
-`Settings`는 아직 placeholder다.
+**Search 피처의 ViewModel · SettingsView** — `SearchViewModel` / `AlbumViewModel`은
+Home / User 대비 로직 밀도가 낮아 후순위. Search의 `APITarget` 계약은 위에서 덮었다.
+`SettingsView`(#52에서 User 피처로 합쳐짐)는 버전 표시와 로그아웃 확인만 있고 상태는 `SessionStore`에
+위임하므로 `SessionStoreTests`가 덮는다.
 
-**DTO 매핑** — `toDomain()`의 정상 경로는 `PhotoRepositoryTests`와 `DecodingPerformanceTests`가
-간접적으로 지나간다. URL·날짜 파싱 실패 시 `RepositoryError.invalidResponse(detail:)`로
+**DTO 매핑** — `AlbumResponseDTO` 디코딩은 위에서 직접 고정했지만, 나머지 `toDomain()`의 정상 경로는
+`PhotoRepositoryTests`와 `DecodingPerformanceTests`가 간접적으로 지나간다. URL·날짜 파싱 실패 시 `RepositoryError.invalidResponse(detail:)`로
 떨어지는 경로는 아직 직접 검증하지 않았다.
 
 ---
@@ -154,7 +167,7 @@ Swift Testing은 스위트 간에도 병렬 실행하므로, `.serialized`를 �
 
 | 테스트 플랜 | 대상 | 시점 |
 |---|---|---|
-| `Rephoto_iOS.xctestplan` | 단위·계약 테스트 81케이스 (성능 제외) | PR / push · CI 게이트 |
+| `Rephoto_iOS.xctestplan` | 단위·계약 테스트 94케이스 (성능 제외) | PR / push · CI 게이트 |
 | `Rephoto_Performance.xctestplan` | 벤치마크 37케이스만 | 수동 · baseline 대조 |
 
 플랜만 분리하고 **테스트 타겟은 1개**로 유지한다. 단일 앱 타겟이라 어느 쪽이든
@@ -230,7 +243,7 @@ xcrun xcresulttool get log --path DeviceRelease.xcresult --type console | grep �
 
 ### 주의: `CODE_SIGNING_ALLOWED=NO`를 test에 붙이지 말 것
 
-서명을 끄면 엔타이틀먼트가 없어 `KeychainTokenStore` 스위트 5개가
+서명을 끄면 엔타이틀먼트가 없어 `KeychainTokenStore` 스위트 6개가
 `errSecMissingEntitlement`(`-34018`)로 실패한다.
 시뮬레이터는 ad-hoc 서명으로 충분하므로 CI의 `Test` 스텝에서는 이 플래그를 쓰지 않는다.
 (`Build` 스텝에는 남겨둬도 무방하다.)

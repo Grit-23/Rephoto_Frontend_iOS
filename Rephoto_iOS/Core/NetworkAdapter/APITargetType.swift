@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// API 엔드포인트 선언 DSL
+/// API 엔드포인트 선언 프로토콜
 ///
 /// baseURL은 타겟이 아니라 `NetworkAdapter`가 생성자로 주입받아 소유한다 —
 /// 테스트에서 스텁 호스트로 갈아끼울 수 있어야 하므로 선언부에 박지 않는다.
