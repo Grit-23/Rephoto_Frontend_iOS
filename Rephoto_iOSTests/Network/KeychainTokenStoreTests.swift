@@ -95,9 +95,11 @@ final class KeychainTokenStoreTests {
             }
         }
 
-        // 마지막에 명시적으로 저장한 값이 조회된다(직렬화 보장).
-        try await sut.save(accessToken: "final", refreshToken: "final-r")
-        let access = await sut.getAccessToken()
-        #expect(access == "final")
+        // save는 access·refresh를 두 번의 Keychain 쓰기로 저장한다.
+        // 직렬화가 깨지면 서로 다른 index의 쓰기가 끼어들어 쌍이 어긋나므로,
+        // 마지막에 남은 두 값이 같은 index인지로 직렬화를 검증한다.
+        let access = try #require(await sut.getAccessToken())
+        let refresh = await sut.getRefreshToken()
+        #expect(refresh == "r-\(access.dropFirst(2))")
     }
 }

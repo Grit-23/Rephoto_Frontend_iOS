@@ -14,7 +14,6 @@ import Testing
 /// 서버 없이 buildURLRequest 출력(method/URL/헤더/바디)을 직접 검증한다.
 /// JSON 바디는 직렬화 키 순서가 비결정적이므로 바이트 비교 대신 파싱 후 비교한다.
 @Suite("NetworkAdapter")
-@MainActor
 struct NetworkAdapterTests {
 
     private let baseURL = URL(string: "https://api.test")!
@@ -77,16 +76,6 @@ struct NetworkAdapterTests {
         #expect(try jsonBody(of: request) == ["loginId": "dodle", "password": "secret!"])
     }
 
-    /// RefreshTokenRequestDTO는 CodingKeys로 서버가 기대하는 "Authorization" 필드명에 매핑된다.
-    @Test("리프레시 토큰 요청은 서버가 기대하는 Authorization 바디 키로 인코딩된다")
-    func jsonEncodableRefreshTokenUsesAuthorizationBodyKey() throws {
-        let target = UserAPITarget.refreshToken(refreshToken: "refresh-token-value")
-        let request = try makeSUT().buildURLRequest(target)
-
-        #expect(request.url == URL(string: "https://api.test/auth/refresh"))
-        #expect(try jsonBody(of: request) == ["Authorization": "refresh-token-value"])
-    }
-
     @Test("검색 요청은 query를 JSON 바디로 인코딩한다")
     func jsonEncodableSearchEncodesQuery() throws {
         let request = try makeSUT().buildURLRequest(SearchAPITarget.search(query: "제주도 바다"))
@@ -112,7 +101,7 @@ struct NetworkAdapterTests {
         let contentType = try #require(request.value(forHTTPHeaderField: "Content-Type"))
         #expect(contentType.hasPrefix("multipart/form-data; boundary="))
         let boundary = String(contentType.dropFirst("multipart/form-data; boundary=".count))
-        #expect(!boundary.isEmpty)
+        #expect(boundary.isEmpty == false)
 
         let body = try #require(request.httpBody)
         let partHeader = Data(
@@ -130,6 +119,6 @@ struct NetworkAdapterTests {
         let request = try makeSUT().buildURLRequest(PhotosAPITarget.s3Upload(file: Data()))
 
         let contentType = try #require(request.value(forHTTPHeaderField: "Content-Type"))
-        #expect(!contentType.contains("application/json"))
+        #expect(contentType.contains("application/json") == false)
     }
 }

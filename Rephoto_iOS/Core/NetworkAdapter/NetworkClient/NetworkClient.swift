@@ -52,9 +52,15 @@ actor NetworkClient {
     }
 
     /// 로그아웃 처리 (진행 중 토큰 갱신 취소 + 토큰 삭제)
+    ///
+    /// 갱신 Task가 이미 저장 단계에 들어갔다면 끝날 때까지 기다린 뒤 지운다.
+    /// 기다리지 않으면 clear 뒤에 save가 실행되어 로그아웃한 계정의 토큰이 되살아날 수 있다.
+    /// actor는 FIFO를 언어 차원에서 보증하지 않으므로 순서를 await로 고정한다.
     func logout() async throws {
-        refreshTask?.cancel()
+        let task = refreshTask
         refreshTask = nil
+        task?.cancel()
+        _ = try? await task?.value
         try await tokenStore.clear()
     }
 
@@ -166,6 +172,11 @@ extension NetworkClient {
             }
 
             let tokenPair = try await refreshService.refresh(refreshToken)
+
+            // logout()이 이 Task를 cancel한 뒤 종료를 기다린다. 응답이 이미 도착한 뒤 취소됐다면
+            // 지워질 토큰을 저장할 이유가 없으므로 여기서 관측해 저장을 건너뛰고,
+            // 대기 중인 요청들에는 CancellationError를 전달한다.
+            try Task.checkCancellation()
 
             try await tokenStore.save(
                 accessToken: tokenPair.accessToken,

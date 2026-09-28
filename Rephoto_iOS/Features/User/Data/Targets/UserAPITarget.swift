@@ -14,7 +14,6 @@ enum UserAPITarget {
     case getUser
     case deleteUser
     case logout
-    case refreshToken(refreshToken: String)
 }
 
 extension UserAPITarget: APITargetType {
@@ -28,14 +27,12 @@ extension UserAPITarget: APITargetType {
             return "/users"
         case .logout:
             return "/logout"
-        case .refreshToken:
-            return "/auth/refresh"
         }
     }
 
     var method: HTTPMethod {
         switch self {
-        case .join, .login, .logout, .refreshToken:
+        case .join, .login, .logout:
             return .post
         case .updateUser:
             return .put
@@ -56,8 +53,6 @@ extension UserAPITarget: APITargetType {
             return .jsonEncodable(UpdateUserRequestDTO(username: username, password: password))
         case .getUser, .logout, .deleteUser:
             return .plain
-        case .refreshToken(let refreshToken):
-            return .jsonEncodable(RefreshTokenRequestDTO(refreshToken: refreshToken))
         }
     }
 

@@ -22,12 +22,3 @@ struct UpdateUserRequestDTO: Encodable {
     let username: String
     let password: String
 }
-
-struct RefreshTokenRequestDTO: Encodable {
-    let refreshToken: String
-
-    // 서버가 바디 필드명으로 "Authorization"을 기대함
-    enum CodingKeys: String, CodingKey {
-        case refreshToken = "Authorization"
-    }
-}

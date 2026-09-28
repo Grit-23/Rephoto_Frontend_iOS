@@ -64,22 +64,6 @@ extension StubURLProtocolSuites {
             HTTPURLResponse(url: request.url!, statusCode: code, httpVersion: nil, headerFields: nil)!
         }
 
-        /// URLProtocol에 도달한 요청은 바디가 `httpBodyStream`으로 바뀌어 올 수 있어 둘 다 읽는다.
-        private nonisolated static func bodyData(of request: URLRequest) -> Data {
-            if let body = request.httpBody { return body }
-            guard let stream = request.httpBodyStream else { return Data() }
-            stream.open()
-            defer { stream.close() }
-            var data = Data()
-            var buffer = [UInt8](repeating: 0, count: 4096)
-            while stream.hasBytesAvailable {
-                let read = stream.read(&buffer, maxLength: buffer.count)
-                guard read > 0 else { break }
-                data.append(buffer, count: read)
-            }
-            return data
-        }
-
         // MARK: - Tests
 
         @Test("빈 배열은 어떤 네트워크 요청도 발생시키지 않고 즉시 반환한다")
@@ -135,7 +119,7 @@ extension StubURLProtocolSuites {
                     throw URLError(.unknown)
                 }
                 // 특정 item의 S3 요청만 500을 반환해 한 건 실패를 보장한다.
-                let shouldFail = Self.bodyData(of: request).range(of: failingMarker) != nil
+                let shouldFail = request.bodyData.range(of: failingMarker) != nil
                 if shouldFail {
                     return (Self.errorResponse(for: request, code: 500), Data("server error".utf8))
                 }
@@ -143,7 +127,9 @@ extension StubURLProtocolSuites {
                 return (Self.okResponse(for: request), Data(body.utf8))
             }
 
-            await #expect(throws: (any Error).self) {
+            // 어떤 에러든 통과시키면 다른 원인(디코딩·파일 읽기 실패)도 성공으로 보인다.
+            // S3 500이 그대로 호출부까지 전파되는지 에러 값으로 고정한다.
+            await #expect(throws: NetworkError.httpError(statusCode: 500, data: Data("server error".utf8))) {
                 try await sut.uploadPhotos(items: items)
             }
 
