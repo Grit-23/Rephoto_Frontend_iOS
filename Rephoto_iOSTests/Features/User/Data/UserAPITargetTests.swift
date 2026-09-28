@@ -12,7 +12,7 @@ import Testing
 /// UserAPITarget의 엔드포인트 계약 검증.
 ///
 /// 조회·수정·삭제가 `/users` 하나를 method로만 구분하므로, path만으로는 오설정을 잡을 수 없다.
-/// 또 `/login` `/join` `/auth/refresh`는 DefaultAuthenticationPolicy가 공개 경로로 판정하는 값이라,
+/// 또 `/login` `/join`은 DefaultAuthenticationPolicy가 공개 경로로 판정하는 값이라,
 /// 여기서 path가 바뀌면 토큰 주입 여부까지 함께 틀어진다.
 @Suite("UserAPITarget — 엔드포인트 계약")
 struct UserAPITargetTests {
@@ -42,14 +42,6 @@ struct UserAPITargetTests {
         #expect(target.path == "/logout")
         #expect(target.method == .post)
         #expect(target.task.isPlain)
-    }
-
-    @Test("refreshToken — POST /auth/refresh")
-    func refreshTokenPathAndMethod() {
-        let target = UserAPITarget.refreshToken(refreshToken: "refresh-token-value")
-
-        #expect(target.path == "/auth/refresh")
-        #expect(target.method == .post)
     }
 
     /// `/users`는 세 케이스가 공유하므로 method가 유일한 구분자다.
@@ -117,20 +109,6 @@ struct UserAPITargetTests {
         #expect(body.password == "new-secret!")
     }
 
-    /// RefreshTokenRequestDTO는 CodingKeys로 서버가 기대하는 "Authorization" 필드명에 매핑된다.
-    /// 이 키가 틀어지면 갱신이 조용히 실패하고 전 화면이 강제 로그아웃되므로 인코딩 결과까지 검증한다.
-    @Test("refreshToken — 바디를 Authorization 키로 인코딩한다")
-    func refreshTokenUsesAuthorizationBodyKey() throws {
-        let target = UserAPITarget.refreshToken(refreshToken: "refresh-token-value")
-
-        let body = try #require(target.task.jsonBody(as: RefreshTokenRequestDTO.self), "task가 .jsonEncodable이 아님")
-        #expect(body.refreshToken == "refresh-token-value")
-
-        let encoded = try JSONEncoder().encode(body)
-        let json = try #require(JSONSerialization.jsonObject(with: encoded) as? NSDictionary)
-        #expect(json == ["Authorization": "refresh-token-value"])
-    }
-
     // MARK: - headers
 
     @Test("모든 케이스가 JSON 기본 헤더를 사용한다")
@@ -141,8 +119,7 @@ struct UserAPITargetTests {
             .updateUser(username: "도연", password: "pw"),
             .getUser,
             .deleteUser,
-            .logout,
-            .refreshToken(refreshToken: "refresh-token-value")
+            .logout
         ]
 
         for target in targets {
