@@ -167,6 +167,12 @@ extension NetworkClient {
 
             let tokenPair = try await refreshService.refresh(refreshToken)
 
+            // logout()은 이 Task를 cancel한 뒤 tokenStore.clear()를 기다린다.
+            // 취소를 관측하는 지점이 session.data(for:) 안뿐이면, 응답이 이미 도착한 뒤 온 logout은
+            // clear 다음에 아래 save를 실행시켜 Keychain에 유효 토큰을 되살린다(다음 실행 시 자동 로그인).
+            // 저장 직전에 한 번 더 확인해 그 문을 닫는다.
+            try Task.checkCancellation()
+
             try await tokenStore.save(
                 accessToken: tokenPair.accessToken,
                 refreshToken: tokenPair.refreshToken

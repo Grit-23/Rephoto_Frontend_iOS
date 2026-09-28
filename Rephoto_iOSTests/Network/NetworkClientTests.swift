@@ -317,6 +317,45 @@ extension StubURLProtocolSuites {
             let access = await store.getAccessToken()
             #expect(access == nil)
         }
+
+        /// logout()은 갱신 Task를 cancel한 뒤 tokenStore.clear()를 기다린다.
+        /// 갱신 응답이 이미 도착해 session.data(for:)의 취소 관측 지점을 지나친 뒤라면,
+        /// 취소를 다시 확인하지 않는 한 save가 clear 다음에 실행돼 Keychain에 새 토큰이 되살아난다
+        /// (다음 실행 시 자동 로그인). 저장 직전의 checkCancellation이 이 창을 닫는지 검증한다.
+        ///
+        /// GatedRefreshService는 취소를 무시하고 신호가 올 때까지 응답을 붙잡아 둬,
+        /// "응답은 왔지만 아직 저장 전" 상태에서 logout을 끼워 넣는 순서를 결정적으로 만든다.
+        // 게이트는 신호가 없으면 영원히 기다린다. 갱신이 호출되지 않는 방향으로 회귀하면
+        // 무한 대기가 되어 .serialized 컨테이너의 뒤 스위트까지 막히므로 시간 제한을 둔다(분 단위만 허용).
+        @Test("갱신 응답 도착 후 logout이 오면 새 토큰을 저장하지 않는다", .timeLimit(.minutes(1)))
+        func logoutDuringRefreshDoesNotResurrectTokens() async throws {
+            let store = MockTokenStore(accessToken: "old", refreshToken: "r")
+            let gate = GatedRefreshService(success: TokenPair(accessToken: "new", refreshToken: "r2"))
+            let client = makeClient(tokenStore: store, refreshService: gate)
+            // 새 토큰이면 200. 항상 401로 두면 checkCancellation이 없어도 재시도 한도 초과 경로가
+            // 토큰을 지워 버려, 아래 "저장소가 비어 있다" 단언이 변이를 잡지 못한다.
+            StubURLProtocol.handler = { req in
+                let authorized = req.value(forHTTPHeaderField: "Authorization") == "Bearer new"
+                return (Self.response(req.url, authorized ? 200 : 401), Data("{}".utf8))
+            }
+
+            let req = request(path: "/photos")
+            let inFlight = Task { try await client.request(req) }
+            await gate.waitUntilEntered()
+
+            try await client.logout()
+            await gate.release()
+
+            await #expect(throws: CancellationError.self) {
+                _ = try await inFlight.value
+            }
+            let access = await store.getAccessToken()
+            #expect(access == nil, "logout 뒤 도착한 갱신 결과가 저장소를 되살리면 안 된다")
+            let refresh = await store.getRefreshToken()
+            #expect(refresh == nil)
+            // 최초 401 1건만 나갔어야 한다. 저장이 됐다면 새 토큰으로 재시도가 한 번 더 기록된다.
+            #expect(StubURLProtocol.recordedRequests.count == 1, "logout 뒤 새 토큰으로 재시도하면 안 된다")
+        }
     }
 }
 
@@ -369,6 +408,45 @@ actor ScriptedRefreshService: TokenRefreshService {
         index += 1
         guard let result else { throw NetworkError.unauthorized }
         return result
+    }
+}
+
+/// 진입 사실을 알리고, release()가 올 때까지 응답을 붙잡아 두는 토큰 갱신 서비스.
+///
+/// Task 취소를 관측하지 않는다. 실제 URLSession이라면 "응답을 이미 받아 취소 확인 지점을 지난 뒤"에
+/// 해당하는 상태를 흉내 내, 그 사이에 logout()을 끼워 넣는 순서를 테스트가 제어할 수 있게 한다.
+actor GatedRefreshService: TokenRefreshService {
+    private let newTokens: TokenPair
+    private var hasEntered = false
+    private var isReleased = false
+    private var enteredWaiter: CheckedContinuation<Void, Never>?
+    private var releaseWaiter: CheckedContinuation<Void, Never>?
+
+    init(success: TokenPair) {
+        self.newTokens = success
+    }
+
+    func refresh(_ refreshToken: String) async throws -> TokenPair {
+        hasEntered = true
+        enteredWaiter?.resume()
+        enteredWaiter = nil
+        if isReleased == false {
+            await withCheckedContinuation { releaseWaiter = $0 }
+        }
+        return newTokens
+    }
+
+    /// refresh()가 호출될 때까지 기다린다. 이미 호출됐으면 즉시 반환.
+    func waitUntilEntered() async {
+        if hasEntered { return }
+        await withCheckedContinuation { enteredWaiter = $0 }
+    }
+
+    /// 붙잡아 둔 refresh()를 풀어 결과를 반환시킨다.
+    func release() {
+        isReleased = true
+        releaseWaiter?.resume()
+        releaseWaiter = nil
     }
 }
 
