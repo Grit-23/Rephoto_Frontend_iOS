@@ -37,8 +37,9 @@ Rephoto_iOS/
 ├── Core/             # 공통 인프라
 │   ├── Config/           # 환경 설정 (BASE_URL)
 │   ├── DIContainer/      # Factory 기반 DI 컨테이너
-│   ├── Error/            # 공통 에러 타입
-│   └── NetworkAdapter/   # URLSession 기반 자체 네트워크 레이어
+│   ├── Error/            # AppError · Loadable · ErrorHandler — 계층별 에러 정규화와 표시 경로
+│   ├── NetworkAdapter/   # URLSession 기반 자체 네트워크 레이어
+│   └── UIComponents/     # PhotoNavGrid · PhotoGridTile · ThumbnailTier · ErrorStateView
 ├── Features/
 │   ├── Home/         # 사진 그리드 · 업로드 · 상세(태그/설명)
 │   │   ├── Data/         # DTO · Repository 구현 · API Target
@@ -54,8 +55,24 @@ Rephoto_iOS/
 
 - **Clean Architecture + MVVM** — View → ViewModel → UseCase → Repository 단방향 의존. Presentation은 Domain Model만 사용하고, DTO 매핑은 Data 계층에 격리됩니다.
 - **Swift Concurrency** — `async/await` 전면 사용. 토큰 저장소와 네트워크 클라이언트는 `actor`로 구현해 동시 접근을 직렬화합니다.
-- **자체 네트워크 DSL** — 엔드포인트를 `APITargetType` 프로토콜로 선언하면 `NetworkAdapter`가 `URLRequest`로 조립하고, `NetworkClient`(actor)가 Bearer 토큰 주입과 401 시 토큰 자동 갱신·재시도를 처리합니다.
-- **의존성 주입** — Factory로 의존성을 등록하고, DEBUG 빌드에서는 Mock provider를 자동 주입해 SwiftUI Preview와 테스트를 네트워크 없이 격리합니다.
+- **자체 네트워크 레이어** — 엔드포인트를 `APITargetType` 프로토콜로 선언하면 `NetworkAdapter`가 `URLRequest`로 조립하고, `NetworkClient`(actor)가 Bearer 토큰 주입과 401 시 토큰 자동 갱신·재시도를 처리합니다.
+- **의존성 주입** — `Factory`로 의존성을 등록하고, DEBUG 빌드에서는 Mock provider를 자동 주입해 SwiftUI Preview와 테스트를 네트워크 없이 격리합니다.
+
+## 기술 포인트
+
+- **토큰 갱신 직렬화** — 갱신 진행 중 도착한 동시 401 20건을 단일 갱신으로 합칩니다(`NetworkClient` actor, 단일 `Task` 합류). 갱신 실패 통지도 1회로 접고, 로그아웃은 진행 중인 갱신이 끝난 뒤 토큰을 지웁니다. 테스트로 고정.
+- **업로드 전처리** — ImageIO 다운샘플 목표 크기를 JPEG 1/2ⁿ 서브샘플 경계에 맞춰 페이로드 −74%(4032px 원본 1장 기준), 장당 전처리 시간 −22%(A16) · −24%(A13). 실기기 Release 실측, [BASELINE_RESULTS.md](Rephoto_iOSTests/BASELINE_RESULTS.md).
+- **에러 계층** — 계층별 에러를 `AppError`로 정규화하고, 화면 안에서 해결할 수 있는 실패는 `Loadable` 인라인, 흐름이 끊기는 실패는 전역 `ErrorHandler` Alert으로 나눕니다.
+
+## 테스트 · CI
+
+- 단위·계약 테스트 **94개**(Swift Testing 82 + XCTest 12) — `Rephoto_iOS.xctestplan`. 네트워크 코어(동시 401 → 갱신 1회, 로그아웃–갱신 경합, Keychain actor, 어댑터 조립)와 클라이언트 엔드포인트 명세 35케이스를 고정합니다.
+- 성능 벤치 **37개** — `Rephoto_Performance.xctestplan`, 수동 실행. 기준값과 측정 조건은 [BASELINE_RESULTS.md](Rephoto_iOSTests/BASELINE_RESULTS.md), 가이드는 [TESTING.md](Rephoto_iOSTests/TESTING.md).
+- CI — PR마다 `build-for-testing` → `test-without-building` → `xccov` 커버리지 요약 (`.github/workflows/iOS.yml`).
+
+## 로컬 목 서버
+
+백엔드는 운영이 종료됐습니다. 리팩토링은 로컬 목 서버 `mock_server.py`를 API 명세로 삼아 진행했고, 일부 경로·필드는 원 서버와 다릅니다. `mock_server.py`는 앱의 API 계약에 맞춰 데모 픽스처 14장을 내려주는 인메모리 서버입니다(`python3 mock_server.py`). DEBUG 빌드는 앱 내 목 provider, 네트워크 경로는 mock_server — 연결 절차(BASE_URL · DEBUG Mock 등록 해제)는 파일 상단 주석에 있습니다.
 
 ## 의존성
 
