@@ -127,7 +127,9 @@ extension StubURLProtocolSuites {
                 return (Self.okResponse(for: request), Data(body.utf8))
             }
 
-            await #expect(throws: (any Error).self) {
+            // 어떤 에러든 통과시키면 다른 원인(디코딩·파일 읽기 실패)도 성공으로 보인다.
+            // S3 500이 그대로 호출부까지 전파되는지 에러 값으로 고정한다.
+            await #expect(throws: NetworkError.httpError(statusCode: 500, data: Data("server error".utf8))) {
                 try await sut.uploadPhotos(items: items)
             }
 

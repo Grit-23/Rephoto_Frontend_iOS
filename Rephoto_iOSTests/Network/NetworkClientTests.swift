@@ -165,7 +165,7 @@ extension StubURLProtocolSuites {
             }
 
             let loggedIn = await client.isLoggedIn()
-            #expect(!loggedIn)
+            #expect(loggedIn == false)
             let refreshToken = await store.getRefreshToken()
             #expect(refreshToken == nil, "refresh token까지 삭제돼야 재실행 시 자동 로그인되지 않는다")
         }
@@ -313,7 +313,7 @@ extension StubURLProtocolSuites {
             try await client.logout()
 
             let after = await client.isLoggedIn()
-            #expect(!after)
+            #expect(after == false)
             let access = await store.getAccessToken()
             #expect(access == nil)
         }

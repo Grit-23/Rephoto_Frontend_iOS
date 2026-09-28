@@ -53,7 +53,7 @@ extension StubURLProtocolSuites {
             try await sut.logout()
 
             let hasTokens = await sut.hasTokens()
-            #expect(!hasTokens)
+            #expect(hasTokens == false)
         }
 
         @Test("서버 로그아웃이 실패해도(오프라인) 저장된 토큰은 삭제된다")
@@ -65,7 +65,7 @@ extension StubURLProtocolSuites {
             try await sut.logout()
 
             let hasTokens = await sut.hasTokens()
-            #expect(!hasTokens, "서버 호출 실패가 로컬 토큰 삭제를 막으면 안 된다")
+            #expect(hasTokens == false, "서버 호출 실패가 로컬 토큰 삭제를 막으면 안 된다")
             let refresh = await store.getRefreshToken()
             #expect(refresh == nil)
         }

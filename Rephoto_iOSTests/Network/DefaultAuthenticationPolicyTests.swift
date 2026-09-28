@@ -21,7 +21,7 @@ struct DefaultAuthenticationPolicyTests {
 
     @Test("공개 경로는 인증이 필요 없다", arguments: ["/login", "/join", "/auth/refresh"])
     func publicPathDoesNotRequireAuthentication(path: String) {
-        #expect(!policy.requireAuthentication(request(path: path)))
+        #expect(policy.requireAuthentication(request(path: path)) == false)
     }
 
     @Test(

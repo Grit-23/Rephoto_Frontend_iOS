@@ -14,7 +14,6 @@ import Testing
 /// 서버 없이 buildURLRequest 출력(method/URL/헤더/바디)을 직접 검증한다.
 /// JSON 바디는 직렬화 키 순서가 비결정적이므로 바이트 비교 대신 파싱 후 비교한다.
 @Suite("NetworkAdapter")
-@MainActor
 struct NetworkAdapterTests {
 
     private let baseURL = URL(string: "https://api.test")!
@@ -102,7 +101,7 @@ struct NetworkAdapterTests {
         let contentType = try #require(request.value(forHTTPHeaderField: "Content-Type"))
         #expect(contentType.hasPrefix("multipart/form-data; boundary="))
         let boundary = String(contentType.dropFirst("multipart/form-data; boundary=".count))
-        #expect(!boundary.isEmpty)
+        #expect(boundary.isEmpty == false)
 
         let body = try #require(request.httpBody)
         let partHeader = Data(
@@ -120,6 +119,6 @@ struct NetworkAdapterTests {
         let request = try makeSUT().buildURLRequest(PhotosAPITarget.s3Upload(file: Data()))
 
         let contentType = try #require(request.value(forHTTPHeaderField: "Content-Type"))
-        #expect(!contentType.contains("application/json"))
+        #expect(contentType.contains("application/json") == false)
     }
 }
