@@ -30,7 +30,7 @@ struct TokenRefreshServiceImpl: TokenRefreshService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(
-            RefreshTokenRequestBody(Authorization: refreshToken)
+            RefreshTokenRequestBody(refreshToken: refreshToken)
         )
 
         let (data, response) = try await session.data(for: request)
@@ -55,7 +55,12 @@ struct TokenRefreshServiceImpl: TokenRefreshService {
 // MARK: - Request / Response DTOs
 
 private struct RefreshTokenRequestBody: Encodable {
-    let Authorization: String
+    let refreshToken: String
+
+    /// 서버가 바디 필드명으로 "Authorization"을 기대한다
+    enum CodingKeys: String, CodingKey {
+        case refreshToken = "Authorization"
+    }
 }
 
 private struct RefreshResponseDTO: Decodable {
