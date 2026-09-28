@@ -318,10 +318,8 @@ extension StubURLProtocolSuites {
             #expect(access == nil)
         }
 
-        /// logout()은 갱신 Task를 cancel한 뒤 tokenStore.clear()를 기다린다.
-        /// 갱신 응답이 이미 도착해 session.data(for:)의 취소 관측 지점을 지나친 뒤라면,
-        /// 취소를 다시 확인하지 않는 한 save가 clear 다음에 실행돼 Keychain에 새 토큰이 되살아난다
-        /// (다음 실행 시 자동 로그인). 저장 직전의 checkCancellation이 이 창을 닫는지 검증한다.
+        /// 갱신 응답이 이미 도착해 session.data(for:)의 취소 관측 지점을 지나친 뒤 logout이 오는 창.
+        /// 저장 직전의 checkCancellation이 저장을 건너뛰고 CancellationError를 전달하는지 검증한다.
         ///
         /// GatedRefreshService는 취소를 무시하고 신호가 올 때까지 응답을 붙잡아 둬,
         /// "응답은 왔지만 아직 저장 전" 상태에서 logout을 끼워 넣는 순서를 결정적으로 만든다.
@@ -330,8 +328,8 @@ extension StubURLProtocolSuites {
         @Test("갱신 응답 도착 후 logout이 오면 새 토큰을 저장하지 않는다", .timeLimit(.minutes(1)))
         func logoutDuringRefreshDoesNotResurrectTokens() async throws {
             let store = MockTokenStore(accessToken: "old", refreshToken: "r")
-            let gate = GatedRefreshService(success: TokenPair(accessToken: "new", refreshToken: "r2"))
-            let client = makeClient(tokenStore: store, refreshService: gate)
+            let refresh = GatedRefreshService(success: TokenPair(accessToken: "new", refreshToken: "r2"))
+            let client = makeClient(tokenStore: store, refreshService: refresh)
             // 새 토큰이면 200. 항상 401로 두면 checkCancellation이 없어도 재시도 한도 초과 경로가
             // 토큰을 지워 버려, 아래 "저장소가 비어 있다" 단언이 변이를 잡지 못한다.
             StubURLProtocol.handler = { req in
@@ -341,20 +339,56 @@ extension StubURLProtocolSuites {
 
             let req = request(path: "/photos")
             let inFlight = Task { try await client.request(req) }
-            await gate.waitUntilEntered()
+            await refresh.gate.waitUntilEntered()
 
-            try await client.logout()
-            await gate.release()
+            // logout은 갱신 Task 종료를 기다리므로 별도 Task로 띄운다.
+            // cancel()이 갱신 Task에 도달한 것을 확인한 뒤 응답을 풀어야 "취소된 뒤 도착한 응답" 순서가 된다.
+            let logout = Task { try await client.logout() }
+            await refresh.gate.waitUntilCancelled()
+            await refresh.gate.release()
+            try await logout.value
 
             await #expect(throws: CancellationError.self) {
                 _ = try await inFlight.value
             }
             let access = await store.getAccessToken()
             #expect(access == nil, "logout 뒤 도착한 갱신 결과가 저장소를 되살리면 안 된다")
-            let refresh = await store.getRefreshToken()
-            #expect(refresh == nil)
+            let refreshToken = await store.getRefreshToken()
+            #expect(refreshToken == nil)
             // 최초 401 1건만 나갔어야 한다. 저장이 됐다면 새 토큰으로 재시도가 한 번 더 기록된다.
             #expect(StubURLProtocol.recordedRequests.count == 1, "logout 뒤 새 토큰으로 재시도하면 안 된다")
+        }
+
+        /// checkCancellation을 통과해 저장 단계에 들어간 뒤 logout이 오는 창.
+        /// logout이 갱신 Task 종료를 기다리지 않으면 clear가 먼저 실행되고 뒤늦은 save가 토큰을 되살린다.
+        /// 저장을 게이트로 붙잡아 두고 그 사이에 logout을 끼워 넣어, clear가 save 뒤에 오는지 검증한다.
+        @Test("저장 단계에서 logout이 오면 갱신 Task가 끝난 뒤 토큰을 지운다", .timeLimit(.minutes(1)))
+        func logoutWaitsForInFlightSaveBeforeClearing() async throws {
+            let store = GatedTokenStore(accessToken: "old", refreshToken: "r")
+            let refresh = SpyRefreshService(success: TokenPair(accessToken: "new", refreshToken: "r2"))
+            let client = makeClient(tokenStore: store, refreshService: refresh)
+            StubURLProtocol.handler = { req in
+                let authorized = req.value(forHTTPHeaderField: "Authorization") == "Bearer new"
+                return (Self.response(req.url, authorized ? 200 : 401), Data("{}".utf8))
+            }
+
+            let req = request(path: "/photos")
+            let inFlight = Task { try await client.request(req) }
+            await store.saveGate.waitUntilEntered()
+
+            let logout = Task { try await client.logout() }
+            // logout이 cancel()까지 진행한 시점. 기다리는 구현이면 여기서 save 완료를 대기하고,
+            // 기다리지 않는 구현이면 이미 clear()를 호출했다.
+            await store.saveGate.waitUntilCancelled()
+            await store.saveGate.release()
+            try await logout.value
+            // 재시도는 clear와 경합하므로 결과는 보지 않고 끝나기만 기다린다(늦은 clear 기록 방지).
+            _ = try? await inFlight.value
+
+            let events = await store.events
+            #expect(events.first == "save", "clear는 진행 중인 save가 끝난 뒤여야 한다: \(events)")
+            let access = await store.getAccessToken()
+            #expect(access == nil, "logout이 끝난 뒤 토큰이 남으면 안 된다")
         }
     }
 }
@@ -411,42 +445,99 @@ actor ScriptedRefreshService: TokenRefreshService {
     }
 }
 
-/// 진입 사실을 알리고, release()가 올 때까지 응답을 붙잡아 두는 토큰 갱신 서비스.
+/// 진입을 알리고 release()가 올 때까지 호출자를 붙잡아 두는 게이트.
 ///
-/// Task 취소를 관측하지 않는다. 실제 URLSession이라면 "응답을 이미 받아 취소 확인 지점을 지난 뒤"에
-/// 해당하는 상태를 흉내 내, 그 사이에 logout()을 끼워 넣는 순서를 테스트가 제어할 수 있게 한다.
-actor GatedRefreshService: TokenRefreshService {
-    private let newTokens: TokenPair
+/// 붙잡힌 Task의 취소는 무시하되 관측만 한다. 실제 URLSession이라면 "응답을 이미 받아
+/// 취소 확인 지점을 지난 뒤"에 해당하는 상태를 흉내 내고, 테스트는 waitUntilCancelled()로
+/// logout의 cancel()이 도달한 시점을 잡아 그 뒤에 release()하는 순서를 결정적으로 만든다.
+actor TestGate {
     private var hasEntered = false
     private var isReleased = false
+    private var isCancelled = false
     private var enteredWaiter: CheckedContinuation<Void, Never>?
     private var releaseWaiter: CheckedContinuation<Void, Never>?
+    private var cancelWaiter: CheckedContinuation<Void, Never>?
+
+    /// 붙잡히는 쪽이 호출한다. release()까지 대기하며, 이미 풀렸으면 즉시 반환.
+    func hold() async {
+        hasEntered = true
+        enteredWaiter?.resume()
+        enteredWaiter = nil
+        guard isReleased == false else { return }
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { releaseWaiter = $0 }
+        } onCancel: {
+            Task { await self.markCancelled() }
+        }
+    }
+
+    /// hold()가 호출될 때까지 기다린다. 이미 호출됐으면 즉시 반환.
+    func waitUntilEntered() async {
+        if hasEntered { return }
+        await withCheckedContinuation { enteredWaiter = $0 }
+    }
+
+    /// 붙잡힌 Task가 취소될 때까지 기다린다. 이미 취소됐으면 즉시 반환.
+    func waitUntilCancelled() async {
+        if isCancelled { return }
+        await withCheckedContinuation { cancelWaiter = $0 }
+    }
+
+    /// 붙잡아 둔 호출자를 풀어 준다.
+    func release() {
+        isReleased = true
+        releaseWaiter?.resume()
+        releaseWaiter = nil
+    }
+
+    private func markCancelled() {
+        isCancelled = true
+        cancelWaiter?.resume()
+        cancelWaiter = nil
+    }
+}
+
+/// 게이트가 풀릴 때까지 응답을 붙잡아 두는 토큰 갱신 서비스.
+struct GatedRefreshService: TokenRefreshService {
+    let gate = TestGate()
+    private let newTokens: TokenPair
 
     init(success: TokenPair) {
         self.newTokens = success
     }
 
     func refresh(_ refreshToken: String) async throws -> TokenPair {
-        hasEntered = true
-        enteredWaiter?.resume()
-        enteredWaiter = nil
-        if isReleased == false {
-            await withCheckedContinuation { releaseWaiter = $0 }
-        }
+        await gate.hold()
         return newTokens
     }
+}
 
-    /// refresh()가 호출될 때까지 기다린다. 이미 호출됐으면 즉시 반환.
-    func waitUntilEntered() async {
-        if hasEntered { return }
-        await withCheckedContinuation { enteredWaiter = $0 }
+/// save를 게이트로 붙잡아 두고 save/clear 호출 순서를 기록하는 토큰 저장소.
+actor GatedTokenStore: TokenStore {
+    let saveGate = TestGate()
+    private(set) var events: [String] = []
+    private var access: String?
+    private var refresh: String?
+
+    init(accessToken: String?, refreshToken: String?) {
+        self.access = accessToken
+        self.refresh = refreshToken
     }
 
-    /// 붙잡아 둔 refresh()를 풀어 결과를 반환시킨다.
-    func release() {
-        isReleased = true
-        releaseWaiter?.resume()
-        releaseWaiter = nil
+    func getAccessToken() async -> String? { access }
+    func getRefreshToken() async -> String? { refresh }
+
+    func save(accessToken: String, refreshToken: String) async throws {
+        await saveGate.hold()
+        access = accessToken
+        refresh = refreshToken
+        events.append("save")
+    }
+
+    func clear() async throws {
+        access = nil
+        refresh = nil
+        events.append("clear")
     }
 }
 
