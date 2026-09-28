@@ -36,6 +36,29 @@ extension RequestTask {
     }
 }
 
+// MARK: - URLRequest 바디 헬퍼
+
+extension URLRequest {
+
+    /// StubURLProtocol에 도달한 요청의 바디.
+    ///
+    /// URLSession은 `httpBody`를 `httpBodyStream`으로 바꿔 넘길 수 있어 둘 다 읽는다.
+    var bodyData: Data {
+        if let body = httpBody { return body }
+        guard let stream = httpBodyStream else { return Data() }
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        while stream.hasBytesAvailable {
+            let read = stream.read(&buffer, maxLength: buffer.count)
+            guard read > 0 else { break }
+            data.append(buffer, count: read)
+        }
+        return data
+    }
+}
+
 // MARK: - 직렬화 컨테이너
 
 /// StubURLProtocol의 전역 상태(handler/recordedRequests)를 공유하는 스위트들의 컨테이너.
