@@ -28,12 +28,19 @@ public actor KeychainTokenStore: TokenStore {
         return loadFromKeychain(key: refreshTokenKey)
     }
 
+    /// access·refresh를 순서대로 저장한다. 두 번째 쓰기가 실패하면 첫 번째를 이전 값으로 되돌려
+    /// 쌍이 어긋나지 않게 한다. 이전 값이 없었다면 삭제한다.
     public func save(accessToken: String, refreshToken: String) async throws {
+        let previousAccessToken = loadFromKeychain(key: accessTokenKey)
         try saveToKeychain(key: accessTokenKey, value: accessToken)
         do {
             try saveToKeychain(key: refreshTokenKey, value: refreshToken)
         } catch {
-            deleteFromKeychain(key: accessTokenKey)
+            if let previousAccessToken {
+                try? saveToKeychain(key: accessTokenKey, value: previousAccessToken)
+            } else {
+                deleteFromKeychain(key: accessTokenKey)
+            }
             throw error
         }
     }
@@ -45,25 +52,40 @@ public actor KeychainTokenStore: TokenStore {
 
     // MARK: - Private Methods
 
+    /// 기존 항목이 있으면 값만 갱신하고, 없을 때만 새로 추가한다.
+    ///
+    /// delete 후 add 방식은 add가 실패하면(재부팅 후 첫 잠금 해제 전 등) 옛 값이 이미 지워져
+    /// 토큰이 유실된다. update가 실패해도 기존 항목은 그대로 남는다.
     private func saveToKeychain(key: String, value: String) throws {
         guard let data = value.data(using: .utf8) else {
             throw KeychainError.encodingFailed
         }
 
-        deleteFromKeychain(key: key)
-
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            kSecAttrAccount as String: key
+        ]
+        let attributesToUpdate: [String: Any] = [
+            kSecValueData as String: data
         ]
 
-        let status = SecItemAdd(query as CFDictionary, nil)
+        let updateStatus = SecItemUpdate(query as CFDictionary, attributesToUpdate as CFDictionary)
 
-        guard status == errSecSuccess else {
-            throw KeychainError.saveFailed(status: status)
+        switch updateStatus {
+        case errSecSuccess:
+            return
+        case errSecItemNotFound:
+            var addQuery = query
+            addQuery[kSecValueData as String] = data
+            addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+
+            let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+            guard addStatus == errSecSuccess else {
+                throw KeychainError.saveFailed(status: addStatus)
+            }
+        default:
+            throw KeychainError.saveFailed(status: updateStatus)
         }
     }
 
