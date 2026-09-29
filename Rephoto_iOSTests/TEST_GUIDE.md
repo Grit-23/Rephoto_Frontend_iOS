@@ -33,8 +33,9 @@
 ## 테스트 파일 구성 (37개 — 회귀 감시 19 + 측정 전용 18)
 
 회귀 감시 19개는 아래 5개 스위트(`Decoding` 3 · `Mapping` 6 · `Memory` 3 · `PhotoInfo` 2 · `Token` 5).
-xcbaseline에 실제 기록된 baseline은 17개다 — `MemoryPerformanceTests`는 비교 제외 방침이라 3개 중
-`test_memoryPeak_fullPipeline_1000` 1개만 옛 기록이 남아 있다(정리 대상). 나머지 18개는
+xcbaseline에 실제 기록된 baseline은 17개다 — `MemoryPerformanceTests`는 Memory 메트릭만 비교 제외(#48에서
+baseline 삭제)라, 3개 중 Clock 메트릭도 측정하는 `test_memoryPeak_fullPipeline_1000`의 Clock baseline 1개만 남아
+비교 대상이다. 나머지 18개는
 `HomeDerivedCollectionPerformanceTests`(11) · `UploadMemoryBenchmark`(3) · `DecodeVariantBenchTests`(4)로 측정 전용.
 
 ### `Support/MockDataFactory.swift`

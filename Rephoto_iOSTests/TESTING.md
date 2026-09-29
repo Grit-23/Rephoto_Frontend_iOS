@@ -59,7 +59,7 @@
 8개 클래스 37개 측정. 회귀 판정 기준은 [`BASELINE_RESULTS.md`](BASELINE_RESULTS.md),
 측정 방법과 스위트 정리 이력은 [`TEST_GUIDE.md`](TEST_GUIDE.md)에 있다.
 (이 중 19개가 회귀 감시 스위트이고 xcbaseline에는 17개가 기록돼 있다 — `MemoryPerformanceTests`는
-비교 제외라 3개 중 1개만 남은 상태. `HomeDerivedCollectionPerformanceTests` ·
+Memory 메트릭만 비교 제외라 3개 중 Clock baseline 1개만 비교한다. `HomeDerivedCollectionPerformanceTests` ·
 `UploadMemoryBenchmark` · `DecodeVariantBenchTests` 18개는 A/B 실측·측정 전용이라 카운트에서 제외한다.)
 
 #### `DecodeVariantBenchTests` — 디코드 변형 대조 (4개)

@@ -57,9 +57,9 @@ C_cgdraw가 이론값과 0.2% 일치, D가 출력 JPEG 크기와 일치, A/B의 
 > 호스트: Apple M4 (Mac16,12), macOS
 > 리팩토링 후 동일 테스트 실행 시 이 값과 비교됨
 
-> **2026-07-23 스위트 정리**: 현재 회귀 감시 스위트(19개, xcbaseline 기록 17개 — `TEST_GUIDE.md` 참조)에 남은 테스트의 기록만 유지한다.
+> **2026-07-23 스위트 정리**: 현재 회귀 감시 스위트는 19개다. xcbaseline에 기록된 baseline은 17개로, 16개는 시간 스위트(`Decoding` 3 · `Mapping` 6 · `PhotoInfo` 2 · `Token` 5), 1개는 `MemoryPerformanceTests/test_memoryPeak_fullPipeline_1000`의 **Clock 메트릭**(0.0609s)이다 (`TEST_GUIDE.md` 참조).
 > 삭제된 테스트(`DateFormatter`/`PhotoLoading`/`CacheHash`/`ImageCompression` 전체, 소규모·500급 티어 등)의 측정 기록은 git 히스토리의 이 파일 이전 버전에서 확인할 수 있다.
-> Memory 메트릭 baseline은 신뢰성 문제(physical 0.0kB, peak는 프로세스 전체값)로 비교 대상에서 제외 — `MemoryPerformanceTests`는 baseline 없이 측정값 확인용으로만 유지.
+> **Memory 메트릭** baseline은 신뢰성 문제(physical 0.0kB, peak는 프로세스 전체값)로 비교 대상에서 제외하고 이 정리 때 xcbaseline에서 삭제했다(#48). `MemoryPerformanceTests`의 Memory 값은 측정값 확인용, 같은 테스트의 Clock baseline은 유지·비교한다.
 > 남은 테스트의 새 baseline은 재기록 필요 (`Cmd + U` → Test Report → Set Baseline).
 
 ---
@@ -117,7 +117,7 @@ C_cgdraw가 이론값과 0.2% 일치, D가 출력 JPEG 크기와 일치, A/B의 
 ## MemoryPerformanceTests
 
 > 재측정일: 2026-05-07 — 객체 retain 방식으로 수정 후 재측정 (이전 측정은 measure 블록 내 할당/해제로 Memory Physical이 항상 0.0이었음)
-> baseline 비교 없이 측정값 확인용.
+> Memory 메트릭은 baseline 비교 없이 측정값 확인용. `test_memoryPeak_fullPipeline_1000`의 Clock 메트릭만 xcbaseline(0.0609s)과 비교한다.
 
 ### `test_memoryFootprint_homeModels_1000()`
 
