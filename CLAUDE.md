@@ -14,14 +14,14 @@
 ## 기술 스택
 
 - **Swift 5 / SwiftUI** (iOS 26.0+)
-- **자체 네트워크 DSL** — Moya는 PR #46에서 **완전 제거**됨(SPM 6개 → 2개). 엔드포인트 선언은 자체 `APITargetType` 프로토콜, 요청 조립은 `NetworkAdapter`(`APITargetType` → `URLRequest`), 실행·인증은 URLSession 기반 `NetworkClient`(actor)가 담당
+- **자체 네트워크 레이어** — Moya는 PR #46에서 **완전 제거**됨(SPM 6개 → 2개). 엔드포인트 선언은 자체 `APITargetType` 프로토콜, 요청 조립은 `NetworkAdapter`(`APITargetType` → `URLRequest`), 실행·인증은 URLSession 기반 `NetworkClient`(actor)가 담당
 - **Factory** — DI (`@Injected`, `AppContainer`). DEBUG 빌드에서 Mock provider 자동 주입
 - **Nuke** — 이미지 비동기 로딩 & 캐싱
 - **SPM** — 패키지 관리
 - **동시성 격리 설정** — 앱 타겟은 `SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated`(명시 지정). 즉 `@Observable` 클래스가 자동으로 메인 액터 격리되지 **않으며**, ViewModel 등에는 `@MainActor`를 직접 붙인다
   - Xcode 26 신규 프로젝트 기본값은 `MainActor`(SE-0466)지만 기존 프로젝트는 마이그레이션되지 않아 `nonisolated`가 유지됨
-  - 단일 앱 타겟이라 `MainActor`로 켜면 Presentation뿐 아니라 Data 레이어(Repository·DTO 매핑)까지 MainActor로 추론되어 디코딩이 메인에서 돈다. Apple 권장대로 "앱·UI = MainActor / 비UI = nonisolated"로 나누려면 Step 4 멀티모듈 분리가 선행되어야 함
-  - ⚠️ **타겟 간 설정 불일치** — `SWIFT_APPROACHABLE_CONCURRENCY`가 테스트 타겟에만 `YES`(앱 타겟은 미설정 → `NO`). SE-0461(nonisolated async 함수가 호출자 액터에서 실행)이 테스트에서만 적용되므로, 격리 동작을 검증하는 테스트는 앱과 다르게 동작할 수 있다. 정리 대상
+  - 단일 앱 타겟이라 `MainActor`로 켜면 Presentation뿐 아니라 Data 레이어(Repository·DTO 매핑)까지 MainActor로 추론되어 디코딩이 메인에서 돈다. 단일 타겟에서도 Data 타입에 `nonisolated`를 붙이거나 CPU 작업(디코딩·다운샘플)에 `@concurrent`를 쓰면 같은 효과를 낼 수 있지만 타입마다 표기해야 한다. Step 4 멀티모듈로 나누면 "앱·UI 모듈 = MainActor / 비UI 모듈 = nonisolated"가 모듈 설정 하나로 일괄 적용된다
+  - ⚠️ **타겟 간 설정 불일치** — `SWIFT_APPROACHABLE_CONCURRENCY`가 테스트 타겟에만 `YES`(앱 타겟은 미설정 → `NO`). SE-0461(nonisolated async 함수가 호출자 액터에서 실행)은 함수가 **선언된 모듈**의 설정을 따르므로, 앱 모듈의 async 함수는 테스트에서 불러도 앱 설정대로(전역 executor) 돈다. 테스트 타겟 안에 선언된 async 헬퍼·테스트 더블만 호출자 액터에 머문다. 격리 동작을 검증하는 테스트를 쓸 때 이 차이를 염두에 둘 것. 정리 대상
 
 ## 프로젝트 구조 (현재)
 
@@ -31,24 +31,25 @@ Rephoto_iOS/
 ├── Core/
 │   ├── Config/       — Config.swift, Config.xcconfig (BASE_URL)
 │   ├── DIContainer/  — AppContainer (Factory 등록)
-│   ├── Error/        — NetworkError, RepositoryError
-│   └── NetworkAdapter/
-│       ├── NetworkClient/ — NetworkClient(actor), TokenStoreProtocol, TokenPair, DefaultAuthenticationPolicy
-│       ├── TokenRefreshService/ — TokenRefreshServiceImpl
-│       ├── Base/            — HTTPMethod, RequestTask, MultipartFormItem, NetworkResponse
-│       └── APITargetType, NetworkAdapter, AuthSystemFactory
+│   ├── Error/        — Types(AppError, DomainError, NetworkError, RepositoryError, Error+Cancellation) · Loadable · Handler(ErrorHandler, ErrorContext, GlobalErrorAlert, PresentableError) — #72
+│   ├── NetworkAdapter/
+│   │   ├── NetworkClient/ — NetworkClient(actor), TokenStoreProtocol, TokenPair, DefaultAuthenticationPolicy
+│   │   ├── TokenRefreshService/ — TokenRefreshServiceImpl
+│   │   ├── Base/            — HTTPMethod, RequestTask, MultipartFormItem, NetworkResponse
+│   │   └── APITargetType, NetworkAdapter, AuthSystemFactory
+│   └── UIComponents/ — PhotoNavGrid, PhotoGridTile, ThumbnailTier, ErrorStateView, ErrorDisplay (#70·#72)
 ├── Features/             — 각 Feature는 Data/Domain/Presentation 3계층 동일 구조
 │   ├── Home/             — 사진 그리드, 업로드, 사진 상세(태그/설명)
 │   ├── Search/           — 자연어 검색(300ms 디바운스 + generation 가드), 태그 앨범
 │   ├── User/             — 로그인(LoginView), 세션(SessionStore), 설정(SettingsView — #43/PR #52 구현, Settings→User 의존 제거를 위해 User로 이동)
 │   └── RephotoTabView.swift — 탭 루트 뷰
-├── Resources/        — Colors.xcassets, Assets.xcassets, 공용 컴포넌트(CTAButton), MockImages(DEBUG 데모용 사진)
+├── Resources/        — Colors/Colors.xcassets, Images/Assets.xcassets, Components(CTAButton, FlowLayout, GlassCards), MockImages(DEBUG 데모용 사진)
 └── Utilities/
     ├── Extensions/   — Date+Photo 등
     └── Keychain/     — KeychainTokenStore (actor)
 ```
 
-- **제거된 기능**: PhotoCapture(카메라 촬영), 지도(Map), 휴지통, 도움말, 카카오 OAuth — 레거시에만 존재. 이 문서나 README에서 언급을 발견해도 부활시키지 말 것
+- **제거된 기능**: PhotoCapture(카메라 촬영), 지도 탭(Map 화면 — 사진 상세의 위치 지도는 유지), 휴지통, 도움말, 카카오 OAuth — 레거시에만 존재. 이 문서나 README에서 언급을 발견해도 부활시키지 말 것
 - 리팩토링 전 레거시 코드: 형제 디렉토리 `../Rephoto_legacy` 에 보존
 
 ### 의존성 규칙
@@ -82,8 +83,8 @@ Cmd + U
 ```
 
 - **테스트 플랜 2개**
-  - `Rephoto_iOS` — 단위·계약 81케이스 (성능 스위트 skip). CI 게이트가 이걸 돌린다
-  - `Rephoto_Performance` — 성능 벤치 37개 (회귀 감시용 baseline 대조 19 + A/B·측정 전용 18). 수동 실행
+  - `Rephoto_iOS` — 단위·계약 94케이스 (성능 스위트 skip). CI 게이트가 이걸 돌린다
+  - `Rephoto_Performance` — 성능 벤치 37개 (회귀 감시 19 — 그중 xcbaseline 기록 17 · A/B·측정 전용 18). 수동 실행
 - 성능 테스트 baseline은 `Rephoto_iOSTests/BASELINE_RESULTS.md`에 기록
 - 테스트 가이드: `Rephoto_iOSTests/TEST_GUIDE.md`, 프레임워크 선택 기준: `TESTING.md`
 
@@ -120,10 +121,10 @@ PR 템플릿: `.github/pull_request_template.md`
 
 핵심 역량 (아키텍처, Concurrency, 모듈화, 테스트, CI/CD) 중심 포트폴리오 강화.
 
-> **진행 현황 (2026-08-03 기준)**: **열린 이슈 0개 — 코드 작업 종료.**
+> **진행 현황 (2026-09-28 기준)**: **코드 작업 종료.** 이후 발사 전 수정 2건만 머지 — 로그아웃 토큰 잔존·진행률 스레드(#76 → PR #77), 토큰 재발급 구조체 중복·로그아웃-갱신 경합(#78 → PR #79). 열린 이슈는 문서 갱신(#80)만.
 > - Step 1~3 **완료** (#14·#21·#23·#27·#44 / #29·#32 / #31)
 > - Step 4 (Tuist 멀티모듈) — **유일한 미착수 항목**
-> - Step 5 **부분 완료**: 단위·계약 테스트 81케이스(Swift Testing 69 + XCTest 12), 성능 플랜 37개(회귀 감시용 baseline 대조 19). 미완: UseCase 전수 테스트, UI Test
+> - Step 5 **부분 완료**: 단위·계약 테스트 94케이스(Swift Testing 82 + XCTest 12), 성능 플랜 37개(회귀 감시 19, baseline 기록 17). 미완: UseCase 전수 테스트, UI Test
 > - Step 6 **부분 완료**: PR마다 빌드 + 유닛 플랜 실행 + `xccov` 커버리지 요약(#56). 미완: SwiftLint 워크플로, Fastlane TestFlight
 > - Step 7 **부분 완료**: DateFormatter static 캐싱, 이미지 다운샘플·압축(#34·#50), Home 관찰 성능(#47·#59), 검색 디바운스(#53). 미완: ETag 캐시, Dictionary O(1) 태그 조회
 >
@@ -142,7 +143,6 @@ PR 템플릿: `.github/pull_request_template.md`
 **리팩토링 전**: UserDefaults에 토큰 직접 저장. 보안 취약 + 매 읽기/쓰기마다 디스크 I/O. race condition 가능성.
 **목표**:
 - KeychainTokenStore를 Swift actor로 구현 → thread-safe 보장
-- 메모리 캐시 레이어 추가 (Keychain 접근 최소화)
 - NetworkClient actor: 토큰 주입(AuthPlugin) + 401 감지 시 TokenRefreshService 호출 → 토큰 갱신 후 원래 요청 재시도
 - AuthSystemFactory로 NetworkClient 조립 (TokenStore, RefreshService 의존성 주입)
 - 토큰 만료/갱신/삭제 시나리오별 에러 처리 (로그아웃 유도 포함)
@@ -151,7 +151,7 @@ PR 템플릿: `.github/pull_request_template.md`
 **리팩토링 전**: `Data(contentsOf:)` 동기 로딩 + for loop 순차 처리. completion handler 혼재. 메인 스레드 블로킹.
 **목표**:
 - async/await 전면 도입. completion handler 전량 제거
-- TaskGroup으로 사진 병렬 로딩 (HomeViewModel.handlePickedItems())
+- TaskGroup으로 사진 병렬 로딩 (HomeViewModel.handlePickedPhotos())
 - @MainActor 격리: ViewModel의 UI 상태 변경을 메인 스레드 보장
 - Sendable 준수: actor 경계를 넘는 데이터 타입 점검
 - Task cancellation 처리: 화면 이탈 시 진행 중 작업 취소
@@ -168,7 +168,7 @@ PR 템플릿: `.github/pull_request_template.md`
 
 ### Step 5. 🔶 테스트 커버리지 강화 (부분 완료)
 **리팩토링 전**: 성능 벤치마크만 존재. UseCase/ViewModel 단위 테스트 없음. UI 테스트 없음.
-**현재**: 단위·계약 81케이스(Network 32 · APITarget 계약 37 · Presentation 12) + 성능 플랜 37개. UseCase 전수 테스트와 UI Test는 미완.
+**현재**: 단위·계약 94케이스(네트워크 코어 41 · 엔드포인트 명세 35 · 응답 DTO 6 · Presentation 12) + 성능 플랜 37개. UseCase 전수 테스트와 UI Test는 미완.
 **목표**:
 - Domain UseCase 단위 테스트: mock repository 주입하여 비즈니스 로직 검증
 - ViewModel 상태 테스트: UseCase mock 주입 → 입력 이벤트 → 상태 변화 assertion

@@ -30,7 +30,13 @@
 
 ---
 
-## 테스트 파일 구성 (19개 테스트)
+## 테스트 파일 구성 (37개 — 회귀 감시 19 + 측정 전용 18)
+
+회귀 감시 19개는 아래 5개 스위트(`Decoding` 3 · `Mapping` 6 · `Memory` 3 · `PhotoInfo` 2 · `Token` 5).
+xcbaseline에 실제 기록된 baseline은 17개다 — `MemoryPerformanceTests`는 Memory 메트릭만 비교 제외(#48에서
+baseline 삭제)라, 3개 중 Clock 메트릭도 측정하는 `test_memoryPeak_fullPipeline_1000`의 Clock baseline 1개만 남아
+비교 대상이다. 나머지 18개는
+`HomeDerivedCollectionPerformanceTests`(11) · `UploadMemoryBenchmark`(3) · `DecodeVariantBenchTests`(4)로 측정 전용.
 
 ### `Support/MockDataFactory.swift`
 공용 Mock 데이터 생성 팩토리.
@@ -132,6 +138,7 @@ didSet 방식의 쓰기 비용(`photosAssign_10000`)도 함께 기록. 측정 �
 |---|---|
 | `test_undownsampledReencode_peakDelta` | 다운샘플 없는 대조군: UIImage 전체 디코드 + JPEG 재인코딩 (레거시 앱 재현 아님 — 라벨 정정 이력은 `BASELINE_RESULTS.md`) |
 | `test_current_downsampleExtract_peakDelta` | 현재: `PhotoMetadataExtractor.extract` (2048px 썸네일 디코드) |
+| `test_downsampleOptions_experiment` | 다운샘플 옵션(목표 크기·경계 정렬) 조합별 피크 실험 — #50 경계 정렬 근거 |
 
 ---
 
