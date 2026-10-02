@@ -3,7 +3,7 @@
 무엇을 테스트하고 무엇을 의도적으로 빼두었는지, 그리고 그 판단의 근거를 적는다.
 커버리지 공백이 "누락"이 아니라 "판단 결과"임을 남기는 것이 이 문서의 목적이다.
 
-벤치마크의 측정 방법과 수치는 [`TEST_GUIDE.md`](TEST_GUIDE.md) / [`BASELINE_RESULTS.md`](BASELINE_RESULTS.md)에 따로 있다.
+벤치마크의 측정 설계와 실기기 절차는 이 문서의 「성능 벤치마크」·「실기기 + Release 벤치마크 측정」에, 테스트 구성은 [`TEST_GUIDE.md`](TEST_GUIDE.md)에, 측정 수치는 [`BASELINE_RESULTS.md`](BASELINE_RESULTS.md)에 있다.
 
 백엔드는 운영이 종료됐다. 리팩토링은 로컬 목 서버 `mock_server.py`를 API 명세로 삼아 진행했고,
 일부 경로·필드는 원 서버와 다르다. 아래 계약 테스트가 고정하는 것은 이 명세 기준의 클라이언트 선언이다.
@@ -54,21 +54,19 @@
 | `SessionStoreTests` (8) | 토큰 유무에 따른 자동 로그인 복원, 로그인·로그아웃 상태 전이, 서버 로그아웃 실패해도 로컬 상태는 정리, 리프레시 실패 콜백 → 강제 로그아웃 |
 | `LoginViewModelTests` (4) | 빈 입력 검증 시 세션 미호출, 성공·실패 시 `isLoading` / `errorMessage` 전이 |
 
-### 성능 baseline — `Performance/`
+### 성능 벤치마크 — `Performance/`
 
-8개 클래스 37개 측정. 회귀 판정 기준은 [`BASELINE_RESULTS.md`](BASELINE_RESULTS.md),
-측정 방법과 스위트 정리 이력은 [`TEST_GUIDE.md`](TEST_GUIDE.md)에 있다.
-(이 중 19개가 회귀 감시 스위트이고 xcbaseline에는 17개가 기록돼 있다 — `MemoryPerformanceTests`는
-Memory 메트릭만 비교 제외라 3개 중 Clock baseline 1개만 비교한다. `HomeDerivedCollectionPerformanceTests` ·
-`UploadMemoryBenchmark` · `DecodeVariantBenchTests` 18개는 A/B 실측·측정 전용이라 카운트에서 제외한다.)
+3개 클래스 18개 측정(`HomeDerivedCollectionPerformanceTests` 11 · `UploadMemoryBenchmark` 3 · `DecodeVariantBenchTests` 4).
+모두 A/B 실측·측정 전용이고 회귀 baseline(xcbaseline)은 두지 않는다. 측정 결과는 [`BASELINE_RESULTS.md`](BASELINE_RESULTS.md),
+테스트 구성은 [`TEST_GUIDE.md`](TEST_GUIDE.md)에 있다.
 
 #### `DecodeVariantBenchTests` — 디코드 변형 대조 (4개)
 
 **목적**: `UploadMemoryBenchmark`의 "다운샘플 없는 대조군"이 이론값(4032×3024×4 ≈ 46.5MB)의
 절반도 안 나오는 이유를 가른다. 가설 (a) `UIImage` lazy decoding으로 애초에 디코드하지 않음,
-(b) 디코더가 서브샘플 YUV(1.5~2B/px)로 풂.
+(b) 디코더가 서브샘플 YUV(1.5–2B/px)로 풂.
 
-> **측정 완료 (2026-08-02, iPhone 14 Pro / iOS 27.0 beta / Release).** 결론: 대조군이 들고 있던
+> **측정 완료 (2026-10-02, iPhone 14 Pro / iOS 27.2 beta / Release).** 결론: 대조군이 들고 있던
 > 9.8MB는 픽셀 버퍼가 아니라 **출력 JPEG**이었다 — 풀사이즈 비트맵은 한 번도 상주하지 않는다.
 > RGBA를 강제하면(C) 46.6MB로 이론값과 0.2% 일치한다. 상세는
 > [`BASELINE_RESULTS.md`](BASELINE_RESULTS.md)의 DecodeVariantBenchTests 절.
@@ -88,11 +86,13 @@ Memory 메트릭만 비교 제외라 3개 중 Clock baseline 1개만 비교한�
 
 이 세 가지를 어기면 수치가 조용히 틀린다.
 
-**① 집계는 중앙값이 아니라 `max`.** `phys_footprint`는 `free()` 직후 바로 내려가지 않고,
+**① 집계는 중앙값을 쓰지 않는다.** `phys_footprint`는 `free()` 직후 바로 내려가지 않고,
 프레임워크가 디코드 결과를 내부 캐시에 들고 있기도 한다. 그래서 2회차부터 보유·캐시된 페이지를
 재사용해 delta가 **+0.0MB**로 찍힌다. 이 0.0은 "메모리를 안 썼다"가 아니라 **"못 쟀다"**이므로
 중앙값을 쓰면 유일한 유효 샘플이 버려진다. (실제로 1차 측정에서 `B_prepared`가
 17.2 → 0, 0, 0, 0으로 나와 중앙값 0.0MB라는 무의미한 값이 나왔다.)
+대표값은 2회차 이후 값으로 하고, B처럼 2회차부터 0.0이면 1회차 값을 쓴다. 로그의 `max`는 C·D에서 콜드 런 값이라
+대표값이 아니다(`BASELINE_RESULTS.md` 「집계 규칙」).
 
 **② 워밍업은 변형 자신이 아니라 64px 썸네일 디코드로.** JPEG 코덱 최초 사용 비용만 걷어내야 한다.
 변형 자신을 미리 돌리면 그 변형의 디코드 캐시가 채워져 이후 측정이 전부 0.0이 된다.
@@ -103,21 +103,11 @@ Memory 메트릭만 비교 제외라 3개 중 Clock baseline 1개만 비교한�
 그 외: 측정 객체는 `withExtendedLifetime`으로 `stopPeak()` 시점까지 살려둔다
 (Release `-O`에서 옵티마이저가 조기 해제해 피크를 놓치는 것을 막는다).
 
-```bash
-# 변형별로 하나씩 (권장). UDID는 xcrun devicectl list devices 로 확인
-for M in test_A_lazy_peakDelta test_B_prepared_peakDelta \
-         test_C_cgdraw_peakDelta test_D_undownsampled_peakDelta; do
-  xcodebuild test -project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS \
-    -testPlan Rephoto_Performance -configuration Release \
-    -destination 'platform=iOS,id=<UDID>' \
-    -only-testing:Rephoto_iOSTests/DecodeVariantBenchTests/$M \
-    ENABLE_TESTABILITY=YES 2>&1 | grep 🧪
-done
-```
+실행 명령은 아래 「실기기 + Release 벤치마크 측정」에 있다.
 
 > **시뮬레이터 수치는 해석하지 않는다.** 시뮬레이터는 호스트 macOS의 소프트웨어 디코더를 쓰고
 > Debug는 `-Onone`이라 실기기와 결과가 실제로 갈린다 — 이 프로젝트에서 이미 두 번 확인됐다
-> (대조군 19MB↔9.8MB, maxPixelSize 정렬 효과는 시뮬레이터에서만 재현).
+> (대조군 19MB↔9.8MB, maxPixelSize 정렬의 메모리 효과는 시뮬레이터에서만 재현).
 > 판정 근거로 쓸 수치는 **실기기 + Release**뿐이다. 측정 결과는 [`BASELINE_RESULTS.md`](BASELINE_RESULTS.md) 참조.
 
 ---
@@ -139,7 +129,7 @@ Home / User 대비 로직 밀도가 낮아 후순위. Search의 `APITarget` 계�
 위임하므로 `SessionStoreTests`가 덮는다.
 
 **DTO 매핑** — `AlbumResponseDTO` 디코딩은 위에서 직접 고정했지만, 나머지 `toDomain()`의 정상 경로는
-`PhotoRepositoryTests`와 `DecodingPerformanceTests`가 간접적으로 지나간다. URL·날짜 파싱 실패 시 `RepositoryError.invalidResponse(detail:)`로
+`PhotoRepositoryTests`가 간접적으로 지나간다. URL·날짜 파싱 실패 시 `RepositoryError.invalidResponse(detail:)`로
 떨어지는 경로는 아직 직접 검증하지 않았다.
 
 ---
@@ -168,25 +158,28 @@ Swift Testing은 스위트 간에도 병렬 실행하므로, `.serialized`를 �
 | 테스트 플랜 | 대상 | 시점 |
 |---|---|---|
 | `Rephoto_iOS.xctestplan` | 단위·계약 테스트 94케이스 (성능 제외) | PR / push · CI 게이트 |
-| `Rephoto_Performance.xctestplan` | 벤치마크 37케이스만 | 수동 · baseline 대조 |
+| `Rephoto_Performance.xctestplan` | 벤치마크 18케이스만 | 수동 · 측정값 기록 |
 
 플랜만 분리하고 **테스트 타겟은 1개**로 유지한다. 단일 앱 타겟이라 어느 쪽이든
 `@testable import Rephoto_iOS`가 동일해서, 타겟을 쪼개도 격리 이득이 없기 때문이다.
 
 성능 벤치마크를 PR 게이트에 넣지 않는 이유는 머신 편차가 신호보다 클 수 있기 때문이다.
-같은 이유로 `XCTMemoryMetric`은 baseline 비교에서 제외했다 (상세: [`TEST_GUIDE.md`](TEST_GUIDE.md)).
 
 로컬 실행:
 
+단위 테스트(CI와 동일). 아래 커버리지 명령이 읽을 결과 번들도 함께 남긴다.
+
 ```bash
-# 단위 (CI와 동일). 아래 커버리지 명령이 읽을 결과 번들도 함께 남긴다.
 xcodebuild test -project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS \
   -testPlan Rephoto_iOS \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   -resultBundlePath TestResults.xcresult \
   -enableCodeCoverage YES
+```
 
-# 벤치마크
+벤치마크(시뮬레이터 — 수치는 판정에 쓰지 않는다. 실기기 절차는 아래 절):
+
+```bash
 xcodebuild test -project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS \
   -testPlan Rephoto_Performance \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
@@ -199,38 +192,39 @@ Xcode에서는 `Cmd + U`로 활성 플랜을 실행한다. 플랜 전환은 스�
 시뮬레이터 + Debug 수치는 **판정 근거로 쓰지 않는다.** 시뮬레이터는 호스트 macOS의 코덱과
 메모리 서브시스템을 쓰고 Debug는 `-Onone`이라, 특히 이미지 디코드 메모리는 실기기와 다르게 나온다.
 
+UDID는 `xcrun devicectl list devices`로 확인한다. 빌드는 한 번만 하고, 테스트는 **메서드 하나당 프로세스 하나**로 돌린다
+(위 ③). 측정 줄은 xcodebuild 출력에서 바로 거른다 — 결과 번들의 `xcresulttool get log --type console`에는 남지 않는다.
+
 ```bash
-# 1. 연결된 기기의 UDID 확인 (Reality 열이 physical인 항목)
-xcrun devicectl list devices
+xcodebuild build-for-testing -project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS \
+  -testPlan Rephoto_Performance -configuration Release \
+  -destination 'platform=iOS,id=<UDID>' -derivedDataPath <DD> ENABLE_TESTABILITY=YES
 
-# 2. 실행
-xcodebuild test -project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS \
-  -testPlan Rephoto_Performance \
-  -configuration Release \
+xcodebuild test-without-building -xctestrun <DD>/Build/Products/<…>.xctestrun \
   -destination 'platform=iOS,id=<UDID>' \
-  -only-testing:Rephoto_iOSTests/DecodeVariantBenchTests \
-  -only-testing:Rephoto_iOSTests/UploadMemoryBenchmark \
-  ENABLE_TESTABILITY=YES \
-  -resultBundlePath DeviceRelease.xcresult
-
-# 3. 🧪 로그만 추출
-xcrun xcresulttool get log --path DeviceRelease.xcresult --type console | grep 🧪
+  -only-testing:Rephoto_iOSTests/DecodeVariantBenchTests/test_B_prepared_peakDelta \
+  2>&1 | grep -E "🧪|run[0-9]:|measured"
 ```
+
+`-only-testing`의 대상만 바꿔 `DecodeVariantBenchTests` · `UploadMemoryBenchmark` · `HomeDerivedCollectionPerformanceTests`의
+메서드를 하나씩 돌린다. 2026-10-02 측정에 실제로 쓴 반복 횟수·폴더 구조는
+[측정 원문 README](../docs/benchmarks/2026-10-02_iPhone14Pro_iOS27.2b/README.md)의 「재현 명령」에 있다.
+zsh에 붙여 넣을 때는 `#` 주석 줄을 빼야 한다(대화형 zsh는 기본적으로 주석을 해석하지 않는다).
 
 **`ENABLE_TESTABILITY=YES`가 반드시 필요하다.** 프로젝트 Release 설정에는 이 값이 없어
 기본값 `NO`이고, 그러면 `@testable import Rephoto_iOS`가 컴파일되지 않는다.
 앱 타겟 Release 설정에 직접 켜면 출시 빌드까지 영향을 받으므로 **커맨드라인에서만** 넘긴다.
 (부작용: 모듈 내부 심볼이 노출되어 일부 데드코드 제거·모듈 내 최적화가 억제된다.
-디코드 작업은 시스템 프레임워크가 수행하므로 이 벤치마크에는 영향이 없다.)
+디코드 작업은 시스템 프레임워크가 수행하므로 디코드 벤치마크(`UploadMemoryBenchmark` · `DecodeVariantBenchTests`)에는 영향이 없다.)
 
 **픽스처.** 실기기에는 `#filePath` 경로가 존재하지 않으므로 호스트의 `MockImagesReal/`을 읽을 수 없다.
-`Rephoto_iOSTests/Performance/Fixtures/`에 카메라 원본을 두면 테스트 번들에 동봉되어 기기에서도 읽힌다
+`Rephoto_iOSTests/Performance/Fixtures/`에 원본 해상도 사진을 두면 테스트 번들에 동봉되어 기기에서도 읽힌다
 (타겟이 file-system synchronized group이라 폴더에 파일만 넣으면 되고 pbxproj 수정은 불필요).
 `fixtureURL()`이 **번들 → 호스트 폴더** 순으로 찾으며, 실제로 어느 쪽을 썼는지는
 `🧪 [입력] … [출처: …]` 로그에 찍힌다. 둘 다 없으면 자동 스킵.
 
 > 앱 타겟 `Resources/`에는 넣지 말 것. 앱 번들 루트에 이미 `MockImages/IMG_9898.jpeg`가
-> 평탄화되어 들어가 있어 파일명이 충돌한다(축소본 739KB — 원본 5,733KB와 다른 파일이다).
+> 평탄화되어 들어가 있어 파일명이 충돌한다(축소본 722KB — 원본 5,733KB와 다른 파일이다).
 > 테스트 번들은 `Rephoto_iOSTests.xctest`로 분리되어 있어 충돌하지 않는다.
 
 **측정 전 체크리스트** — 기기 상태가 수치를 흔든다.
@@ -239,7 +233,7 @@ xcrun xcresulttool get log --path DeviceRelease.xcresult --type console | grep �
 - 직전에 무거운 빌드를 돌렸다면 발열이 식을 때까지 대기 (thermal throttling)
 - 화면 켜둔 채 잠금 해제 상태 유지
 - 첫 실행은 워밍업으로 버리고 두 번째 실행부터 기록
-- 측정 후 [`BASELINE_RESULTS.md`](BASELINE_RESULTS.md) 상단 「측정 환경」 템플릿을 채워 함께 기록
+- 측정일·기기·iOS 빌드 번호·빌드 구성·반복 횟수를 수치와 함께 기록 ([`BASELINE_RESULTS.md`](BASELINE_RESULTS.md) 「측정 환경」 형식)
 
 ### 주의: `CODE_SIGNING_ALLOWED=NO`를 test에 붙이지 말 것
 

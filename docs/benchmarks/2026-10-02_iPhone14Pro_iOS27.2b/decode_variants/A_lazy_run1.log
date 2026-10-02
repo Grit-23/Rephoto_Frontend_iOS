@@ -1,0 +1,4 @@
+Test Case '-[Rephoto_iOSTests.DecodeVariantBenchTests test_A_lazy_peakDelta]' started.
+🧪 [입력] IMG_9898.jpeg 4032x3024 5733KB [출처: Rephoto_iOSTests.xctest]
+🧪 [A_lazy] max: 0.0MB  (runs: +0.0MB, +0.0MB, +0.0MB, +0.0MB, +0.0MB)
+Test Case '-[Rephoto_iOSTests.DecodeVariantBenchTests test_A_lazy_peakDelta]' passed (0.088 seconds).

@@ -21,12 +21,7 @@
       "parallelizable" : false,
       "skippedTests" : [
         "DecodeVariantBenchTests",
-        "DecodingPerformanceTests",
         "HomeDerivedCollectionPerformanceTests",
-        "MappingPerformanceTests",
-        "MemoryPerformanceTests",
-        "PhotoInfoPerformanceTests",
-        "TokenPerformanceTests",
         "UploadMemoryBenchmark"
       ],
       "target" : {

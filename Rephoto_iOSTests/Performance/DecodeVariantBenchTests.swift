@@ -4,7 +4,7 @@
 //
 //  Created by Doyeon Kim on 8/2/26.
 //
-//  디코드 변형별 메모리 피크 대조 — "다운샘플 없는 대조군 +19MB" 수치의 원인 규명용.
+//  디코드 변형별 메모리 피크 대조 — "다운샘플 없는 대조군 +19MB"(시뮬레이터 값) 수치의 원인 규명용.
 //
 //  문제: 4032×3024 원본을 풀사이즈 RGBA(8bit×4ch)로 디코드하면 이론상 ≈46.5MB인데,
 //  기존 `UploadMemoryBenchmark.test_undownsampledReencode_peakDelta`는 그 절반도 나오지 않는다.
@@ -23,11 +23,12 @@
 //     baseline을 밀어올려 순서 의존성이 생긴다. `-only-testing`으로 하나씩 돌리면
 //     그 영향까지 없앨 수 있다.
 //
-//  2) 집계는 중앙값이 아니라 **max**를 쓴다.
+//  2) 집계에 중앙값을 쓰지 않는다.
 //     phys_footprint는 free() 직후 바로 내려가지 않고, 프레임워크가 디코드 결과를
 //     내부 캐시에 들고 있기도 한다. 그러면 2회차부터는 보유/캐시된 페이지를 재사용해
 //     delta가 +0.0MB로 찍힌다. 이 0.0은 "메모리를 안 썼다"가 아니라 "못 쟀다"이므로,
-//     중앙값을 쓰면 유효 샘플이 통째로 버려진다. 피크 측정에서는 max가 맞다.
+//     중앙값을 쓰면 유효 샘플이 통째로 버려진다. 그래서 로그에는 max와 회차별 값을 함께 찍는다.
+//     문서의 대표값은 2회차 이후 값(0.0이면 1회차 값)이다 — BASELINE_RESULTS.md 「집계 규칙」.
 //
 //  3) 워밍업은 **변형 자신이 아닌** 64px 썸네일 디코드로 한다.
 //     JPEG 코덱 최초 사용 비용은 걷어내되, 변형 자신을 미리 돌리면 그 변형의
@@ -133,7 +134,7 @@ final class DecodeVariantBenchTests: XCTestCase {
 
         let runs = deltas.map { "+\(mb($0))MB" }.joined(separator: ", ")
         let peak = deltas.max() ?? 0
-        // max가 대표값. 개별 run도 함께 남겨 캐시로 인한 0.0 패턴이 보이게 한다.
+        // max와 개별 run을 함께 남긴다 — 캐시로 인한 0.0 패턴이 보이게. 대표값 규칙은 BASELINE_RESULTS.md 「집계 규칙」.
         print("🧪 [\(label)] max: \(mb(peak))MB  (runs: \(runs))")
 
         // 변형이 nil을 반환하면 delta가 0으로 찍히고 "메모리를 안 썼다"로 오독된다.

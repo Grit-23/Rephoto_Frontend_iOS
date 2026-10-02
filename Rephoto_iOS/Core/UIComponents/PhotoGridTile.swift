@@ -16,7 +16,6 @@ struct PhotoGridTile: View {
         Color.clear
             .aspectRatio(1, contentMode: .fit)
             .overlay {
-                // 타일에 필요한 크기만 디코드·캐시 — 원본 풀 디코드 대비 메모리 ~30배 절약
                 LazyImage(request: ThumbnailTier.grid.request(imageUrl)) { state in
                     if let image = state.image {
                         image
