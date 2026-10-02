@@ -33,26 +33,6 @@ enum MockDataFactory {
         return try! JSONSerialization.data(withJSONObject: array)
     }
 
-    // MARK: - Search JSON
-
-    static func searchResponseJSON(resultCount: Int) -> Data {
-        guard resultCount > 0 else {
-            let response: [String: Any] = ["query": "테스트 검색어", "searchResults": []]
-            return try! JSONSerialization.data(withJSONObject: response)
-        }
-        let results: [[String: Any]] = (1...resultCount).map { i in
-            [
-                "imageUrl": "https://example.com/photos/search_\(i).jpg",
-                "photoId": i
-            ]
-        }
-        let response: [String: Any] = [
-            "query": "테스트 검색어",
-            "searchResults": results
-        ]
-        return try! JSONSerialization.data(withJSONObject: response)
-    }
-
     // MARK: - Pre-decoded DTOs
 
     static func photoResponseDTOs(count: Int) -> [PhotoResponseDTO] {
