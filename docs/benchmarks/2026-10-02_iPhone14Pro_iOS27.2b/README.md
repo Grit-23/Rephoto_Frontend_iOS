@@ -190,6 +190,7 @@ xcodebuild build-for-testing -project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS 
   -testPlan Rephoto_Performance -configuration Release \
   -destination "platform=iOS,id=$UDID" -derivedDataPath $DD ENABLE_TESTABILITY=YES
 XCTESTRUN=$(ls $DD/Build/Products/*Performance*.xctestrun | head -1)
+mkdir -p decode_variants home_derived
 
 run() {
   xcodebuild test-without-building -xctestrun "$XCTESTRUN" \
