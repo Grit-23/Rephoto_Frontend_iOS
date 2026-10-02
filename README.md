@@ -61,13 +61,13 @@ Rephoto_iOS/
 ## 기술 포인트
 
 - **토큰 갱신 직렬화** — 갱신 진행 중 도착한 동시 401 20건을 단일 갱신으로 합칩니다(`NetworkClient` actor, 단일 `Task` 합류). 갱신 실패 통지도 1회로 접고, 로그아웃은 진행 중인 갱신이 끝난 뒤 토큰을 지웁니다. 테스트로 고정.
-- **업로드 전처리** — ImageIO 다운샘플로 페이로드 −74%(원본 업로드 대비, 4032px 1장 기준), 목표 크기를 JPEG 1/2ⁿ 서브샘플 경계에 맞춰 장당 전처리 시간 −22%(A16) · −24%(A13). 실기기 Release 실측, [BASELINE_RESULTS.md](Rephoto_iOSTests/BASELINE_RESULTS.md).
+- **업로드 전처리** — ImageIO 다운샘플로 페이로드 −72–74%(받은 사진을 그대로 올리던 방식 대비), 목표 크기를 JPEG 1/2ⁿ 서브샘플 경계에 맞춰 장당 다운샘플·인코딩 시간 약 −22–26%. iPhone 14 Pro 1대 · 4032px 사진 2장 · Release 실측, [BASELINE_RESULTS.md](Rephoto_iOSTests/BASELINE_RESULTS.md).
 - **에러 계층** — 계층별 에러를 `AppError`로 정규화하고, 화면 안에서 해결할 수 있는 실패는 `Loadable` 인라인, 흐름이 끊기는 실패는 전역 `ErrorHandler` Alert으로 나눕니다.
 
 ## 테스트 · CI
 
 - 단위·계약 테스트 **94개**(Swift Testing 82 + XCTest 12) — `Rephoto_iOS.xctestplan`. 네트워크 코어(동시 401 → 갱신 1회, 로그아웃–갱신 경합, Keychain actor, 어댑터 조립)와 클라이언트 엔드포인트 명세 35케이스를 고정합니다.
-- 성능 벤치 **37개** — `Rephoto_Performance.xctestplan`, 수동 실행. 기준값과 측정 조건은 [BASELINE_RESULTS.md](Rephoto_iOSTests/BASELINE_RESULTS.md), 가이드는 [TESTING.md](Rephoto_iOSTests/TESTING.md).
+- 성능 벤치 **18개** — `Rephoto_Performance.xctestplan`, 수동 실행. 측정 결과와 조건은 [BASELINE_RESULTS.md](Rephoto_iOSTests/BASELINE_RESULTS.md), 가이드는 [TESTING.md](Rephoto_iOSTests/TESTING.md).
 - CI — PR마다 `build-for-testing` → `test-without-building` → `xccov` 커버리지 요약 (`.github/workflows/iOS.yml`).
 
 ## 로컬 목 서버

@@ -84,8 +84,8 @@ Cmd + U
 
 - **테스트 플랜 2개**
   - `Rephoto_iOS` — 단위·계약 94케이스 (성능 스위트 skip). CI 게이트가 이걸 돌린다
-  - `Rephoto_Performance` — 성능 벤치 37개 (회귀 감시 19 — 그중 xcbaseline 기록 17 · A/B·측정 전용 18). 수동 실행
-- 성능 테스트 baseline은 `Rephoto_iOSTests/BASELINE_RESULTS.md`에 기록
+  - `Rephoto_Performance` — 성능 벤치 18개 (A/B·측정 전용, 회귀 baseline 없음). 수동 실행
+- 성능 측정 결과는 `Rephoto_iOSTests/BASELINE_RESULTS.md`에 기록 (실기기 원문 로그는 `docs/benchmarks/`)
 - 테스트 가이드: `Rephoto_iOSTests/TEST_GUIDE.md`, 프레임워크 선택 기준: `TESTING.md`
 
 ## 커밋 컨벤션
@@ -112,7 +112,7 @@ PR 템플릿: `.github/pull_request_template.md`
 
 1. `PhotosPicker`(SwiftUI)로 사진 선택
 2. `HomeViewModel.handlePickedPhotos`가 `TaskGroup`으로 장별 병렬 처리 → 각 Task가 `ExtractPhotoMetadataUseCase` → `PhotoMetadataExtractor`(EXIF/GPS 추출)
-3. 업로드 전 이미지 다운샘플 + JPEG 압축 (ImageIO, #34 · 경계 정렬 #50)
+3. 업로드 전 이미지 다운샘플 + JPEG 압축 (ImageIO, #34 · 경계 정렬 #49)
 4. S3 업로드 (`PhotosAPITarget.s3Upload`) → 메타데이터 일괄 저장 (`PhotosAPITarget.savePhotosBatch`)
 
 ---
@@ -122,11 +122,11 @@ PR 템플릿: `.github/pull_request_template.md`
 핵심 역량 (아키텍처, Concurrency, 모듈화, 테스트, CI/CD) 중심 포트폴리오 강화.
 
 > **진행 현황 (2026-09-28 기준)**: **코드 작업 종료.** 이후 발사 전 수정 2건만 머지 — 로그아웃 토큰 잔존·진행률 스레드(#76 → PR #77), 토큰 재발급 구조체 중복·로그아웃-갱신 경합(#78 → PR #79). 열린 이슈는 문서 갱신(#80)만.
-> - Step 1~3 **완료** (#14·#21·#23·#27·#44 / #29·#32 / #31)
+> - Step 1–3 **완료** (#14·#21·#23·#27·#44 / #29·#32 / #31)
 > - Step 4 (Tuist 멀티모듈) — **유일한 미착수 항목**
-> - Step 5 **부분 완료**: 단위·계약 테스트 94케이스(Swift Testing 82 + XCTest 12), 성능 플랜 37개(회귀 감시 19, baseline 기록 17). 미완: UseCase 전수 테스트, UI Test
+> - Step 5 **부분 완료**: 단위·계약 테스트 94케이스(Swift Testing 82 + XCTest 12), 성능 플랜 18개(측정 전용). 미완: UseCase 전수 테스트, UI Test
 > - Step 6 **부분 완료**: PR마다 빌드 + 유닛 플랜 실행 + `xccov` 커버리지 요약(#56). 미완: SwiftLint 워크플로, Fastlane TestFlight
-> - Step 7 **부분 완료**: DateFormatter static 캐싱, 이미지 다운샘플·압축(#34·#50), Home 관찰 성능(#47·#59), 검색 디바운스(#53). 미완: ETag 캐시, Dictionary O(1) 태그 조회
+> - Step 7 **부분 완료**: DateFormatter static 캐싱, 이미지 다운샘플·압축(#34·#49), Home 관찰 성능(#47·#59), 검색 디바운스(#53). 미완: ETag 캐시, Dictionary O(1) 태그 조회
 >
 > 남은 작업: 포트폴리오 마무리.
 
@@ -168,7 +168,7 @@ PR 템플릿: `.github/pull_request_template.md`
 
 ### Step 5. 🔶 테스트 커버리지 강화 (부분 완료)
 **리팩토링 전**: 성능 벤치마크만 존재. UseCase/ViewModel 단위 테스트 없음. UI 테스트 없음.
-**현재**: 단위·계약 94케이스(네트워크 코어 41 · 엔드포인트 명세 35 · 응답 DTO 6 · Presentation 12) + 성능 플랜 37개. UseCase 전수 테스트와 UI Test는 미완.
+**현재**: 단위·계약 94케이스(네트워크 코어 41 · 엔드포인트 명세 35 · 응답 DTO 6 · Presentation 12) + 성능 플랜 18개. UseCase 전수 테스트와 UI Test는 미완.
 **목표**:
 - Domain UseCase 단위 테스트: mock repository 주입하여 비즈니스 로직 검증
 - ViewModel 상태 테스트: UseCase mock 주입 → 입력 이벤트 → 상태 변화 assertion
@@ -188,10 +188,10 @@ PR 템플릿: `.github/pull_request_template.md`
 
 ### Step 7. 🔶 성능 최적화 (부분 완료)
 **리팩토링 전**: DateFormatter 매번 생성, 이미지 원본 업로드, fetchPhotos() 전체 교체, 태그 배열 선형 검색.
-**현재**: DateFormatter static 캐싱 완료, 이미지 다운샘플·압축 완료(#34·#50 — 페이로드 −74%, 처리 시간 −22%(A16)·−24%(A13)), Home 파생 컬렉션 didSet 캐싱(#47·#59). ETag 캐시와 Dictionary O(1) 태그 조회는 미완(`PhotoInfoViewModel`이 아직 `firstIndex` 선형 검색).
+**현재**: DateFormatter static 캐싱 완료, 이미지 다운샘플·압축 완료(#34·#49 — 페이로드 −72–74%, 다운샘플·인코딩 시간 약 −22–26% — iPhone 14 Pro 1대 · 사진 2장), Home 파생 컬렉션 didSet 캐싱(#47·#59). ETag 캐시와 Dictionary O(1) 태그 조회는 미완(`PhotoInfoViewModel`이 아직 `firstIndex` 선형 검색).
 **목표**:
 - DateFormatter static 캐싱 또는 ISO8601DateFormatter 전환
-- 업로드 전 이미지 압축 (quality 0.7~0.8)
+- 업로드 전 이미지 압축 (quality 0.7–0.8)
 - ETag/Last-Modified 기반 캐시 → 변경분만 diff 업데이트
 - Dictionary 기반 O(1) 태그 조회 + 낙관적 업데이트 실패 시 롤백
 
