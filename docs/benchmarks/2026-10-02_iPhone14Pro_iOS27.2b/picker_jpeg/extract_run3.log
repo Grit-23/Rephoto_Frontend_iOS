@@ -1,0 +1,9 @@
+Test Case '-[Rephoto_iOSTests.UploadMemoryBenchmark test_current_downsampleExtract_peakDelta]' started.
+🧪 [입력] IMG_1568_picker.jpg 4032x3024 2317KB [출처: Rephoto_iOSTests.xctest]
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +23.1MB, 0.043s
+run2: peakDelta +17.8MB, 0.020s
+run3: peakDelta +17.9MB, 0.018s
+run4: peakDelta +18.0MB, 0.020s
+run5: peakDelta +17.7MB, 0.018s
+Test Case '-[Rephoto_iOSTests.UploadMemoryBenchmark test_current_downsampleExtract_peakDelta]' passed (0.152 seconds).

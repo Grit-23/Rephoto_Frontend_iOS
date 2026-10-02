@@ -1,0 +1,19 @@
+Test Case '-[Rephoto_iOSTests.UploadMemoryBenchmark test_downsampleOptions_experiment]' started.
+🧪 [입력] IMG_1568_picker.jpg 4032x3024 2317KB [출처: Rephoto_iOSTests.xctest]
+🧪 [A 현행 — transform:true, max 2048]
+run1: +36.0MB, 0.023s, out 1536x2048 690KB
+run2: +18.1MB, 0.023s, out 1536x2048 690KB
+run3: +18.1MB, 0.022s, out 1536x2048 690KB
+🧪 [B transform:false, max 2048]
+run1: +18.1MB, 0.022s, out 2048x1536 698KB
+run2: +18.1MB, 0.022s, out 2048x1536 698KB
+run3: +18.1MB, 0.022s, out 2048x1536 698KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.015s, out 2016x1512 649KB
+run2: +17.7MB, 0.014s, out 2016x1512 649KB
+run3: +17.7MB, 0.014s, out 2016x1512 649KB
+🧪 [D transform:true, max 2016]
+run1: +22.2MB, 0.016s, out 1512x2016 644KB
+run2: +17.7MB, 0.016s, out 1512x2016 644KB
+run3: +17.7MB, 0.016s, out 1512x2016 644KB
+Test Case '-[Rephoto_iOSTests.UploadMemoryBenchmark test_downsampleOptions_experiment]' passed (0.274 seconds).

@@ -1,0 +1,4 @@
+Test Case '-[Rephoto_iOSTests.DecodeVariantBenchTests test_B_prepared_peakDelta]' started.
+🧪 [입력] IMG_9898.jpeg 4032x3024 5733KB [출처: Rephoto_iOSTests.xctest]
+🧪 [B_prepared] max: 17.2MB  (runs: +17.2MB, +0.0MB, +0.0MB, +0.0MB, +0.0MB)
+Test Case '-[Rephoto_iOSTests.DecodeVariantBenchTests test_B_prepared_peakDelta]' passed (0.119 seconds).

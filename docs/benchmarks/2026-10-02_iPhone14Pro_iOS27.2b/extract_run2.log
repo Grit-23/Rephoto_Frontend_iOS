@@ -1,0 +1,8 @@
+🧪 [입력] IMG_9898.jpeg 4032x3024 5733KB [출처: Rephoto_iOSTests.xctest]
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +25.1MB, 0.046s
+run2: peakDelta +19.8MB, 0.024s
+run3: peakDelta +19.9MB, 0.024s
+run4: peakDelta +19.7MB, 0.023s
+run5: peakDelta +19.7MB, 0.023s
+Test Case '-[Rephoto_iOSTests.UploadMemoryBenchmark test_current_downsampleExtract_peakDelta]' passed (0.177 seconds).

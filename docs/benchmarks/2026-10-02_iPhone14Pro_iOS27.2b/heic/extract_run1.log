@@ -1,0 +1,9 @@
+Test Case '-[Rephoto_iOSTests.UploadMemoryBenchmark test_current_downsampleExtract_peakDelta]' started.
+🧪 [입력] IMG_1568.HEIC 4032x3024 1536KB [출처: Rephoto_iOSTests.xctest]
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +31.1MB, 0.079s
+run2: peakDelta +27.2MB, 0.052s
+run3: peakDelta +13.9MB, 0.048s
+run4: peakDelta +14.4MB, 0.049s
+run5: peakDelta +13.6MB, 0.046s
+Test Case '-[Rephoto_iOSTests.UploadMemoryBenchmark test_current_downsampleExtract_peakDelta]' passed (0.308 seconds).
