@@ -58,7 +58,7 @@ XCTClockMetric, 테스트당 프로세스 3회 × 5회 = 15샘플 평균.
 - **회차별 원문**: `decode_variants/<변형>_run1–3.log`, `home_derived/<테스트>_run1–3.log`.
   로그는 측정 줄만 남기도록 `grep`으로 거르고, 로컬 경로·기기 UDID가 든 줄은 지웠다(측정값 줄은 원문 그대로)
 - **Xcode 결과 번들** (로컬 전용, `.gitignore`): 같은 이름의 `.xcresult`를 더블클릭 → Report 내비게이터에서 테스트 선택 → 콘솔 출력
-- **재계산**: 로그의 `run` 줄(디코드 변형)과 `measured` 줄(파생 컬렉션)의 값을 모아 평균을 내면 위 표와 같다
+- **재계산**: 디코드 표의 첫 열은 각 로그의 `max`, 둘째 열은 `runs`의 2–5회차 값(로그 3개 범위)이다(B는 1회차가 대표값). 파생 컬렉션 표는 `measured` 줄의 `values` 15개(로그 3개 × 5회)로 낸 평균·범위·RSD다
 
 ## 재현 명령
 
@@ -94,4 +94,4 @@ for t in computedProperty_bodyEval100_photos100 computedProperty_bodyEval100_pho
 done; done
 ```
 
-`DecodeVariantBenchTests`는 `fixtureURL()`로 `Fixtures/`에서 가장 큰 파일 한 장을 고른다. 2026-10-03 이후 `Fixtures/`의 15장 중 가장 큰 파일도 같은 `IMG_9898`(5,871,533 B)이다.
+`DecodeVariantBenchTests`는 `fixtureURL()`로 `Fixtures/`에서 가장 큰 파일 한 장을 고른다. 2026-10-03 이후 `Fixtures/`의 15장 중 가장 큰 파일은 `587306D8-02F9-43B5-84D7-723F65134400.jpg`(5,871,533 B)다. `IMG_9898.jpeg`와 같은 사진이다 — EXIF 안의 UUID 문자열(36바이트)만 다르고 나머지 바이트는 같다.

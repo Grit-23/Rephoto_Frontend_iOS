@@ -75,7 +75,7 @@ xcbaseline 17개 중 6개에는 그 값이 그대로 남아 있었다. 예전 �
 ### 실기기 + Release 15장 측정 (2026-10-03)
 
 > iPhone 14 Pro · iOS 27.2 developer beta (24B5089g) · Release `-O` wholemodule
-> 입력: iPhone 14 Pro 기본 카메라 12MP(4032×3024) 사진 15장 — 세로 13 · 가로 2. DEBUG 앱의 `PhotosPicker`가 넘긴 데이터 그대로(15장 모두 JPEG)
+> 입력: iPhone 14 Pro 카메라 앱으로 찍은 12MP(4032×3024) 사진 15장 — 렌즈 광각 9 · 망원 3 · 초광각 3, 세로 13 · 가로 2. DEBUG 앱의 `PhotosPicker`가 넘긴 데이터 그대로(15장 모두 JPEG)
 > 반복/집계: 테스트 1개씩 별도 프로세스, 옵션 실험 프로세스 5회 · `extract()` 3회. 시간은 사진·변형별로 각 프로세스의 1회차를 뺀 평균(n=10 · 12) · 분해능 0.1ms
 > **원문 로그와 사진별 표**: [`docs/benchmarks/2026-10-03_iPhone14Pro_15photos/`](../docs/benchmarks/2026-10-03_iPhone14Pro_15photos/README.md)
 
@@ -89,7 +89,7 @@ A–D는 `test_downsampleOptions_experiment`의 변형이다 — A #49 이전(�
 | 다운샘플·인코딩 시간 A → D | **−24.7%** | −19.7 – −35.6% | −25.3 / −23.9% |
 | 회전 고정 정렬 효과 B → C (참고) | −34.2% | −27.8 – −35.5% | |
 
-15장 합계 페이로드는 41.6MB → 11.7MB(−72.0%)다.
+15장 합계 페이로드는 39.7MB → 11.1MB(−72.0%)다.
 
 **회전 여부에 따라 시간 개선폭이 갈린다.**
 
@@ -101,7 +101,7 @@ A–D는 `test_downsampleOptions_experiment`의 변형이다 — A #49 이전(�
 아이폰은 세로 사진도 픽셀을 가로(4032×3024)로 저장하고 EXIF 방향 태그만 붙인다. 압축본에는 EXIF가 빠지므로 앱이 업로드 전에 픽셀을 돌린다(`kCGImageSourceCreateThumbnailWithTransform: true`).
 경계 정렬로 줄어드는 시간은 비슷하지만(B→C 약 −34%), 세로 사진은 회전 비용 약 2ms가 남아 A→D 개선폭이 작아진다.
 
-`extract()` 전체(EXIF 파싱 · 임시 파일 쓰기 포함)는 D보다 중앙값 약 1.0ms 더 걸린다.
+`extract()` 전체(EXIF 파싱 · 임시 파일 쓰기 포함)는 D보다 중앙값 약 1ms 더 걸린다.
 
 ---
 
