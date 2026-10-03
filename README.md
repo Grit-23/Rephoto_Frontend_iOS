@@ -61,7 +61,7 @@ Rephoto_iOS/
 ## 기술 포인트
 
 - **토큰 갱신 직렬화** — 갱신 진행 중 도착한 동시 401 20건을 단일 갱신으로 합칩니다(`NetworkClient` actor, 단일 `Task` 합류). 갱신 실패 통지도 1회로 접고, 로그아웃은 진행 중인 갱신이 끝난 뒤 토큰을 지웁니다. 테스트로 고정.
-- **업로드 전처리** — ImageIO 다운샘플로 페이로드 −72–74%(받은 사진을 그대로 올리던 방식 대비), 목표 크기를 JPEG 1/2ⁿ 서브샘플 경계에 맞춰 장당 다운샘플·인코딩 시간 약 −22–26%. iPhone 14 Pro 1대 · 4032px 사진 2장 · Release 실측, [BASELINE_RESULTS.md](Rephoto_iOSTests/BASELINE_RESULTS.md).
+- **업로드 전처리** — ImageIO 다운샘플로 페이로드 중앙값 −73%(받은 사진을 그대로 올리던 방식 대비), 목표 크기를 JPEG 1/2ⁿ 서브샘플 경계에 맞춰 장당 다운샘플·인코딩 시간 중앙값 −25%. iPhone 14 Pro 1대 · 12MP 사진 15장 · Release 실측, [BASELINE_RESULTS.md](Rephoto_iOSTests/BASELINE_RESULTS.md).
 - **에러 계층** — 계층별 에러를 `AppError`로 정규화하고, 화면 안에서 해결할 수 있는 실패는 `Loadable` 인라인, 흐름이 끊기는 실패는 전역 `ErrorHandler` Alert으로 나눕니다.
 
 ## 테스트 · CI

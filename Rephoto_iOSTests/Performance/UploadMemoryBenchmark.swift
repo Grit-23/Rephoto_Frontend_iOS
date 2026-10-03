@@ -16,7 +16,8 @@
 //  셋업 메모리에 오염된다. 대신 task_vm_info.phys_footprint를 폴링해
 //  작업 구간의 피크 증가분(delta)을 직접 잰다. 결과는 콘솔의 🧪 라인으로 출력.
 //
-//  입력: 원본 해상도 사진(JPEG/HEIC) 중 가장 큰 것. 두 위치를 순서대로 찾는다.
+//  입력: 원본 해상도 사진(JPEG/HEIC). 추출·옵션 실험은 전부(`fixtureURLs()`), 대조군은 가장 큰 한 장(`fixtureURL()`).
+//  두 위치를 순서대로 찾는다.
 //   1. 테스트 번들의 Performance/Fixtures/ — 실기기 실행용. 기기에는 #filePath 경로가
 //      존재하지 않으므로 번들 동봉이 유일한 수단이다.
 //   2. 리포 루트 MockImagesReal/ — 시뮬레이터 실행용(호스트 파일시스템 직접 읽기).
@@ -59,6 +60,38 @@ final class UploadMemoryBenchmark: XCTestCase {
             · 실기기: Rephoto_iOSTests/Performance/Fixtures/ 에 원본 해상도 사진을 두세요 (테스트 번들에 동봉됨)
             · 시뮬레이터: 리포 루트 MockImagesReal/ 도 가능
             """)
+    }
+
+    /// 픽스처 전부를 파일명 순으로 돌려준다. 여러 장을 한 프로세스에서 재기 위함
+    /// (`fixtureURL()`은 가장 큰 한 장만 고르므로 사진마다 빌드를 새로 해야 했다).
+    /// 번들 동봉본이 있으면 그것만, 없으면 호스트 폴더를 쓴다.
+    static func fixtureURLs() throws -> [URL] {
+        func unique(_ urls: [URL]) -> [URL] {
+            var seen = Set<String>()
+            return urls
+                .filter { seen.insert($0.lastPathComponent).inserted }
+                .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        }
+        let bundled = unique(bundledCandidates())
+        if !bundled.isEmpty { return bundled }
+        let onHost = unique(hostCandidates())
+        if !onHost.isEmpty { return onHost }
+        throw XCTSkip("원본 사진 픽스처를 찾지 못했습니다. Fixtures/ 또는 MockImagesReal/ 에 사진을 두세요.")
+    }
+
+    /// `PhotoMetadataExtractor`와 같은 목표 크기 계산 — 긴 변을 2로 나눠 2048 이하가 되는 첫 값.
+    /// 옵션 실험의 D(현재 앱)를 사진 크기와 무관하게 앱 경로와 같게 맞추기 위함.
+    static func alignedTargetPixelSize(for data: Data) -> CGFloat {
+        var longerSide = 0
+        if let src = CGImageSourceCreateWithData(data as CFData, nil),
+           let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [String: Any] {
+            let w = props[kCGImagePropertyPixelWidth as String] as? Int ?? 0
+            let h = props[kCGImagePropertyPixelHeight as String] as? Int ?? 0
+            longerSide = max(w, h)
+        }
+        var target: CGFloat = longerSide > 0 ? CGFloat(longerSide) : 2016
+        while target > 2048 { target /= 2 }
+        return target
     }
 
     /// 테스트 번들에 동봉된 픽스처. 동기화 그룹이 리소스를 번들 루트로 평탄화하는 경우와
@@ -190,26 +223,30 @@ final class UploadMemoryBenchmark: XCTestCase {
 
     // MARK: - 현재 경로: ImageIO 다운샘플 (실제 프로덕션 코드)
 
-    /// 현재 업로드 전처리: PhotoMetadataExtractor.extract — 원본 기반 목표 크기(4032px 원본이면 2016px)로 CGImageSource 썸네일 디코드 + quality 0.8
+    /// 현재 업로드 전처리: PhotoMetadataExtractor.extract — 원본 기반 목표 크기(4032px 원본이면 2016px)로 CGImageSource 썸네일 디코드 + quality 0.8.
+    /// `Fixtures/`의 사진을 전부 돈다. 출력 크기는 extract()가 쓴 임시 파일의 실제 바이트 수다(Release에는 DEBUG 로그가 없다).
     func test_current_downsampleExtract_peakDelta() async throws {
-        let url = try Self.fixtureURL()
-        let data = try Data(contentsOf: url)
-        print("🧪 [입력] \(Self.describe(url, data))")
-
         let extractor = PhotoMetadataExtractor()
-        var lines: [String] = []
-        for i in 1...5 {
-            let sampler = FootprintSampler()
-            let baseline = sampler.start()
-            let t0 = CFAbsoluteTimeGetCurrent()
-            let item = await extractor.extract(from: data, identifier: "benchmark")
-            let dt = CFAbsoluteTimeGetCurrent() - t0
-            let peak = sampler.stopPeak()
-            XCTAssertNotNil(item)
-            lines.append("run\(i): peakDelta +\(mb(peak - baseline))MB, \(String(format: "%.3f", dt))s")
+        for url in try Self.fixtureURLs() {
+            let data = try Data(contentsOf: url)
+            print("🧪 [입력] \(Self.describe(url, data)) \(data.count)B")
+
+            var lines: [String] = []
+            for i in 1...5 {
+                let sampler = FootprintSampler()
+                let baseline = sampler.start()
+                let t0 = CFAbsoluteTimeGetCurrent()
+                let item = await extractor.extract(from: data, identifier: "benchmark")
+                let dt = CFAbsoluteTimeGetCurrent() - t0
+                let peak = sampler.stopPeak()
+                XCTAssertNotNil(item, "extract 실패: \(url.lastPathComponent)")
+                let outBytes = item.flatMap {
+                    try? $0.imageUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize
+                } ?? 0
+                lines.append("run\(i): peakDelta +\(mb(peak - baseline))MB, \(String(format: "%.4f", dt))s, out \(outBytes)B")
+            }
+            print("🧪 [current ImageIO 다운샘플]\n" + lines.joined(separator: "\n"))
         }
-        // extract 내부 DEBUG print("📷 [압축] WxH beforeKB → afterKB (%)")가 페이로드 수치도 출력
-        print("🧪 [current ImageIO 다운샘플]\n" + lines.joined(separator: "\n"))
     }
 
     // MARK: - 다운샘플 옵션 실험: 풀사이즈 디코드(시뮬레이터 +50MB)의 원인 규명
@@ -236,44 +273,48 @@ final class UploadMemoryBenchmark: XCTestCase {
         return (out as Data, cg.width, cg.height)
     }
 
-    /// Transform(EXIF 회전) on/off × maxPixelSize 2048/2016 조합별 피크 delta 비교.
-    /// 가설: Transform:true가 JPEG 서브샘플 디코드 경로를 무력화해 풀사이즈 디코드(시뮬레이터 +50MB)를 유발한다.
-    /// 서브샘플 경로를 타면 출력이 2016px(정확히 1/2)로 나오고 delta가 ~12MB대로 떨어질 것.
+    /// Transform(EXIF 회전) on/off × maxPixelSize 2048 / 경계 정렬값 조합별 처리 시간·출력 비교.
+    /// A(#49 이전 앱)는 2048 고정, D(현재 앱)는 `alignedTargetPixelSize`로 사진마다 앱과 같은 목표를 쓴다
+    /// (4032px 원본이면 2016). `Fixtures/`의 사진을 전부 돈다.
+    /// 네 변형을 한 프로세스에서 이어 돌리므로 변형 간 메모리 비교 근거로는 쓰지 않는다.
     func test_downsampleOptions_experiment() throws {
-        let url = try Self.fixtureURL()
-        let data = try Data(contentsOf: url)
-        print("🧪 [입력] \(Self.describe(url, data))")
+        for url in try Self.fixtureURLs() {
+            let data = try Data(contentsOf: url)
+            let aligned = Self.alignedTargetPixelSize(for: data)
+            print("🧪 [입력] \(Self.describe(url, data)) \(data.count)B")
 
-        // JPEG 코덱 워밍업 (첫 호출의 일회성 +100MB대 스파이크 제거)
-        _ = downsampledJPEG(data: data, maxPixelSize: 64, withTransform: false)
+            // JPEG 코덱 워밍업 (첫 호출의 일회성 스파이크 제거)
+            _ = downsampledJPEG(data: data, maxPixelSize: 64, withTransform: false)
 
-        struct Variant { let label: String; let maxPixel: CGFloat; let transform: Bool }
-        let variants = [
-            Variant(label: "A #49 이전 — transform:true, max 2048", maxPixel: 2048, transform: true),
-            Variant(label: "B transform:false, max 2048", maxPixel: 2048, transform: false),
-            Variant(label: "C transform:false, max 2016", maxPixel: 2016, transform: false),
-            Variant(label: "D transform:true, max 2016", maxPixel: 2016, transform: true),
-        ]
+            struct Variant { let label: String; let maxPixel: CGFloat; let transform: Bool }
+            let a = Int(aligned)
+            let variants = [
+                Variant(label: "A #49 이전 — transform:true, max 2048", maxPixel: 2048, transform: true),
+                Variant(label: "B transform:false, max 2048", maxPixel: 2048, transform: false),
+                Variant(label: "C transform:false, max \(a)", maxPixel: aligned, transform: false),
+                Variant(label: "D transform:true, max \(a)", maxPixel: aligned, transform: true),
+            ]
 
-        for v in variants {
-            var lines: [String] = []
-            for i in 1...3 {
-                let sampler = FootprintSampler()
-                let baseline = sampler.start()
-                let t0 = CFAbsoluteTimeGetCurrent()
-                var out = "변환 실패"
-                autoreleasepool {
-                    if let r = downsampledJPEG(data: data, maxPixelSize: v.maxPixel, withTransform: v.transform) {
-                        out = "\(r.w)x\(r.h) \(r.data.count / 1024)KB"
-                    } else {
-                        XCTFail("변환 실패: \(v.label)")
+            for v in variants {
+                var lines: [String] = []
+                for i in 1...3 {
+                    let sampler = FootprintSampler()
+                    let baseline = sampler.start()
+                    let t0 = CFAbsoluteTimeGetCurrent()
+                    var out = "변환 실패"
+                    autoreleasepool {
+                        if let r = downsampledJPEG(data: data, maxPixelSize: v.maxPixel, withTransform: v.transform) {
+                            out = "\(r.w)x\(r.h) \(r.data.count / 1024)KB"
+                        } else {
+                            XCTFail("변환 실패: \(v.label) · \(url.lastPathComponent)")
+                        }
                     }
+                    let dt = CFAbsoluteTimeGetCurrent() - t0
+                    let peak = sampler.stopPeak()
+                    lines.append("run\(i): +\(mb(peak - baseline))MB, \(String(format: "%.4f", dt))s, out \(out)")
                 }
-                let dt = CFAbsoluteTimeGetCurrent() - t0
-                let peak = sampler.stopPeak()
-                lines.append("run\(i): +\(mb(peak - baseline))MB, \(String(format: "%.3f", dt))s, out \(out)")
+                print("🧪 [\(v.label)]\n" + lines.joined(separator: "\n"))
             }
-            print("🧪 [\(v.label)]\n" + lines.joined(separator: "\n"))
         }
     }
 }

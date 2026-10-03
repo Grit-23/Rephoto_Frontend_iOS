@@ -207,8 +207,9 @@ xcodebuild test-without-building -xctestrun <DD>/Build/Products/<…>.xctestrun 
 ```
 
 `-only-testing`의 대상만 바꿔 `DecodeVariantBenchTests` · `UploadMemoryBenchmark` · `HomeDerivedCollectionPerformanceTests`의
-메서드를 하나씩 돌린다. 2026-10-02 측정에 실제로 쓴 반복 횟수·폴더 구조는
-[측정 원문 README](../docs/benchmarks/2026-10-02_iPhone14Pro_iOS27.2b/README.md)의 「재현 명령」에 있다.
+메서드를 하나씩 돌린다. 실제로 쓴 반복 횟수·폴더 구조는 측정 원문 README의 「재현 명령」에 있다 —
+업로드 전처리는 [`2026-10-03_iPhone14Pro_15photos`](../docs/benchmarks/2026-10-03_iPhone14Pro_15photos/README.md),
+디코드 변형·파생 컬렉션은 [`2026-10-02_iPhone14Pro_iOS27.2b`](../docs/benchmarks/2026-10-02_iPhone14Pro_iOS27.2b/README.md).
 zsh에 붙여 넣을 때는 `#` 주석 줄을 빼야 한다(대화형 zsh는 기본적으로 주석을 해석하지 않는다).
 
 **`ENABLE_TESTABILITY=YES`가 반드시 필요하다.** 프로젝트 Release 설정에는 이 값이 없어
@@ -220,8 +221,8 @@ zsh에 붙여 넣을 때는 `#` 주석 줄을 빼야 한다(대화형 zsh는 기
 **픽스처.** 실기기에는 `#filePath` 경로가 존재하지 않으므로 호스트의 `MockImagesReal/`을 읽을 수 없다.
 `Rephoto_iOSTests/Performance/Fixtures/`에 원본 해상도 사진을 두면 테스트 번들에 동봉되어 기기에서도 읽힌다
 (타겟이 file-system synchronized group이라 폴더에 파일만 넣으면 되고 pbxproj 수정은 불필요).
-`fixtureURL()`이 **번들 → 호스트 폴더** 순으로 찾으며, 실제로 어느 쪽을 썼는지는
-`🧪 [입력] … [출처: …]` 로그에 찍힌다. 둘 다 없으면 자동 스킵.
+**번들 → 호스트 폴더** 순으로 찾으며, 실제로 어느 쪽을 썼는지는 `🧪 [입력] … [출처: …]` 로그에 찍힌다. 둘 다 없으면 자동 스킵.
+`UploadMemoryBenchmark`의 두 측정은 `fixtureURLs()`로 **폴더의 사진을 전부** 돌고, `DecodeVariantBenchTests`와 대조군은 `fixtureURL()`로 **가장 큰 한 장**만 쓴다.
 
 > 앱 타겟 `Resources/`에는 넣지 말 것. 앱 번들 루트에 이미 `MockImages/IMG_9898.jpeg`가
 > 평탄화되어 들어가 있어 파일명이 충돌한다(축소본 722KB — 원본 5,733KB와 다른 파일이다).

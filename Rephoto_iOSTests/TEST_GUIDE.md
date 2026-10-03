@@ -46,9 +46,11 @@ didSet 방식의 쓰기 비용(`photosAssign_10000`)도 함께 기록. 측정 �
 `task_vm_info.phys_footprint` 폴링으로 작업 구간의 피크 증가분(delta)을 잰다 — 프로세스 전체
 피크에 셋업 메모리가 섞이는 오염을 피하기 위함. 결과는 콘솔 출력.
 
-입력으로 원본 해상도 사진이 필요한데 개인 EXIF 때문에 커밋하지 않는다. `fixtureURL()`이
+입력으로 원본 해상도 사진이 필요한데 개인 EXIF 때문에 커밋하지 않는다.
 `Rephoto_iOSTests/Performance/Fixtures/`(테스트 번들 동봉 — 실기기용) → 리포 루트
 `MockImagesReal/`(호스트 — 시뮬레이터용) 순으로 찾고, 둘 다 없으면 **자동 스킵**된다.
+`test_current_downsampleExtract_peakDelta` · `test_downsampleOptions_experiment`는 폴더의 사진을 **전부** 돌며(`fixtureURLs()`),
+대조군은 가장 큰 한 장만 쓴다(`fixtureURL()`). 옵션 실험의 C·D 목표 크기는 앱과 같은 공식으로 사진마다 계산한다.
 앱 타겟 `Resources/`에는 두지 말 것 — `MockImages`와 파일명이 겹쳐 번들 복사 충돌이 난다.
 실기기 + Release 실행 절차는 [`TESTING.md`](TESTING.md), 측정 수치는 `BASELINE_RESULTS.md` 참조.
 

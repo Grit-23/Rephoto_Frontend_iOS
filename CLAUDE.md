@@ -188,7 +188,7 @@ PR 템플릿: `.github/pull_request_template.md`
 
 ### Step 7. 🔶 성능 최적화 (부분 완료)
 **리팩토링 전**: DateFormatter 매번 생성, 이미지 원본 업로드, fetchPhotos() 전체 교체, 태그 배열 선형 검색.
-**현재**: DateFormatter static 캐싱 완료, 이미지 다운샘플·압축 완료(#34·#49 — 페이로드 −72–74%, 다운샘플·인코딩 시간 약 −22–26% — iPhone 14 Pro 1대 · 사진 2장), Home 파생 컬렉션 didSet 캐싱(#47·#59). ETag 캐시와 Dictionary O(1) 태그 조회는 미완(`PhotoInfoViewModel`이 아직 `firstIndex` 선형 검색).
+**현재**: DateFormatter static 캐싱 완료, 이미지 다운샘플·압축 완료(#34·#49 — 페이로드 중앙값 −73%, 다운샘플·인코딩 시간 중앙값 −25% — iPhone 14 Pro 1대 · 사진 15장), Home 파생 컬렉션 didSet 캐싱(#47·#59). ETag 캐시와 Dictionary O(1) 태그 조회는 미완(`PhotoInfoViewModel`이 아직 `firstIndex` 선형 검색).
 **목표**:
 - DateFormatter static 캐싱 또는 ISO8601DateFormatter 전환
 - 업로드 전 이미지 압축 (quality 0.7–0.8)

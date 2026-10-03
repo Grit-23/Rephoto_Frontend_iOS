@@ -1,0 +1,107 @@
+Test Case '-[Rephoto_iOSTests.UploadMemoryBenchmark test_current_downsampleExtract_peakDelta]' started.
+🧪 [입력] 37E6F0D7-2EAA-4301-92E2-97EFB707BBC9.jpg 4032x3024 1331KB [출처: Rephoto_iOSTests.xctest] 1363866B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +21.0MB, 0.0311s, out 362244B
+run2: peakDelta +15.8MB, 0.0183s, out 362244B
+run3: peakDelta +16.0MB, 0.0219s, out 362244B
+run4: peakDelta +15.8MB, 0.0181s, out 362244B
+run5: peakDelta +15.8MB, 0.0172s, out 362244B
+🧪 [입력] 502406CE-49C0-4F4B-8DCD-D77C50B6731B.jpg 4032x3024 5354KB [출처: Rephoto_iOSTests.xctest] 5483371B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +24.3MB, 0.0213s, out 1605825B
+run2: peakDelta +19.8MB, 0.0225s, out 1605825B
+run3: peakDelta +19.7MB, 0.0214s, out 1605825B
+run4: peakDelta +19.7MB, 0.0220s, out 1605825B
+run5: peakDelta +20.3MB, 0.0243s, out 1605825B
+🧪 [입력] 52E2BBE5-A1EA-40AF-8EFA-A924270F8FFD.jpg 4032x3024 3488KB [출처: Rephoto_iOSTests.xctest] 3571903B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +22.3MB, 0.0197s, out 915799B
+run2: peakDelta +17.7MB, 0.0193s, out 915799B
+run3: peakDelta +17.7MB, 0.0194s, out 915799B
+run4: peakDelta +17.7MB, 0.0193s, out 915799B
+run5: peakDelta +17.7MB, 0.0192s, out 915799B
+🧪 [입력] 54F59859-FF83-4DC8-97DB-2CBF9B21F2D4.jpg 4032x3024 2176KB [출처: Rephoto_iOSTests.xctest] 2228735B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +20.2MB, 0.0166s, out 598739B
+run2: peakDelta +15.7MB, 0.0166s, out 598739B
+run3: peakDelta +15.7MB, 0.0165s, out 598739B
+run4: peakDelta +15.7MB, 0.0167s, out 598739B
+run5: peakDelta +15.7MB, 0.0167s, out 598739B
+🧪 [입력] 587306D8-02F9-43B5-84D7-723F65134400.jpg 4032x3024 5733KB [출처: Rephoto_iOSTests.xctest] 5871533B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +24.2MB, 0.0221s, out 1502113B
+run2: peakDelta +19.8MB, 0.0223s, out 1502113B
+run3: peakDelta +19.7MB, 0.0227s, out 1502113B
+run4: peakDelta +19.7MB, 0.0225s, out 1502113B
+run5: peakDelta +19.7MB, 0.0224s, out 1502113B
+🧪 [입력] 66055B8E-6DA0-49B3-8687-89F49ED470D4.jpg 4032x3024 2317KB [출처: Rephoto_iOSTests.xctest] 2372869B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +22.4MB, 0.0171s, out 659802B
+run2: peakDelta +17.7MB, 0.0171s, out 659802B
+run3: peakDelta +17.7MB, 0.0171s, out 659802B
+run4: peakDelta +17.7MB, 0.0172s, out 659802B
+run5: peakDelta +17.7MB, 0.0172s, out 659802B
+🧪 [입력] 67BD1CF3-723A-47A1-8086-A158E4271E51.jpg 4032x3024 3887KB [출처: Rephoto_iOSTests.xctest] 3980526B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +22.2MB, 0.0183s, out 1287775B
+run2: peakDelta +17.7MB, 0.0184s, out 1287775B
+run3: peakDelta +17.7MB, 0.0184s, out 1287775B
+run4: peakDelta +17.7MB, 0.0186s, out 1287775B
+run5: peakDelta +17.7MB, 0.0185s, out 1287775B
+🧪 [입력] 833E3864-5A9D-4939-880B-144AB36B629B.jpg 4032x3024 1645KB [출처: Rephoto_iOSTests.xctest] 1684879B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +20.2MB, 0.0163s, out 523163B
+run2: peakDelta +15.7MB, 0.0165s, out 523163B
+run3: peakDelta +15.7MB, 0.0164s, out 523163B
+run4: peakDelta +15.7MB, 0.0165s, out 523163B
+run5: peakDelta +15.7MB, 0.0164s, out 523163B
+🧪 [입력] 9003DABA-12A0-4969-B797-9B7F5219F7E9.jpg 4032x3024 2885KB [출처: Rephoto_iOSTests.xctest] 2954854B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +22.2MB, 0.0171s, out 868764B
+run2: peakDelta +17.7MB, 0.0173s, out 868764B
+run3: peakDelta +17.7MB, 0.0183s, out 868764B
+run4: peakDelta +17.7MB, 0.0173s, out 868764B
+run5: peakDelta +17.7MB, 0.0176s, out 868764B
+🧪 [입력] 90B7B149-1A20-42C9-AAB4-76115F788A1F.jpg 4032x3024 1845KB [출처: Rephoto_iOSTests.xctest] 1890001B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +20.2MB, 0.0167s, out 495082B
+run2: peakDelta +15.7MB, 0.0167s, out 495082B
+run3: peakDelta +15.7MB, 0.0168s, out 495082B
+run4: peakDelta +15.7MB, 0.0168s, out 495082B
+run5: peakDelta +15.7MB, 0.0167s, out 495082B
+🧪 [입력] 9700DCE6-7326-4075-97E6-169D6B13CCD0.jpg 4032x3024 1929KB [출처: Rephoto_iOSTests.xctest] 1975962B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +15.7MB, 0.0144s, out 464401B
+run2: peakDelta +15.7MB, 0.0145s, out 464401B
+run3: peakDelta +15.7MB, 0.0144s, out 464401B
+run4: peakDelta +15.7MB, 0.0145s, out 464401B
+run5: peakDelta +15.7MB, 0.0145s, out 464401B
+🧪 [입력] B889BB8E-D5F1-4ED4-A68B-80AEE7B2510A.jpg 4032x3024 1647KB [출처: Rephoto_iOSTests.xctest] 1686868B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +20.2MB, 0.0167s, out 447029B
+run2: peakDelta +15.7MB, 0.0167s, out 447029B
+run3: peakDelta +15.7MB, 0.0165s, out 447029B
+run4: peakDelta +15.7MB, 0.0169s, out 447029B
+run5: peakDelta +15.7MB, 0.0165s, out 447029B
+🧪 [입력] D8B22651-78F5-4F97-9FDB-6B45772B1FE0.jpg 4032x3024 2592KB [출처: Rephoto_iOSTests.xctest] 2654822B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +22.2MB, 0.0177s, out 777184B
+run2: peakDelta +17.7MB, 0.0179s, out 777184B
+run3: peakDelta +17.7MB, 0.0179s, out 777184B
+run4: peakDelta +17.7MB, 0.0181s, out 777184B
+run5: peakDelta +17.7MB, 0.0180s, out 777184B
+🧪 [입력] F36DA221-B175-459A-B331-2E107DEE2D38.jpg 4032x3024 3090KB [출처: Rephoto_iOSTests.xctest] 3164585B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +17.7MB, 0.0155s, out 941889B
+run2: peakDelta +17.7MB, 0.0155s, out 941889B
+run3: peakDelta +17.7MB, 0.0162s, out 941889B
+run4: peakDelta +17.7MB, 0.0157s, out 941889B
+run5: peakDelta +17.7MB, 0.0157s, out 941889B
+🧪 [입력] F722FE3B-DC7B-4EE4-9661-4ED176DAF5DC.jpg 4032x3024 739KB [출처: Rephoto_iOSTests.xctest] 756814B
+🧪 [current ImageIO 다운샘플]
+run1: peakDelta +19.2MB, 0.0166s, out 202334B
+run2: peakDelta +14.7MB, 0.0168s, out 202334B
+run3: peakDelta +14.7MB, 0.0167s, out 202334B
+run4: peakDelta +14.7MB, 0.0170s, out 202334B
+run5: peakDelta +14.7MB, 0.0170s, out 202334B
+Test Case '-[Rephoto_iOSTests.UploadMemoryBenchmark test_current_downsampleExtract_peakDelta]' passed (1.418 seconds).
