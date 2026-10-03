@@ -1,0 +1,257 @@
+Test Case '-[Rephoto_iOSTests.UploadMemoryBenchmark test_downsampleOptions_experiment]' started.
+🧪 [입력] 37E6F0D7-2EAA-4301-92E2-97EFB707BBC9.jpg 4032x3024 1331KB [출처: Rephoto_iOSTests.xctest] 1363866B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +33.8MB, 0.0228s, out 1536x2048 377KB
+run2: +16.1MB, 0.0220s, out 1536x2048 377KB
+run3: +16.0MB, 0.0218s, out 1536x2048 377KB
+🧪 [B transform:false, max 2048]
+run1: +16.0MB, 0.0220s, out 2048x1536 381KB
+run2: +16.0MB, 0.0224s, out 2048x1536 381KB
+run3: +16.0MB, 0.0213s, out 2048x1536 381KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0139s, out 2016x1512 358KB
+run2: +15.7MB, 0.0139s, out 2016x1512 358KB
+run3: +15.7MB, 0.0138s, out 2016x1512 358KB
+🧪 [D transform:true, max 2016]
+run1: +20.2MB, 0.0161s, out 1512x2016 353KB
+run2: +15.7MB, 0.0161s, out 1512x2016 353KB
+run3: +15.7MB, 0.0161s, out 1512x2016 353KB
+🧪 [입력] 502406CE-49C0-4F4B-8DCD-D77C50B6731B.jpg 4032x3024 5354KB [출처: Rephoto_iOSTests.xctest] 5483371B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +37.8MB, 0.0251s, out 1536x2048 1636KB
+run2: +20.0MB, 0.0256s, out 1536x2048 1636KB
+run3: +20.0MB, 0.0251s, out 1536x2048 1636KB
+🧪 [B transform:false, max 2048]
+run1: +20.0MB, 0.0257s, out 2048x1536 1645KB
+run2: +20.0MB, 0.0256s, out 2048x1536 1645KB
+run3: +20.0MB, 0.0251s, out 2048x1536 1645KB
+🧪 [C transform:false, max 2016]
+run1: +1.7MB, 0.0179s, out 2016x1512 1573KB
+run2: +19.7MB, 0.0178s, out 2016x1512 1573KB
+run3: +19.7MB, 0.0178s, out 2016x1512 1573KB
+🧪 [D transform:true, max 2016]
+run1: +24.2MB, 0.0201s, out 1512x2016 1568KB
+run2: +19.7MB, 0.0205s, out 1512x2016 1568KB
+run3: +19.7MB, 0.0203s, out 1512x2016 1568KB
+🧪 [입력] 52E2BBE5-A1EA-40AF-8EFA-A924270F8FFD.jpg 4032x3024 3488KB [출처: Rephoto_iOSTests.xctest] 3571903B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +35.8MB, 0.0237s, out 1536x2048 920KB
+run2: +18.0MB, 0.0243s, out 1536x2048 920KB
+run3: +18.0MB, 0.0249s, out 1536x2048 920KB
+🧪 [B transform:false, max 2048]
+run1: +18.0MB, 0.0260s, out 2048x1536 929KB
+run2: +18.0MB, 0.0260s, out 2048x1536 929KB
+run3: +18.0MB, 0.0254s, out 2048x1536 929KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0178s, out 2016x1512 901KB
+run2: +17.7MB, 0.0177s, out 2016x1512 901KB
+run3: +17.7MB, 0.0181s, out 2016x1512 901KB
+🧪 [D transform:true, max 2016]
+run1: +22.2MB, 0.0195s, out 1512x2016 894KB
+run2: +17.7MB, 0.0193s, out 1512x2016 894KB
+run3: +17.7MB, 0.0189s, out 1512x2016 894KB
+🧪 [입력] 54F59859-FF83-4DC8-97DB-2CBF9B21F2D4.jpg 4032x3024 2176KB [출처: Rephoto_iOSTests.xctest] 2228735B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +33.8MB, 0.0224s, out 1536x2048 629KB
+run2: +16.0MB, 0.0223s, out 1536x2048 629KB
+run3: +16.0MB, 0.0218s, out 1536x2048 629KB
+🧪 [B transform:false, max 2048]
+run1: +16.0MB, 0.0222s, out 2048x1536 636KB
+run2: +16.0MB, 0.0219s, out 2048x1536 636KB
+run3: +16.0MB, 0.0216s, out 2048x1536 636KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0141s, out 2016x1512 587KB
+run2: +15.7MB, 0.0138s, out 2016x1512 587KB
+run3: +15.7MB, 0.0138s, out 2016x1512 587KB
+🧪 [D transform:true, max 2016]
+run1: +20.2MB, 0.0160s, out 1512x2016 584KB
+run2: +15.7MB, 0.0157s, out 1512x2016 584KB
+run3: +15.7MB, 0.0158s, out 1512x2016 584KB
+🧪 [입력] 587306D8-02F9-43B5-84D7-723F65134400.jpg 4032x3024 5733KB [출처: Rephoto_iOSTests.xctest] 5871533B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +37.8MB, 0.0264s, out 1536x2048 1512KB
+run2: +20.0MB, 0.0268s, out 1536x2048 1512KB
+run3: +20.0MB, 0.0264s, out 1536x2048 1512KB
+🧪 [B transform:false, max 2048]
+run1: +20.0MB, 0.0263s, out 2048x1536 1525KB
+run2: +20.0MB, 0.0266s, out 2048x1536 1525KB
+run3: +20.0MB, 0.0269s, out 2048x1536 1525KB
+🧪 [C transform:false, max 2016]
+run1: +1.7MB, 0.0196s, out 2016x1512 1472KB
+run2: +19.7MB, 0.0200s, out 2016x1512 1472KB
+run3: +19.7MB, 0.0205s, out 2016x1512 1472KB
+🧪 [D transform:true, max 2016]
+run1: +24.2MB, 0.0225s, out 1512x2016 1466KB
+run2: +19.7MB, 0.0221s, out 1512x2016 1466KB
+run3: +19.7MB, 0.0223s, out 1512x2016 1466KB
+🧪 [입력] 66055B8E-6DA0-49B3-8687-89F49ED470D4.jpg 4032x3024 2317KB [출처: Rephoto_iOSTests.xctest] 2372869B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +35.8MB, 0.0227s, out 1536x2048 690KB
+run2: +18.0MB, 0.0226s, out 1536x2048 690KB
+run3: +18.0MB, 0.0224s, out 1536x2048 690KB
+🧪 [B transform:false, max 2048]
+run1: +18.0MB, 0.0225s, out 2048x1536 698KB
+run2: +18.0MB, 0.0224s, out 2048x1536 698KB
+run3: +18.0MB, 0.0221s, out 2048x1536 698KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0145s, out 2016x1512 649KB
+run2: +17.7MB, 0.0142s, out 2016x1512 649KB
+run3: +17.7MB, 0.0143s, out 2016x1512 649KB
+🧪 [D transform:true, max 2016]
+run1: +22.2MB, 0.0165s, out 1512x2016 644KB
+run2: +15.6MB, 0.0166s, out 1512x2016 644KB
+run3: +17.7MB, 0.0165s, out 1512x2016 644KB
+🧪 [입력] 67BD1CF3-723A-47A1-8086-A158E4271E51.jpg 4032x3024 3887KB [출처: Rephoto_iOSTests.xctest] 3980526B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +35.8MB, 0.0227s, out 1536x2048 1321KB
+run2: +18.0MB, 0.0228s, out 1536x2048 1321KB
+run3: +18.0MB, 0.0225s, out 1536x2048 1321KB
+🧪 [B transform:false, max 2048]
+run1: +18.0MB, 0.0225s, out 2048x1536 1326KB
+run2: +18.0MB, 0.0225s, out 2048x1536 1326KB
+run3: +18.0MB, 0.0228s, out 2048x1536 1326KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0154s, out 2016x1512 1262KB
+run2: +17.7MB, 0.0152s, out 2016x1512 1262KB
+run3: +17.7MB, 0.0150s, out 2016x1512 1262KB
+🧪 [D transform:true, max 2016]
+run1: +22.2MB, 0.0171s, out 1512x2016 1257KB
+run2: +17.7MB, 0.0171s, out 1512x2016 1257KB
+run3: +17.7MB, 0.0173s, out 1512x2016 1257KB
+🧪 [입력] 833E3864-5A9D-4939-880B-144AB36B629B.jpg 4032x3024 1645KB [출처: Rephoto_iOSTests.xctest] 1684879B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +33.8MB, 0.0208s, out 1536x2048 544KB
+run2: +16.0MB, 0.0210s, out 1536x2048 544KB
+run3: +16.0MB, 0.0210s, out 1536x2048 544KB
+🧪 [B transform:false, max 2048]
+run1: +16.0MB, 0.0211s, out 2048x1536 551KB
+run2: +16.0MB, 0.0210s, out 2048x1536 551KB
+run3: +16.0MB, 0.0209s, out 2048x1536 551KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0135s, out 2016x1512 517KB
+run2: +15.7MB, 0.0133s, out 2016x1512 517KB
+run3: +15.7MB, 0.0133s, out 2016x1512 517KB
+🧪 [D transform:true, max 2016]
+run1: +20.2MB, 0.0154s, out 1512x2016 510KB
+run2: +15.7MB, 0.0154s, out 1512x2016 510KB
+run3: +15.7MB, 0.0153s, out 1512x2016 510KB
+🧪 [입력] 9003DABA-12A0-4969-B797-9B7F5219F7E9.jpg 4032x3024 2885KB [출처: Rephoto_iOSTests.xctest] 2954854B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +35.8MB, 0.0212s, out 1536x2048 903KB
+run2: +18.0MB, 0.0215s, out 1536x2048 903KB
+run3: +18.0MB, 0.0222s, out 1536x2048 903KB
+🧪 [B transform:false, max 2048]
+run1: +18.0MB, 0.0224s, out 2048x1536 909KB
+run2: +18.0MB, 0.0222s, out 2048x1536 909KB
+run3: +18.0MB, 0.0225s, out 2048x1536 909KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0146s, out 2016x1512 852KB
+run2: +17.7MB, 0.0142s, out 2016x1512 852KB
+run3: +17.7MB, 0.0140s, out 2016x1512 852KB
+🧪 [D transform:true, max 2016]
+run1: +22.2MB, 0.0179s, out 1512x2016 848KB
+run2: +17.7MB, 0.0164s, out 1512x2016 848KB
+run3: +17.7MB, 0.0163s, out 1512x2016 848KB
+🧪 [입력] 90B7B149-1A20-42C9-AAB4-76115F788A1F.jpg 4032x3024 1845KB [출처: Rephoto_iOSTests.xctest] 1890001B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +33.8MB, 0.0214s, out 1536x2048 524KB
+run2: +16.0MB, 0.0216s, out 1536x2048 524KB
+run3: +16.0MB, 0.0216s, out 1536x2048 524KB
+🧪 [B transform:false, max 2048]
+run1: +16.0MB, 0.0216s, out 2048x1536 526KB
+run2: +16.0MB, 0.0216s, out 2048x1536 526KB
+run3: +16.0MB, 0.0215s, out 2048x1536 526KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0142s, out 2016x1512 485KB
+run2: +15.7MB, 0.0140s, out 2016x1512 485KB
+run3: +15.7MB, 0.0140s, out 2016x1512 485KB
+🧪 [D transform:true, max 2016]
+run1: +20.2MB, 0.0162s, out 1512x2016 483KB
+run2: +15.7MB, 0.0167s, out 1512x2016 483KB
+run3: +15.7MB, 0.0167s, out 1512x2016 483KB
+🧪 [입력] 9700DCE6-7326-4075-97E6-169D6B13CCD0.jpg 4032x3024 1929KB [출처: Rephoto_iOSTests.xctest] 1975962B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +33.8MB, 0.0223s, out 2048x1536 482KB
+run2: +16.0MB, 0.0224s, out 2048x1536 482KB
+run3: +16.0MB, 0.0222s, out 2048x1536 482KB
+🧪 [B transform:false, max 2048]
+run1: +16.0MB, 0.0223s, out 2048x1536 482KB
+run2: +16.0MB, 0.0221s, out 2048x1536 482KB
+run3: +16.0MB, 0.0218s, out 2048x1536 482KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0140s, out 2016x1512 453KB
+run2: +15.7MB, 0.0138s, out 2016x1512 453KB
+run3: +15.7MB, 0.0138s, out 2016x1512 453KB
+🧪 [D transform:true, max 2016]
+run1: +15.7MB, 0.0139s, out 2016x1512 453KB
+run2: +15.7MB, 0.0139s, out 2016x1512 453KB
+run3: +15.7MB, 0.0138s, out 2016x1512 453KB
+🧪 [입력] B889BB8E-D5F1-4ED4-A68B-80AEE7B2510A.jpg 4032x3024 1647KB [출처: Rephoto_iOSTests.xctest] 1686868B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +33.8MB, 0.0208s, out 1536x2048 468KB
+run2: +16.0MB, 0.0209s, out 1536x2048 468KB
+run3: +16.0MB, 0.0210s, out 1536x2048 468KB
+🧪 [B transform:false, max 2048]
+run1: +16.0MB, 0.0214s, out 2048x1536 472KB
+run2: +16.0MB, 0.0209s, out 2048x1536 472KB
+run3: +16.0MB, 0.0208s, out 2048x1536 472KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0137s, out 2016x1512 440KB
+run2: +15.7MB, 0.0136s, out 2016x1512 440KB
+run3: +15.7MB, 0.0136s, out 2016x1512 440KB
+🧪 [D transform:true, max 2016]
+run1: +20.2MB, 0.0156s, out 1512x2016 436KB
+run2: +15.7MB, 0.0156s, out 1512x2016 436KB
+run3: +15.7MB, 0.0160s, out 1512x2016 436KB
+🧪 [입력] D8B22651-78F5-4F97-9FDB-6B45772B1FE0.jpg 4032x3024 2592KB [출처: Rephoto_iOSTests.xctest] 2654822B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +35.8MB, 0.0218s, out 1536x2048 799KB
+run2: +18.0MB, 0.0221s, out 1536x2048 799KB
+run3: +18.0MB, 0.0220s, out 1536x2048 799KB
+🧪 [B transform:false, max 2048]
+run1: +18.0MB, 0.0221s, out 2048x1536 805KB
+run2: +18.0MB, 0.0220s, out 2048x1536 805KB
+run3: +18.0MB, 0.0220s, out 2048x1536 805KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0148s, out 2016x1512 760KB
+run2: +17.7MB, 0.0146s, out 2016x1512 760KB
+run3: +17.7MB, 0.0146s, out 2016x1512 760KB
+🧪 [D transform:true, max 2016]
+run1: +22.2MB, 0.0167s, out 1512x2016 758KB
+run2: +17.7MB, 0.0167s, out 1512x2016 758KB
+run3: +17.7MB, 0.0168s, out 1512x2016 758KB
+🧪 [입력] F36DA221-B175-459A-B331-2E107DEE2D38.jpg 4032x3024 3090KB [출처: Rephoto_iOSTests.xctest] 3164585B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +35.8MB, 0.0218s, out 2048x1536 979KB
+run2: +18.0MB, 0.0220s, out 2048x1536 979KB
+run3: +18.0MB, 0.0218s, out 2048x1536 979KB
+🧪 [B transform:false, max 2048]
+run1: +18.0MB, 0.0219s, out 2048x1536 979KB
+run2: +18.0MB, 0.0220s, out 2048x1536 979KB
+run3: +18.0MB, 0.0219s, out 2048x1536 979KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0149s, out 2016x1512 919KB
+run2: +17.7MB, 0.0150s, out 2016x1512 919KB
+run3: +17.7MB, 0.0149s, out 2016x1512 919KB
+🧪 [D transform:true, max 2016]
+run1: +17.7MB, 0.0148s, out 2016x1512 919KB
+run2: +17.7MB, 0.0148s, out 2016x1512 919KB
+run3: +17.7MB, 0.0147s, out 2016x1512 919KB
+🧪 [입력] F722FE3B-DC7B-4EE4-9661-4ED176DAF5DC.jpg 4032x3024 739KB [출처: Rephoto_iOSTests.xctest] 756814B
+🧪 [A #49 이전 — transform:true, max 2048]
+run1: +32.8MB, 0.0209s, out 1536x2048 209KB
+run2: +15.0MB, 0.0211s, out 1536x2048 209KB
+run3: +15.0MB, 0.0211s, out 1536x2048 209KB
+🧪 [B transform:false, max 2048]
+run1: +15.0MB, 0.0211s, out 2048x1536 209KB
+run2: +13.0MB, 0.0211s, out 2048x1536 209KB
+run3: +15.0MB, 0.0212s, out 2048x1536 209KB
+🧪 [C transform:false, max 2016]
+run1: +0.0MB, 0.0138s, out 2016x1512 198KB
+run2: +14.7MB, 0.0137s, out 2016x1512 198KB
+run3: +14.7MB, 0.0134s, out 2016x1512 198KB
+🧪 [D transform:true, max 2016]
+run1: +19.2MB, 0.0156s, out 1512x2016 197KB
+run2: +14.7MB, 0.0156s, out 1512x2016 197KB
+run3: +14.7MB, 0.0156s, out 1512x2016 197KB
+Test Case '-[Rephoto_iOSTests.UploadMemoryBenchmark test_downsampleOptions_experiment]' passed (3.724 seconds).
