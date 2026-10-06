@@ -79,7 +79,7 @@ final class UploadMemoryBenchmark: XCTestCase {
         throw XCTSkip("원본 사진 픽스처를 찾지 못했습니다. Fixtures/ 또는 MockImagesReal/ 에 사진을 두세요.")
     }
 
-    /// `PhotoMetadataExtractor`와 같은 목표 크기 계산 — 긴 변을 2로 나눠 2048 이하가 되는 첫 값.
+    /// `PhotoMetadataExtractor`의 목표 크기 계산을 그대로 쓴다(12MP 4032px이면 2016).
     /// 옵션 실험의 D(현재 앱)를 사진 크기와 무관하게 앱 경로와 같게 맞추기 위함.
     static func alignedTargetPixelSize(for data: Data) -> CGFloat {
         var longerSide = 0
@@ -89,9 +89,7 @@ final class UploadMemoryBenchmark: XCTestCase {
             let h = props[kCGImagePropertyPixelHeight as String] as? Int ?? 0
             longerSide = max(w, h)
         }
-        var target: CGFloat = longerSide > 0 ? CGFloat(longerSide) : 2016
-        while target > 2048 { target /= 2 }
-        return target
+        return PhotoMetadataExtractor.targetPixelSize(forLongerSide: longerSide)
     }
 
     /// 테스트 번들에 동봉된 픽스처. 동기화 그룹이 리소스를 번들 루트로 평탄화하는 경우와
