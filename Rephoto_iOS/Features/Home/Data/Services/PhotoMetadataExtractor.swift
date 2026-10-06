@@ -36,15 +36,9 @@ struct PhotoMetadataExtractor: PhotoMetadataExtractorProtocol {
 
         // 업로드 전 다운샘플 + JPEG 압축 (원본 그대로 올리던 것을 ImageIO로 교체)
         // 위치/촬영시간은 위에서 EXIF로 이미 추출했으므로, 압축본에 메타가 빠져도 무방
-        //
-        // 목표 크기는 JPEG 1/2ⁿ 서브샘플 디코드 경계에 맞춰 동적 계산한다.
-        // 경계에 안 맞으면(예: 4032px 원본에 2048 요청) 1/2ⁿ 축소 디코드를 쓰지 못해 처리 시간이 늘어난다.
-        // 측정 결과는 Rephoto_iOSTests/BASELINE_RESULTS.md에 있다.
         let pxW = properties[kCGImagePropertyPixelWidth as String] as? Int ?? 0
         let pxH = properties[kCGImagePropertyPixelHeight as String] as? Int ?? 0
-        let longerSide = max(pxW, pxH)
-        var targetPixelSize: CGFloat = longerSide > 0 ? CGFloat(longerSide) : 2016
-        while targetPixelSize > 2048 { targetPixelSize /= 2 }
+        let targetPixelSize = Self.targetPixelSize(forLongerSide: max(pxW, pxH))
 
         guard let compressed = downsampledJPEG(from: source, maxPixelSize: targetPixelSize, quality: 0.8) else {
             return nil
@@ -73,6 +67,31 @@ struct PhotoMetadataExtractor: PhotoMetadataExtractorProtocol {
             createdAt: DateFormatter.serverISO.string(from: createdAt),
             fileName: destURL.lastPathComponent
         )
+    }
+
+    /// 다운샘플 목표 크기의 상한(긴 변 px).
+    static let maxPixelSize: CGFloat = 2048
+    /// 경계 정렬을 유지하는 하한. 정렬값이 이보다 작으면 해상도 손실이 커서 상한을 요청한다.
+    static let minAlignedPixelSize: CGFloat = 1536
+    /// 원본 크기를 읽지 못했을 때의 목표(12MP 4032px의 1/2).
+    private static let fallbackPixelSize: CGFloat = 2016
+
+    /// 업로드용 다운샘플 목표 크기(긴 변 px).
+    ///
+    /// 원본 긴 변을 상한 이하가 될 때까지 반씩 나눠 JPEG 1/2ⁿ 서브샘플 디코드 경계에 맞춘다(#49).
+    /// 경계에 안 맞으면(예: 4032px 원본에 2048 요청) 1/2ⁿ 축소 디코드를 쓰지 못해 처리 시간이 늘어난다.
+    /// 측정 결과는 Rephoto_iOSTests/BASELINE_RESULTS.md에 있다.
+    ///
+    /// 다만 정렬값이 하한보다 작으면(예: 24MP 5712px → 1428px) 줄어드는 시간보다 잃는 해상도가 크므로,
+    /// 정렬을 포기하고 상한을 그대로 요청한다(#88).
+    static func targetPixelSize(forLongerSide longerSide: Int) -> CGFloat {
+        guard longerSide > 0 else { return fallbackPixelSize }
+        let original = CGFloat(longerSide)
+        guard original > maxPixelSize else { return original }
+
+        var aligned = original
+        while aligned > maxPixelSize { aligned /= 2 }
+        return aligned >= minAlignedPixelSize ? aligned : maxPixelSize
     }
 
     /// ImageIO로 디코드 시점에 다운샘플 → JPEG 인코딩.
