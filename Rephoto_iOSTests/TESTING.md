@@ -47,6 +47,12 @@
 `GET /albums` 응답의 `coverImageUrl` · `photoCount`(#66 N+1 제거로 추가) 디코딩을 camelCase 그대로 고정한다.
 `AlbumRepository`가 기본 설정 `JSONDecoder()`를 쓰므로 키 하나가 틀어지면 앨범 목록이 통째로 빈다.
 
+### 업로드 전처리 — `Features/Home/Data/PhotoMetadataExtractorTests.swift` (1 케이스)
+
+다운샘플 목표 크기 계산을 값으로 고정한다. 경계 정렬(4032 → 2016, 8064 → 2016)과
+하한(#88 — 5712px는 정렬하면 1428px이라 2048px 요청), 상한 이하 원본·크기 미상 입력을 한 테스트의 인자로 돈다.
+벤치마크(`UploadMemoryBenchmark`)도 같은 함수를 호출하므로 앱과 측정 경로가 갈라지지 않는다.
+
 ### Presentation 상태 전이 — `Presentation/` (12 케이스)
 
 | 스위트 | 검증 대상 |
@@ -157,7 +163,7 @@ Swift Testing은 스위트 간에도 병렬 실행하므로, `.serialized`를 �
 
 | 테스트 플랜 | 대상 | 시점 |
 |---|---|---|
-| `Rephoto_iOS.xctestplan` | 단위·계약 테스트 94케이스 (성능 제외) | PR / push · CI 게이트 |
+| `Rephoto_iOS.xctestplan` | 단위·계약 테스트 95케이스 (성능 제외) | PR / push · CI 게이트 |
 | `Rephoto_Performance.xctestplan` | 벤치마크 18케이스만 | 수동 · 측정값 기록 |
 
 플랜만 분리하고 **테스트 타겟은 1개**로 유지한다. 단일 앱 타겟이라 어느 쪽이든
