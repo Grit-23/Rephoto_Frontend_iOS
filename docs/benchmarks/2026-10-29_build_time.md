@@ -38,11 +38,22 @@ HV=Rephoto_iOS/Features/Home/Presentation/Views/HomeView.swift
 
 run() { /usr/bin/time -p xcodebuild build -project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS -destination "$DEST" -derivedDataPath "$DD" -quiet > "$LOG" 2>&1; s=$?; echo "$1 exit=$s $(grep '^real' "$LOG")"; [ $s -ne 0 ] && grep -m3 -E 'error|failed' "$LOG"; }
 
+(
+BK=$(mktemp "${TMPDIR:-/tmp}/HomeView.XXXXXX") || exit 1
+cp "$HV" "$BK" || exit 1
+trap 'cp "$BK" "$HV" && rm -f "$BK"' EXIT
+trap 'exit 130' INT TERM
+
 run warmup
-for i in 1 2 3; do xcodebuild clean -project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS -destination "$DEST" -derivedDataPath "$DD" -quiet; run "clean$i"; done
+for i in 1 2 3; do
+  if xcodebuild clean -project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS -destination "$DEST" -derivedDataPath "$DD" -quiet; then run "clean$i"; else echo "clean$i 실패: 측정에서 제외"; fi
+done
 for i in 1 2 3; do echo "// touch $i" >> "$HV"; run "incr$i"; done
-git checkout -- "$HV"
 rm -rf "$DD"
+)
 ```
+
+- 서브셸 안에서 `HomeView.swift`를 임시 파일에 백업하고, 정상 종료든 `^C` 중단이든 끝나면 백업본으로 복원한다. 커밋하지 않은 수정도 유지된다.
+- clean이 실패한 회차는 산출물이 남은 상태라 클린 수치가 아니므로 측정에서 뺀다.
 
 Tuist 전환 후에는 `-project Rephoto_iOS.xcodeproj -scheme Rephoto_iOS`를 `-workspace Rephoto.xcworkspace -scheme Rephoto`로, 증분 대상 파일을 `Projects/Feature/Home/Sources/` 아래 `HomeView.swift`로 바꿔 같은 절차로 측정한다.
