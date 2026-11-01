@@ -1,0 +1,69 @@
+name: Tuist
+
+# Tuist 멀티모듈(Rephoto/) 빌드 게이트.
+# 기존 iOS.yml(Rephoto_iOS.xcodeproj)은 전환이 끝나는 PR 5까지 함께 돈다.
+# 빌드 진입점은 로컬과 같은 Rephoto/Makefile을 쓴다.
+# 테스트 단계는 첫 테스트 타깃이 생기는 PR 2에서 붙인다.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: Rephoto
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install tuist · mockolo (mise.toml)
+        uses: jdx/mise-action@v2
+        with:
+          working_directory: Rephoto
+          install: true
+          cache: true
+
+      - name: Cache Tuist dependencies
+        uses: actions/cache@v5
+        with:
+          path: Rephoto/Tuist/.build
+          key: ${{ runner.os }}-tuist-${{ hashFiles('Rephoto/Tuist/Package.resolved', 'Rephoto/Tuist/Package.swift', 'Rephoto/mise.toml') }}
+          restore-keys: ${{ runner.os }}-tuist-
+
+      # 폴더를 추가하고 make modules를 빼먹으면 enum과 폴더가 어긋난다.
+      - name: Check module enum
+        run: |
+          ./Scripts/generate-modules
+          git diff --exit-code -- Plugins/
+
+      # Feature는 다른 Feature · Domain의 구현 모듈을 import하지 않는다 (Interface만 허용).
+      - name: Check feature imports
+        run: |
+          if grep -rEn '^import [A-Za-z]+(Feature|Domain)$' Projects/Feature 2>/dev/null; then
+            echo "::error::Feature가 구현 모듈을 import한다. Interface 모듈을 import한다."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Generate
+        run: make generate
+
+      # 선언하지 않고 import한 의존성 · 선언만 하고 쓰지 않는 의존성을 잡는다.
+      - name: Inspect dependencies
+        run: mise exec -- tuist inspect dependencies
+
+      # 기기 이름에 묶이지 않도록 generic 목적지로 빌드한다.
+      - name: Build
+        run: make build
