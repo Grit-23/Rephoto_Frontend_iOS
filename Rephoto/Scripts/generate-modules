@@ -15,6 +15,21 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUTPUT_RELATIVE="Plugins/DependencyPlugin/ProjectDescriptionHelpers/GeneratedModules.swift"
 OUTPUT="$ROOT/$OUTPUT_RELATIVE"
 
+# 폴더 이름은 그대로 enum case가 된다 — Swift 식별자(PascalCase)여야 하고 예약어는 안 된다.
+# new-module이 같은 규칙으로 거르지만, 손으로 만든 폴더도 여기서 한 번 더 확인한다.
+validate_name() {
+    local layer="$1" name="$2"
+    if [[ ! "$name" =~ ^[A-Z][A-Za-z0-9]*$ ]]; then
+        echo "모듈 폴더 이름은 PascalCase여야 한다: Projects/$layer/$name" >&2
+        exit 1
+    fi
+    case "$name" in
+        Self|Any|Type|Protocol)
+            echo "Swift 예약어는 모듈 이름으로 쓸 수 없다: Projects/$layer/$name" >&2
+            exit 1 ;;
+    esac
+}
+
 # 계층 폴더 아래 모듈 이름을 정렬해서 출력한다.
 modules() {
     local layer_dir="$ROOT/Projects/$1"
@@ -32,16 +47,16 @@ emit_enum() {
     echo "public enum $type: CaseIterable {"
     while IFS= read -r name; do
         [ -n "$name" ] || continue
-        # 폴더를 손으로 만든 경우도 걸러 준다 — 예약어는 case 이름이 될 수 없다
-        case "$name" in
-            Self|Any|Type|Protocol)
-                echo "Swift 예약어 폴더 이름: Projects/$layer/$name" >&2
-                exit 1 ;;
-        esac
+        validate_name "$layer" "$name"
         echo "    case $name"
     done < <(modules "$layer")
     echo "}"
 }
+
+# 임시 파일에 먼저 쓰고 성공했을 때만 교체한다.
+# 검증에 실패해도 기존 GeneratedModules.swift가 잘린 채 남지 않는다.
+TMP="$(mktemp)"
+trap 'rm -f "$TMP"' EXIT
 
 {
     echo "//"
@@ -58,6 +73,9 @@ emit_enum() {
     emit_enum CoreModule Core
     echo
     emit_enum SharedModule Shared
-} > "$OUTPUT"
+} > "$TMP"
+
+mv "$TMP" "$OUTPUT"
+trap - EXIT
 
 echo "▶︎ $OUTPUT_RELATIVE 갱신"
