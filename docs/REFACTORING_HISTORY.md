@@ -54,13 +54,13 @@ PhotoCapture(카메라 촬영), 지도 탭(Map 화면 — 사진 상세의 위�
 **리팩토링 전**: 단일 앱 타겟. .xcodeproj 직접 관리. Feature 간 암묵적 의존(Search가 Home의 `PhotoInfoView`를, Home이 User의 `SettingsView`를 직접 참조). `AppContainer`가 Core에 있으면서 모든 Feature 구현을 앎.
 **현재**: `Rephoto/` 폴더에 Tuist 워크스페이스. 기존 `Rephoto_iOS.xcodeproj`는 전환이 끝날 때까지 병행 유지. PR 1에서 `Shared/Foundation`(Config · Error 타입 · Date 확장)과 임시 App 타깃까지 분리.
 **목표**:
-- **계층 4개**: Shared(Foundation) · Core(NetworkAdapter, UIComponents 등 공유 인프라) · Domain(Photo, Tag, Album, User 등 업무 단위 + PreviewSupport) · Feature(Home, Search, User). 기존 Feature 폴더의 Domain/Data는 Domain 모듈로, Presentation만 Feature 모듈로 간다
+- **계층 4개**: Shared(Foundation · DesignSystem) · Core(NetworkAdapter 등 공유 인프라) · Domain(Photo, Tag, Album, User 등 업무 단위 + PreviewSupport) · Feature(Home, Search, User). 기존 Feature 폴더의 Domain/Data는 Domain 모듈로, Presentation만 Feature 모듈로 간다
 - **모듈 = Tuist 프로젝트 1개**, 타깃은 `Interface · Sources · Testing · Tests`(Feature는 `Example` 추가) 중 필요한 것만. Interface는 프로토콜·모델만, Sources가 구현, Testing은 mockolo가 만든 Mock, Example은 Feature 단독 실행 앱
 - **의존 규칙**: Feature → Domain Interface · Core · Shared. Feature 간, Feature → Domain은 **Interface 타깃만 허용**, 구현 모듈 import는 CI가 차단(`tuist.yml`). 구현 조립은 App 타깃의 `AppContainer` 한 곳
 - **DependencyPlugin**: 폴더 이름 → 모듈 enum(`GeneratedModules.swift`) 자동 생성, `.feature(interface: .Home)` 같은 타입 안전 의존성 헬퍼, `Project.feature(...)` 한 줄로 타깃 일괄 생성. 모듈 추가는 `make module type= name=`
 - 모든 Feature는 Example 앱으로 동작 확인 후 PR. iPhone 전용
 - 새 워크스페이스는 전 모듈 Swift 6 언어 모드(PR 1부터, 예외 없음). 옮기면서 생기는 Swift 6 에러는 그 모듈에서 바로 고친다. 기존 xcodeproj는 Swift 5 유지
-- **PR 2 (Core · Foundation 정리)**: 에러 타입 간소화 — `DomainError.custom` 삭제, `RepositoryError` 두 케이스를 `invalidData(detail:)` 하나로, `PresentableError`의 중복 `retryAction` 필드 삭제, 세 계층 enum이 공통 프로토콜을 채택해 `AppError`의 반복 switch 제거. `AppError.from` 매핑 · `Loadable` 전이를 Foundation Tests로 검증
+- **PR 2 (Core 분리 · 에러 통합)**: `NetworkAdapter`(Core)와 `DesignSystem`(Shared, MainActor) 분리, 첫 테스트 타깃과 `Rephoto.xctestplan`. 에러는 계층 enum(`NetworkError` · `RepositoryError` · `DomainError`)이 분류만 하고 사용자 문구 · 재시도 정책은 `AppError` 한 곳에서 결정, UI는 `ErrorHandler`(Alert) · `ErrorStateView`(인라인) 둘만 둔다 — `ErrorDisplay` · `ErrorContext` · `PresentableError` · `GlobalErrorAlert` 타입 삭제, `DomainError.custom` 삭제, `RepositoryError`는 `invalidData(detail:)` 하나, `NetworkAdapter.request`는 `Data`만 반환(`NetworkResponse` 삭제), `Loadable`은 case만 남김(접근자는 쓰는 곳이 생길 때 추가). 11/2 결정으로 "공통 프로토콜" 안은 폐기
 - **PR 4 (Home 이관)**: `HomeViewModel`의 `photos` · `isLoading` · `loadError`를 `Loadable<[Photo]>` 하나로. `visiblePhotos` · `sensitivePhotos` 파생 캐싱은 `didSet`으로 유지하고, 사진이 이미 있을 때는 `.loading`으로 바꾸지 않고 실패만 Alert로 알리는 기존 동작을 지킨다. API · Repository · UseCase는 변경 없음
 - 보류: 민감 사진을 Home에서 내려받지 않고 Face ID 통과 후 별도 요청으로 받는 설계. 프라이버시 이점은 있으나 엔드포인트 · Search 매핑까지 갈라야 해 전환 범위 밖
 

@@ -49,8 +49,8 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 
 | 계층 | 모듈 | 기본 격리 | 역할 |
 | --- | --- | --- | --- |
-| Shared | Foundation(`RephotoFoundation`) | nonisolated | Config · Error 타입 · Loadable · 공용 확장 |
-| Core | NetworkAdapter, UIComponents 등 | nonisolated | Feature · Domain이 공유하는 인프라 |
+| Shared | Foundation(`RephotoFoundation`), DesignSystem | nonisolated (DesignSystem만 MainActor) | Config · Error 타입 · Loadable · 색 토큰 · 공용 컴포넌트 · `ErrorHandler` |
+| Core | NetworkAdapter 등 | nonisolated | Feature · Domain이 공유하는 인프라 |
 | Domain | Photo, Tag, Album, User, PreviewSupport | nonisolated | 업무 단위. 모델 · UseCase · Repository |
 | Feature | Home, Search, User | MainActor | 화면 · ViewModel · UseCaseProvider |
 | App | `Projects/App` | MainActor | 유일한 조립 지점. `AppContainer`가 구현을 등록 |
@@ -75,7 +75,7 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 ### 격리와 동시성
 
 - Feature · App은 `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`. ViewModel · View에 `@MainActor`를 명시하지 않는다
-- Domain · Core · Shared는 `nonisolated`. UI 타입을 두지 않는다
+- Domain · Core · Shared는 `nonisolated`. UI 타입을 두지 않는다. 예외는 Shared/DesignSystem 하나 — UI 모듈이라 `MainActor`
 - 전 모듈 `SWIFT_APPROACHABLE_CONCURRENCY = YES` → nonisolated async 함수는 호출자 액터에서 돈다. **디코딩 · 다운샘플 같은 CPU 작업은 `@concurrent`**
 - 빌드 설정은 `Rephoto/Plugins/DependencyPlugin/ProjectDescriptionHelpers/Settings+Recommended.swift`와 각 Project.swift에서만 바꾼다. Xcode UI 변경은 generate 때 사라진다
 
@@ -104,8 +104,8 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 ## Testing
 
 - Swift Testing 기본(`@Test("한글 설명")`). 성능 측정만 XCTest
-- 테스트 플랜 2개: `Rephoto_iOS`(단위 · 계약, CI 게이트) / `Rephoto_Performance`(측정 전용, 수동)
-- 네트워크 스텁은 `StubURLProtocol`. 스위트는 직렬화
+- 테스트 플랜 3개: `Rephoto_iOS`(기존 프로젝트 단위 · 계약, CI 게이트) / `Rephoto_Performance`(측정 전용, 수동) / `Rephoto/Rephoto.xctestplan`(Tuist 모듈 테스트 전부, `make test`와 `tuist.yml`이 사용)
+- 네트워크 스텁은 `StubURLProtocol`(Tuist 쪽은 `NetworkAdapterTesting`). 스위트는 직렬화
 - Tuist Testing 타깃의 Mock은 Interface 프로토콜에 `/// @mockable`을 붙이면 `make generate`가 만든다
 - 가이드: `Rephoto_iOSTests/TEST_GUIDE.md`, 프레임워크 선택 기준 `Rephoto_iOSTests/TESTING.md`
 

@@ -1,0 +1,41 @@
+{
+  "configurations" : [
+    {
+      "id" : "95B30745-D7D9-44C1-B6F6-453DD9B7BA16",
+      "name" : "Unit Tests",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : false
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:Projects/Shared/Foundation/RephotoFoundation.xcodeproj",
+        "identifier" : "BFFBD43821E3B657204F91F9",
+        "name" : "RephotoFoundationTests"
+      }
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:Projects/Core/NetworkAdapter/NetworkAdapter.xcodeproj",
+        "identifier" : "E8DB064736CD13BE9BD8E2E9",
+        "name" : "NetworkAdapterTests"
+      }
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:Projects/Shared/DesignSystem/DesignSystem.xcodeproj",
+        "identifier" : "0F708BB592F173C2660727CA",
+        "name" : "DesignSystemTests"
+      }
+    }
+  ],
+  "version" : 1
+}
