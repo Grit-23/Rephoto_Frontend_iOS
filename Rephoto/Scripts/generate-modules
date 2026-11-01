@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+#  generate-modules
+#  Rephoto
+#
+#  Created by Doyeon Kim on 10/30/26.
+#
+#  Projects/{Feature,Domain,Core,Shared}/* 폴더 이름으로 모듈 enum을 만든다.
+#  Project.swift가 있는 폴더만 모듈로 친다. 결과 파일은 커밋한다.
+#  CI는 이 스크립트를 다시 돌려 diff가 없는지로 폴더와 enum이 일치하는지 검사한다.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+OUTPUT_RELATIVE="Plugins/DependencyPlugin/ProjectDescriptionHelpers/GeneratedModules.swift"
+OUTPUT="$ROOT/$OUTPUT_RELATIVE"
+
+# 계층 폴더 아래 모듈 이름을 정렬해서 출력한다.
+modules() {
+    local layer_dir="$ROOT/Projects/$1"
+    [ -d "$layer_dir" ] || return 0
+    for manifest in "$layer_dir"/*/Project.swift; do
+        [ -f "$manifest" ] || continue
+        basename "$(dirname "$manifest")"
+    done | LC_ALL=C sort
+}
+
+# raw 타입을 두지 않는다 — case가 0개인 enum은 String raw 타입을 가질 수 없다.
+# 이름은 TargetDependency+Modules.swift의 `name`(String(describing:))으로 꺼낸다.
+emit_enum() {
+    local type="$1" layer="$2"
+    echo "public enum $type: CaseIterable {"
+    while IFS= read -r name; do
+        [ -n "$name" ] && echo "    case $name"
+    done < <(modules "$layer")
+    echo "}"
+}
+
+{
+    echo "//"
+    echo "//  GeneratedModules.swift"
+    echo "//  DependencyPlugin"
+    echo "//"
+    echo "//  Scripts/generate-modules가 만든다. 직접 고치지 않는다."
+    echo "//"
+    echo
+    emit_enum FeatureModule Feature
+    echo
+    emit_enum DomainModule Domain
+    echo
+    emit_enum CoreModule Core
+    echo
+    emit_enum SharedModule Shared
+} > "$OUTPUT"
+
+echo "▶︎ $OUTPUT_RELATIVE 갱신"

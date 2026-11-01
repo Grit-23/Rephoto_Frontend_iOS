@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+#  new-module
+#  Rephoto
+#
+#  Created by Doyeon Kim on 10/30/26.
+#
+#  make module type=<feature|domain|core|shared> name=<Name>
+#  Tuist/Templates의 템플릿으로 모듈 폴더를 만들고 모듈 enum을 다시 만든다.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+TYPE="${1:-}"
+NAME="${2:-}"
+
+usage() {
+    echo "usage: make module type=<feature|domain|core|shared> name=<Name>"
+    exit 1
+}
+
+[ -n "$TYPE" ] && [ -n "$NAME" ] || usage
+
+case "$TYPE" in
+    feature) LAYER=Feature ;;
+    domain) LAYER=Domain ;;
+    core) LAYER=Core ;;
+    shared) LAYER=Shared ;;
+    *) usage ;;
+esac
+
+if [[ ! "$NAME" =~ ^[A-Z][A-Za-z0-9]*$ ]]; then
+    echo "name은 PascalCase여야 한다: $NAME"
+    exit 1
+fi
+
+DEST="Projects/$LAYER/$NAME"
+if [ -e "$DEST" ]; then
+    echo "이미 있다: $DEST"
+    exit 1
+fi
+
+mkdir -p "$DEST"
+${MISE:-mise} exec -- tuist scaffold "$TYPE" --name "$NAME" --path "$DEST"
+./Scripts/generate-modules
+
+echo "▶︎ $DEST 생성"
+echo "  쓰지 않는 Interface · Testing · Tests 폴더는 지우고 Project.swift의 has* 값을 맞춘다."

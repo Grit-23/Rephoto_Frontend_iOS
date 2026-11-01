@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+#  generate-mocks
+#  Rephoto
+#
+#  Created by Doyeon Kim on 10/30/26.
+#
+#  Testing 폴더가 있는 모듈마다 mockolo로 Testing/Generated/Mocks.swift를 만든다.
+#  대상은 `/// @mockable`이 붙은 프로토콜이다. 생성 파일은 커밋하지 않는다 (.gitignore).
+#
+#  - Interface가 있으면 Interface의 public 프로토콜을 보고 일반 import
+#  - 없으면 Sources를 보고 @testable import
+#  - 진행 로그는 끄고 경고 이상만 출력한다 (--logging-level 2)
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+count=0
+
+for testing in Projects/*/*/Testing; do
+    [ -d "$testing" ] || continue
+
+    module_dir="$(dirname "$testing")"
+    layer="$(basename "$(dirname "$module_dir")")"
+    name="$(basename "$module_dir")"
+
+    case "$layer" in
+        Feature) interface="${name}FeatureInterface"; implementation="${name}Feature" ;;
+        Domain) interface="${name}DomainInterface"; implementation="${name}Domain" ;;
+        Core) interface="${name}Interface"; implementation="$name" ;;
+        *) continue ;;
+    esac
+
+    mkdir -p "$testing/Generated"
+    output="$testing/Generated/Mocks.swift"
+
+    if [ -d "$module_dir/Interface" ]; then
+        ${MISE:-mise} exec -- mockolo \
+            --sourcedirs "$module_dir/Interface" \
+            --destination "$output" \
+            --custom-imports "$interface" \
+            --mock-final \
+            --enable-args-history \
+            --logging-level 2
+    else
+        ${MISE:-mise} exec -- mockolo \
+            --sourcedirs "$module_dir/Sources" \
+            --destination "$output" \
+            --testable-imports "$implementation" \
+            --mock-final \
+            --enable-args-history \
+            --logging-level 2
+    fi
+
+    count=$((count + 1))
+done
+
+echo "▶︎ Mock 생성: Testing 모듈 ${count}개"
