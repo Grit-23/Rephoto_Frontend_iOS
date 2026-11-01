@@ -9,11 +9,10 @@ import Foundation
 
 /// 앱 전체가 공유하는 통합 에러 타입.
 ///
-/// 계층별 에러(``NetworkError``·``RepositoryError``·``DomainError``)를 감싸기만 하고,
-/// 판단(``userMessage``·``isRetryable``)은 각 하위 타입에 위임한다.
-/// 새 계층이 생겨도 여기에는 case 하나만 늘어난다.
+/// 계층별 에러(``NetworkError``·``RepositoryError``·``DomainError``)를 감싸고,
+/// 사용자 문구와 재시도 정책을 한 곳에서 결정한다.
 ///
-/// 아이콘·제목 같은 UI 어휘는 이 타입이 갖지 않는다 — ``ErrorDisplay``가 담당한다.
+/// 아이콘·제목 같은 UI 어휘는 DesignSystem의 `AppError+Display`가 담당한다.
 ///
 /// Data 계층은 이 타입을 알지 못한 채 자기 계층의 에러만 던지고,
 /// 정규화는 ``from(_:)`` 한 곳에서 일어난다.
@@ -29,7 +28,7 @@ import Foundation
 /// }
 /// ```
 ///
-/// - SeeAlso: ``Loadable``, ``ErrorHandler``, ``ErrorStateView``
+/// - SeeAlso: ``Loadable``
 public enum AppError: Error, LocalizedError, Equatable {
 
     /// 네트워크 계층 (전송·인증)
@@ -47,8 +46,9 @@ public enum AppError: Error, LocalizedError, Equatable {
     /// 분류되지 않은 에러
     case unknown(message: String)
 
-    // MARK: - LocalizedError
+    // MARK: - Presentation
 
+    /// 로그용 개발자 설명은 원래 계층 에러에서 가져온다.
     public var errorDescription: String? {
         switch self {
         case .network(let error):
@@ -64,20 +64,30 @@ public enum AppError: Error, LocalizedError, Equatable {
         }
     }
 
-    // MARK: - Presentation
-
-    /// 사용자에게 표시할 메시지.
-    ///
-    /// 표시 시점에 해석되도록 `LocalizedStringResource`로 둔다 — `String`으로 만들면
-    /// 생성 시점 로케일로 굳고, `Text`가 지역화 경로를 타지 않는다.
+    /// 사용자에게 표시할 메시지. 표시 시점에 지역화하며 내부 진단 정보는 노출하지 않는다.
     public var userMessage: LocalizedStringResource {
         switch self {
-        case .network(let error):
-            return error.userMessage
-        case .repository(let error):
-            return error.userMessage
-        case .domain(let error):
-            return error.userMessage
+        case .network(.unauthorized):
+            return "세션이 만료되었어요. \n다시 로그인해주세요."
+        case .network(.httpError(let statusCode, _)):
+            if (400..<500).contains(statusCode) {
+                return "요청을 처리할 수 없어요. \n잠시 후 다시 시도해주세요."
+            }
+            return "서버에 일시적인 문제가 있어요. \n잠시 후 다시 시도해주세요."
+        case .network(.invalidResponse):
+            return "서버 응답을 이해하지 못했어요. \n잠시 후 다시 시도해주세요."
+        case .network(.noNetwork):
+            return "인터넷 연결을 확인해주세요."
+        case .network(.timeout):
+            return "서버 응답이 늦어지고 있어요. \n잠시 후 다시 시도해주세요."
+        case .repository:
+            return "정보를 불러오지 못했어요. \n잠시 후 다시 시도해주세요."
+        case .domain(.emptyCredentials):
+            return "아이디와 비밀번호를 입력해주세요."
+        case .domain(.biometricUnavailable(let reason)):
+            guard let reason else { return "이 기기에서는 인증을 사용할 수 없어요." }
+            // LocalAuthentication이 이미 시스템 로케일로 지역화한 안내다.
+            return LocalizedStringResource(stringLiteral: reason)
         case .cancelled:
             return ""
         case .unknown:
@@ -88,15 +98,11 @@ public enum AppError: Error, LocalizedError, Equatable {
     /// 재시도 버튼 노출 여부
     public var isRetryable: Bool {
         switch self {
-        case .network(let error):
-            return error.isRetryable
-        case .repository(let error):
-            return error.isRetryable
-        case .domain(let error):
-            return error.isRetryable
-        case .cancelled:
+        case .network(.unauthorized), .repository, .domain, .cancelled:
             return false
-        case .unknown:
+        case .network(.httpError(let statusCode, _)):
+            return !(400..<500).contains(statusCode)
+        case .network, .unknown:
             return true
         }
     }
@@ -149,7 +155,7 @@ public enum AppError: Error, LocalizedError, Equatable {
             return .network(networkError)
         }
         if let decodingError = error as? DecodingError {
-            return .repository(.decodingError(detail: describe(decodingError)))
+            return .repository(.invalidData(detail: describe(decodingError)))
         }
         return .unknown(message: error.localizedDescription)
     }
