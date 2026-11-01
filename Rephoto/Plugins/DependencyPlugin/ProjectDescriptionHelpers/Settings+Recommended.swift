@@ -26,6 +26,7 @@ public let rephotoDeploymentTargets: DeploymentTargets = .iOS("26.0")
 /// 기존 `Rephoto_iOS.xcodeproj` 값을 옮기되 두 가지를 바꿨다.
 /// `SWIFT_VERSION`은 5.0 → 6.0 (새 워크스페이스는 전 모듈 Swift 6 언어 모드, 예외 없음),
 /// `SWIFT_APPROACHABLE_CONCURRENCY`는 테스트 타깃만 `YES`였던 것을 전체로 통일한다.
+/// 격리는 계층마다 다르므로 여기 두지 않고 `isolationSettings(_:)`로 타깃별로 넣는다.
 ///
 /// Tuist는 generate마다 프로젝트를 다시 만들므로 Xcode UI에서 바꾼 설정은 남지 않는다.
 /// 설정은 반드시 여기서 바꾼다.

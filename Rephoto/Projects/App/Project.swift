@@ -16,6 +16,8 @@ let sharedConfig: Path = .relativeToRoot("Config/Shared.xcconfig")
 
 let project = Project(
     name: "Rephoto",
+    // 앱 실행과 전체 모듈 테스트를 묶는 Rephoto 스킴은 Workspace.swift에서 정의한다.
+    options: .options(automaticSchemesOptions: .disabled),
     settings: .settings(base: rephotoBaseSettings),
     targets: [
         .target(
@@ -43,6 +45,7 @@ let project = Project(
             sources: ["Sources/**"],
             dependencies: [
                 .shared(.Foundation),
+                .shared(.DesignSystem),
             ],
             settings: .settings(
                 base: isolationSettings(.mainActor),

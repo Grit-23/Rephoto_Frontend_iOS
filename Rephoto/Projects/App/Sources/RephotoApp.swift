@@ -7,11 +7,13 @@
 
 import SwiftUI
 import RephotoFoundation
+import DesignSystem
 
 /// Tuist 전환 중 임시 진입점.
 ///
 /// 화면은 PR 4에서 기존 `ContentView` · `RephotoTabView`로 바뀐다.
-/// 지금은 RephotoFoundation 링크와 xcconfig → Info.plist의 BASE_URL 주입이 되는지만 보여준다.
+/// 지금은 모듈 링크가 되는지만 보여준다 — RephotoFoundation의 `Config.baseURL`(xcconfig → Info.plist 주입)과
+/// DesignSystem의 `ErrorStateView`(정적 프레임워크 리소스 번들의 색 `mainGreen` 포함).
 @main
 struct RephotoApp: App {
     var body: some Scene {
@@ -22,6 +24,7 @@ struct RephotoApp: App {
                 Text(Config.baseURL)
                     .font(.footnote.monospaced())
                     .foregroundStyle(.secondary)
+                ErrorStateView(error: .network(.noNetwork)) {}
             }
         }
     }
