@@ -59,7 +59,10 @@ PhotoCapture(카메라 촬영), 지도 탭(Map 화면 — 사진 상세의 위�
 - **의존 규칙**: Feature → Domain Interface · Core · Shared. Feature 간, Feature → Domain은 **Interface 타깃만 허용**, 구현 모듈 import는 CI가 차단(`tuist.yml`). 구현 조립은 App 타깃의 `AppContainer` 한 곳
 - **DependencyPlugin**: 폴더 이름 → 모듈 enum(`GeneratedModules.swift`) 자동 생성, `.feature(interface: .Home)` 같은 타입 안전 의존성 헬퍼, `Project.feature(...)` 한 줄로 타깃 일괄 생성. 모듈 추가는 `make module type= name=`
 - 모든 Feature는 Example 앱으로 동작 확인 후 PR. iPhone 전용
-- Swift 6 언어 모드는 새 워크스페이스에서 모듈 단위로 적용. 기존 xcodeproj는 Swift 5 유지
+- 새 워크스페이스는 전 모듈 Swift 6 언어 모드(PR 1부터, 예외 없음). 옮기면서 생기는 Swift 6 에러는 그 모듈에서 바로 고친다. 기존 xcodeproj는 Swift 5 유지
+- **PR 2 (Core · Foundation 정리)**: 에러 타입 간소화 — `DomainError.custom` 삭제, `RepositoryError` 두 케이스를 `invalidData(detail:)` 하나로, `PresentableError`의 중복 `retryAction` 필드 삭제, 세 계층 enum이 공통 프로토콜을 채택해 `AppError`의 반복 switch 제거. `AppError.from` 매핑 · `Loadable` 전이를 Foundation Tests로 검증
+- **PR 4 (Home 이관)**: `HomeViewModel`의 `photos` · `isLoading` · `loadError`를 `Loadable<[Photo]>` 하나로. `visiblePhotos` · `sensitivePhotos` 파생 캐싱은 `didSet`으로 유지하고, 사진이 이미 있을 때는 `.loading`으로 바꾸지 않고 실패만 Alert로 알리는 기존 동작을 지킨다. API · Repository · UseCase는 변경 없음
+- 보류: 민감 사진을 Home에서 내려받지 않고 Face ID 통과 후 별도 요청으로 받는 설계. 프라이버시 이점은 있으나 엔드포인트 · Search 매핑까지 갈라야 해 전환 범위 밖
 
 빌드 시간 기준값: `docs/benchmarks/2026-10-29_build_time.md`.
 
