@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+#  generate-modules
+#  Rephoto
+#
+#  Created by Doyeon Kim on 10/30/26.
+#
+#  Projects/{Feature,Domain,Core,Shared}/* 폴더 이름으로 모듈 enum을 만든다.
+#  Project.swift가 있는 폴더만 모듈로 친다. 결과 파일은 커밋한다.
+#  CI는 이 스크립트를 다시 돌려 diff가 없는지로 폴더와 enum이 일치하는지 검사한다.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+OUTPUT_RELATIVE="Plugins/DependencyPlugin/ProjectDescriptionHelpers/GeneratedModules.swift"
+OUTPUT="$ROOT/$OUTPUT_RELATIVE"
+
+# 폴더 이름은 그대로 enum case가 된다 — Swift 식별자(PascalCase)여야 하고 예약어는 안 된다.
+# new-module이 같은 규칙으로 거르지만, 손으로 만든 폴더도 여기서 한 번 더 확인한다.
+validate_name() {
+    local layer="$1" name="$2"
+    if [[ ! "$name" =~ ^[A-Z][A-Za-z0-9]*$ ]]; then
+        echo "모듈 폴더 이름은 PascalCase여야 한다: Projects/$layer/$name" >&2
+        exit 1
+    fi
+    case "$name" in
+        Self|Any|Type|Protocol)
+            echo "Swift 예약어는 모듈 이름으로 쓸 수 없다: Projects/$layer/$name" >&2
+            exit 1 ;;
+    esac
+}
+
+# 계층 폴더 아래 모듈 이름을 정렬해서 출력한다.
+modules() {
+    local layer_dir="$ROOT/Projects/$1"
+    [ -d "$layer_dir" ] || return 0
+    for manifest in "$layer_dir"/*/Project.swift; do
+        [ -f "$manifest" ] || continue
+        basename "$(dirname "$manifest")"
+    done | LC_ALL=C sort
+}
+
+# raw 타입을 두지 않는다 — case가 0개인 enum은 String raw 타입을 가질 수 없다.
+# 이름은 TargetDependency+Modules.swift의 `name`(String(describing:))으로 꺼낸다.
+emit_enum() {
+    local type="$1" layer="$2"
+    echo "public enum $type: CaseIterable {"
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        validate_name "$layer" "$name"
+        echo "    case $name"
+    done < <(modules "$layer")
+    echo "}"
+}
+
+# 임시 파일에 먼저 쓰고 성공했을 때만 교체한다.
+# 검증에 실패해도 기존 GeneratedModules.swift가 잘린 채 남지 않는다.
+TMP="$(mktemp)"
+trap 'rm -f "$TMP"' EXIT
+
+{
+    echo "//"
+    echo "//  GeneratedModules.swift"
+    echo "//  DependencyPlugin"
+    echo "//"
+    echo "//  Scripts/generate-modules가 만든다. 직접 고치지 않는다."
+    echo "//"
+    echo
+    emit_enum FeatureModule Feature
+    echo
+    emit_enum DomainModule Domain
+    echo
+    emit_enum CoreModule Core
+    echo
+    emit_enum SharedModule Shared
+} > "$TMP"
+
+mv "$TMP" "$OUTPUT"
+trap - EXIT
+
+echo "▶︎ $OUTPUT_RELATIVE 갱신"

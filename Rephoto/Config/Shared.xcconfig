@@ -1,0 +1,15 @@
+//
+//  Shared.xcconfig
+//  Rephoto
+//
+//  Created by Doyeon Kim on 10/30/26.
+//
+//  앱 타깃에 주입되는 공통 빌드 설정 (커밋됨 — 비밀 값 없음).
+//  실제 값은 git에 올리지 않는 Secrets.xcconfig에서 덮어쓴다.
+//  Secrets.xcconfig가 없어도(새로 클론, CI) `#include?`는 에러 없이 넘어가고 아래 기본값이 쓰인다.
+//
+//  xcconfig에서 `//`는 주석이라 URL은 `https:/$()/...`로 쓴다. `$()`는 빈 치환이다.
+
+BASE_URL = https:/$()/placeholder.com
+
+#include? "Secrets.xcconfig"
