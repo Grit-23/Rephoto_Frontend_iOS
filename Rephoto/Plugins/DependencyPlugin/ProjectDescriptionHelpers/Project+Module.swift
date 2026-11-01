@@ -25,9 +25,12 @@ extension Project {
     ///
     /// Feature는 Example 앱을 기본으로 갖는다. 앱 전체 없이 이 Feature만 띄워
     /// 동작을 확인한 뒤 PR을 올린다 (Mock은 `exampleDependencies`로 주입).
+    ///
+    /// Interface는 다른 Feature가 이 Feature의 화면을 열어야 할 때만 둔다.
+    /// 그래서 기본값이 `false`다 — 필요할 때 `Interface/` 폴더를 만들고 `true`로 바꾼다.
     public static func feature(
         _ module: FeatureModule,
-        hasInterface: Bool = true,
+        hasInterface: Bool = false,
         hasTesting: Bool = false,
         hasTests: Bool = false,
         hasExample: Bool = true,

@@ -12,7 +12,7 @@ import ProjectDescription
 let name: Template.Attribute = .required("name")
 
 let template = Template(
-    description: "Feature 모듈 (Interface · Sources · Tests · Example)",
+    description: "Feature 모듈 (Sources · Tests · Example. Interface는 참조될 때만 추가)",
     attributes: [name],
     items: [
         .string(
@@ -21,12 +21,13 @@ let template = Template(
             import ProjectDescription
             import DependencyPlugin
 
+            // Interface는 다른 Feature가 이 Feature의 화면을 열어야 할 때만 둔다.
+            // 필요해지면 Interface/ 폴더를 만들고 hasInterface: true로 바꾼다.
             let project = Project.feature(
                 .\(name),
-                hasInterface: true,
+                hasInterface: false,
                 hasTests: true,
                 hasExample: true,
-                interfaceDependencies: [],
                 implementationDependencies: [],
                 // Example 앱에 주입할 Mock (예: .domain(implementation: .PreviewSupport))
                 exampleDependencies: []
@@ -41,7 +42,8 @@ let template = Template(
             import \(name)Feature
 
             /// \(name)Feature만 단독으로 띄워 확인하는 앱.
-            /// 루트 화면에 PreviewSupport Mock을 주입해 서버 없이 동작을 본다.
+            /// 지금은 placeholder 텍스트뿐이다. 루트 화면을 연결하고 Project.swift의
+            /// exampleDependencies에 PreviewSupport를 넣어야 서버 없이 동작을 볼 수 있다.
             @main
             struct \(name)FeatureExampleApp: App {
                 var body: some Scene {
@@ -54,16 +56,10 @@ let template = Template(
             """
         ),
         .string(
-            path: "Interface/\(name)FeatureInterface.swift",
-            contents: """
-            // \(name)FeatureInterface — 다른 Feature가 참조하는 화면 생성 프로토콜을 둔다.
-
-            """
-        ),
-        .string(
             path: "Sources/\(name)Feature.swift",
             contents: """
-            // \(name)Feature — 화면 · ViewModel과 Interface 구현을 둔다.
+            // \(name)Feature — 화면 · ViewModel을 둔다.
+            // 다른 Feature가 이 화면을 열어야 하면 Interface/에 화면 생성 프로토콜을 두고 여기서 구현한다.
 
             """
         ),

@@ -21,13 +21,9 @@ let template = Template(
             import ProjectDescription
             import DependencyPlugin
 
-            let project = Project.domain(
-                .\(name),
-                interfaceDependencies: [
-                    .shared(.Foundation),
-                ],
-                implementationDependencies: []
-            )
+            // 의존성은 실제로 import할 때 추가한다 (예: interfaceDependencies: [.shared(.Foundation)]).
+            // 선언만 하고 import하지 않으면 tuist inspect dependencies가 실패한다.
+            let project = Project.domain(.\(name))
 
             """
         ),
@@ -42,6 +38,8 @@ let template = Template(
         .string(
             path: "Sources/\(name)Domain.swift",
             contents: """
+            import \(name)DomainInterface
+
             // \(name)Domain — UseCase · Repository 구현, DTO, API Target을 둔다.
 
             """
@@ -58,6 +56,7 @@ let template = Template(
             path: "Tests/\(name)DomainTests.swift",
             contents: """
             import Testing
+            import \(name)DomainTesting
             @testable import \(name)Domain
 
             @Suite("\(name)Domain")

@@ -36,14 +36,24 @@ if [[ ! "$NAME" =~ ^[A-Z][A-Za-z0-9]*$ ]]; then
     exit 1
 fi
 
+# 모듈 이름은 enum case가 되므로 Swift 예약어는 쓸 수 없다
+case "$NAME" in
+    Self|Any|Type|Protocol)
+        echo "Swift 예약어는 모듈 이름으로 쓸 수 없다: $NAME"
+        exit 1 ;;
+esac
+
 DEST="Projects/$LAYER/$NAME"
 if [ -e "$DEST" ]; then
     echo "이미 있다: $DEST"
     exit 1
 fi
 
+# scaffold가 실패하면 빈 폴더가 남아 다음 실행이 "이미 있다"로 막힌다 — 실패 시 정리
 mkdir -p "$DEST"
+trap 'rm -rf "$DEST"' ERR
 ${MISE:-mise} exec -- tuist scaffold "$TYPE" --name "$NAME" --path "$DEST"
+trap - ERR
 ./Scripts/generate-modules
 
 echo "▶︎ $DEST 생성"

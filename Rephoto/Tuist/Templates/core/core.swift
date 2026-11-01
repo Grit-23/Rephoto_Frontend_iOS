@@ -22,12 +22,9 @@ let template = Template(
             import ProjectDescription
             import DependencyPlugin
 
-            let project = Project.core(
-                .\(name),
-                implementationDependencies: [
-                    .shared(.Foundation),
-                ]
-            )
+            // 의존성은 실제로 import할 때 추가한다 (예: implementationDependencies: [.shared(.Foundation)]).
+            // 선언만 하고 import하지 않으면 tuist inspect dependencies가 실패한다.
+            let project = Project.core(.\(name))
 
             """
         ),
@@ -50,6 +47,7 @@ let template = Template(
             path: "Tests/\(name)Tests.swift",
             contents: """
             import Testing
+            import \(name)Testing
             @testable import \(name)
 
             @Suite("\(name)")

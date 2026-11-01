@@ -31,7 +31,14 @@ emit_enum() {
     local type="$1" layer="$2"
     echo "public enum $type: CaseIterable {"
     while IFS= read -r name; do
-        [ -n "$name" ] && echo "    case $name"
+        [ -n "$name" ] || continue
+        # 폴더를 손으로 만든 경우도 걸러 준다 — 예약어는 case 이름이 될 수 없다
+        case "$name" in
+            Self|Any|Type|Protocol)
+                echo "Swift 예약어 폴더 이름: Projects/$layer/$name" >&2
+                exit 1 ;;
+        esac
+        echo "    case $name"
     done < <(modules "$layer")
     echo "}"
 }

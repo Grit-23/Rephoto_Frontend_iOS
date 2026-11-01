@@ -15,6 +15,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: macos-26
@@ -47,9 +50,13 @@ jobs:
           git diff --exit-code -- Plugins/
 
       # Feature는 다른 Feature · Domain의 구현 모듈을 import하지 않는다 (Interface만 허용).
+      # Example 앱과 Tests는 자기 Feature 구현을 import해야 하므로 검사에서 뺀다.
+      # `public import` · `@preconcurrency import` 같은 변형도 잡는다.
       - name: Check feature imports
         run: |
-          if grep -rEn '^import [A-Za-z]+(Feature|Domain)$' Projects/Feature 2>/dev/null; then
+          if grep -rEn --include='*.swift' --exclude-dir=Example --exclude-dir=Tests \
+               '^(@[A-Za-z_]+ )*(public |package |internal |fileprivate |private )?import [A-Za-z0-9]+(Feature|Domain)$' \
+               Projects/Feature 2>/dev/null; then
             echo "::error::Feature가 구현 모듈을 import한다. Interface 모듈을 import한다."
             exit 1
           fi

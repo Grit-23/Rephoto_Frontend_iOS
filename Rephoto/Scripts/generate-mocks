@@ -28,7 +28,10 @@ for testing in Projects/*/*/Testing; do
 
     case "$layer" in
         Feature) interface="${name}FeatureInterface"; implementation="${name}Feature" ;;
-        Domain) interface="${name}DomainInterface"; implementation="${name}Domain" ;;
+        Domain)
+            interface="${name}DomainInterface"
+            # PreviewSupport는 Domain 접미사를 붙이지 않는다 (TargetDependency+Modules.swift와 동일 규칙)
+            if [ "$name" = "PreviewSupport" ]; then implementation="$name"; else implementation="${name}Domain"; fi ;;
         Core) interface="${name}Interface"; implementation="$name" ;;
         *) continue ;;
     esac

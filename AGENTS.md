@@ -13,7 +13,7 @@ AI 코딩 에이전트용 프로젝트 지침. `CLAUDE.md`는 이 파일을 impo
 | 현행 앱 | `Rephoto_iOS.xcodeproj` | 출시 중인 코드. 버그 수정만. CI `iOS.yml` |
 | Tuist 워크스페이스 | `Rephoto/` | 모든 신규·이관 작업. CI `tuist.yml` |
 
-- Swift 5 / SwiftUI. Tuist 모듈은 Swift 6 언어 모드를 모듈 단위로 적용한다
+- SwiftUI. Tuist 워크스페이스는 **전 모듈 Swift 6 언어 모드**(`rephotoBaseSettings`), 예외 없음. 기존 `Rephoto_iOS.xcodeproj`는 Swift 5 유지
 - 네트워크: 자체 레이어. `APITargetType`(엔드포인트) → `NetworkAdapter`(URLRequest 조립) → `NetworkClient`(actor, URLSession 실행·Bearer 주입·401 갱신)
 - DI: Factory (`AppContainer`, `@Injected`). DEBUG에서 Mock provider 자동 주입
 - 이미지: Nuke. 패키지: SPM (`Rephoto/Tuist/Package.swift`, Factory 2.5.3 · Nuke 12.8.0 exact)
@@ -68,7 +68,7 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 ### 의존 규칙
 
 - Feature → Domain Interface · Core · Shared. **구현 모듈(`XxxFeature`, `XxxDomain`) import 금지** — `tuist.yml`이 grep으로 차단
-- Feature 간 참조는 상대 Feature의 Interface만 (예: Search가 Home의 사진 상세를 열 때 `HomeFeatureInterface`의 팩토리 프로토콜). Interface는 실제로 참조되는 Feature에만 둔다
+- Feature 간 참조는 상대 Feature의 Interface만 (예: Search가 Home의 사진 상세를 열 때 `HomeFeatureInterface`의 팩토리 프로토콜). Interface는 실제로 참조되는 Feature에만 둔다 — `Project.feature`의 `hasInterface` 기본값이 `false`인 이유
 - 구현체 주입은 App의 `AppContainer`에서만. Feature는 `Container` extension에 프로토콜 Factory와 Preview 기본값만 선언한다
 - 매니페스트는 문자열 대신 `DependencyPlugin` 헬퍼로 쓴다: `.domain(interface: .Photo)`, `.feature(interface: .Home)`, `.shared(.Foundation)`
 
@@ -91,7 +91,7 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 
 **새 API**: Domain `Interface/`에 Repository 프로토콜 → `Sources/`에 API Target · DTO · Repository 구현 → UseCase 프로토콜(Interface)과 구현(Sources) → App `AppContainer`에 등록.
 
-**기존 코드를 모듈로 옮길 때**: 경계 넘는 선언 `public` → `import` 추가(Interface만) → Swift 6 통과 → CPU 작업 `@concurrent` → Feature면 명시 `@MainActor` 제거 → Example 앱 확인.
+**기존 코드를 모듈로 옮길 때**: 경계 넘는 선언 `public` → `import` 추가(Interface만) → Swift 6 에러를 그 자리에서 고침(전역 가변 상태 · Sendable) → CPU 작업 `@concurrent` → Feature면 명시 `@MainActor` 제거 → Example 앱 확인.
 
 ## Code Style
 
