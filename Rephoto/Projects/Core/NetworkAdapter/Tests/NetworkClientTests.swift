@@ -24,6 +24,7 @@ extension StubURLProtocolSuites {
         private func makeClient(
             tokenStore: TokenStore = MockTokenStore(),
             refreshService: TokenRefreshService = MockTokenRefreshService(),
+            authPolicy: AuthenticationPolicy = DefaultAuthenticationPolicy(),
             maxRetryCount: Int = 1
         ) -> NetworkClient {
             StubURLProtocol.reset()
@@ -31,6 +32,7 @@ extension StubURLProtocolSuites {
                 session: StubURLProtocol.session(),
                 tokenStore: tokenStore,
                 refreshService: refreshService,
+                authPolicy: authPolicy,
                 maxRetryCount: maxRetryCount
             )
         }
@@ -216,19 +218,24 @@ extension StubURLProtocolSuites {
         @Test("동시에 20개 요청이 모두 401을 받아도 토큰 갱신은 정확히 1회만 수행된다")
         func refreshesExactlyOnceUnderConcurrent401() async throws {
             let store = MockTokenStore(accessToken: "old", refreshToken: "r")
-            // 갱신에 지연을 줘서 모든 동시 요청이 먼저 401을 받고 갱신 Task에 합류하도록 한다.
+            let requestCount = 20
+            // 모든 요청이 401을 판정하고 갱신 Task에 합류한 뒤에야 갱신이 끝나도록 횟수로 순서를 고정한다.
+            let allUnauthorized = ArrivalLatch(expected: requestCount)
             let refresh = SpyRefreshService(
                 success: TokenPair(accessToken: "new", refreshToken: "r2"),
-                delay: .milliseconds(100)
+                waitFor: allUnauthorized
             )
-            let client = makeClient(tokenStore: store, refreshService: refresh)
+            let client = makeClient(
+                tokenStore: store,
+                refreshService: refresh,
+                authPolicy: LatchingAuthenticationPolicy(latch: allUnauthorized)
+            )
             StubURLProtocol.handler = { req in
                 let authorized = req.value(forHTTPHeaderField: "Authorization") == "Bearer new"
                 return (Self.response(req.url, authorized ? 200 : 401), Data("{}".utf8))
             }
 
             let req = request(path: "/photos")
-            let requestCount = 20
 
             let successCount = try await withThrowingTaskGroup(of: Int.self) { group in
                 for _ in 0..<requestCount {
@@ -251,9 +258,14 @@ extension StubURLProtocolSuites {
         /// 각자 콜백을 부르면 강제 로그아웃 통지가 요청 수만큼 나간다.
         @Test("동시 401에서 갱신이 실패해도 onRefreshFailed 통지는 1회만 나간다")
         func notifiesRefreshFailureOnceUnderConcurrent401() async throws {
-            // 지연을 줘서 모든 동시 요청이 먼저 401을 받고 같은 갱신 Task에 합류하도록 한다.
-            let refresh = SpyRefreshService(success: nil, delay: .milliseconds(100))
-            let client = makeClient(refreshService: refresh)
+            let requestCount = 20
+            // 모든 요청이 401을 판정하고 같은 갱신 Task에 합류한 뒤에야 갱신이 실패하도록 횟수로 고정한다.
+            let allUnauthorized = ArrivalLatch(expected: requestCount)
+            let refresh = SpyRefreshService(success: nil, waitFor: allUnauthorized)
+            let client = makeClient(
+                refreshService: refresh,
+                authPolicy: LatchingAuthenticationPolicy(latch: allUnauthorized)
+            )
             StubURLProtocol.handler = { req in (Self.response(req.url, 401), Data("{}".utf8)) }
 
             let counter = CallCounter()
@@ -261,7 +273,7 @@ extension StubURLProtocolSuites {
 
             let req = request(path: "/photos")
             await withTaskGroup(of: Void.self) { group in
-                for _ in 0..<20 {
+                for _ in 0..<requestCount {
                     group.addTask { _ = try? await client.request(req) }
                 }
             }
@@ -392,30 +404,111 @@ extension StubURLProtocolSuites {
             let access = await store.getAccessToken()
             #expect(access == nil, "logout이 끝난 뒤 토큰이 남으면 안 된다")
         }
+
+        /// 로그인 사이에 늦게 끝난 이전 갱신이 새 계정 토큰을 덮어쓰면 안 된다.
+        @Test("갱신 응답 도착 후 saveTokens가 오면 이전 갱신 결과로 덮어쓰지 않는다", .timeLimit(.minutes(1)))
+        func saveTokensDuringRefreshDiscardsStaleResult() async throws {
+            let store = MockTokenStore(accessToken: "old", refreshToken: "r")
+            let refresh = GatedRefreshService(success: TokenPair(accessToken: "stale", refreshToken: "stale-r"))
+            let client = makeClient(tokenStore: store, refreshService: refresh)
+            StubURLProtocol.handler = { req in
+                let authorized = req.value(forHTTPHeaderField: "Authorization") == "Bearer stale"
+                return (Self.response(req.url, authorized ? 200 : 401), Data("{}".utf8))
+            }
+
+            let req = request(path: "/photos")
+            let inFlight = Task { try await client.request(req) }
+            await refresh.gate.waitUntilEntered()
+
+            let login = Task { try await client.saveTokens(accessToken: "login", refreshToken: "login-r") }
+            await refresh.gate.waitUntilCancelled()
+            await refresh.gate.release()
+            try await login.value
+
+            await #expect(throws: CancellationError.self) {
+                _ = try await inFlight.value
+            }
+            let access = await store.getAccessToken()
+            #expect(access == "login", "로그인 뒤 도착한 갱신 결과가 새 계정 토큰을 덮어쓰면 안 된다")
+            let refreshToken = await store.getRefreshToken()
+            #expect(refreshToken == "login-r")
+        }
     }
 }
 
 // MARK: - Test Doubles
 
-/// 호출 횟수를 세는 토큰 갱신 서비스. success가 nil이면 실패를 던진다.
+/// 호출 횟수를 세는 토큰 갱신 서비스. success가 nil이면 실패를 던지고, waitFor 래치가 있으면 열릴 때까지 응답을 미룬다.
 actor SpyRefreshService: TokenRefreshService {
     private(set) var callCount = 0
     private let newTokens: TokenPair?
-    private let delay: Duration
+    private let latch: ArrivalLatch?
 
-    init(success: TokenPair?, delay: Duration = .zero) {
+    init(success: TokenPair?, waitFor latch: ArrivalLatch? = nil) {
         self.newTokens = success
-        self.delay = delay
+        self.latch = latch
     }
 
     func refresh(_ refreshToken: String) async throws -> TokenPair {
         callCount += 1
-        if delay > .zero { try? await Task.sleep(for: delay) }
+        if let latch { await latch.wait() }
         guard let newTokens else { throw NetworkError.unauthorized }
         return newTokens
     }
 
     func count() -> Int { callCount }
+}
+
+/// 401 판정 때 래치를 두드리는 인증 정책.
+///
+/// 판정은 NetworkClient actor 위에서 일어나고, 그 요청은 갱신 Task에 합류할 때까지 actor를 놓지 않는다.
+/// URLProtocol 핸들러에서 세면 응답은 만들어졌지만 아직 actor에 돌아오지 않은 요청이 생겨 갱신이 두 번 일어난다.
+struct LatchingAuthenticationPolicy: AuthenticationPolicy {
+    let latch: ArrivalLatch
+    private let base = DefaultAuthenticationPolicy()
+
+    func requireAuthentication(_ request: URLRequest) -> Bool {
+        base.requireAuthentication(request)
+    }
+
+    func isUnauthorizedResponse(_ response: HTTPURLResponse) -> Bool {
+        let unauthorized = base.isUnauthorizedResponse(response)
+        if unauthorized { latch.arrive() }
+        return unauthorized
+    }
+}
+
+/// 정해진 횟수의 arrive()가 모이면 열리는 래치. arrive()는 동기 문맥에서 부르므로 락 기반.
+final class ArrivalLatch: @unchecked Sendable {
+    private let lock = NSLock()
+    private let expected: Int
+    private var arrived = 0
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    init(expected: Int) {
+        self.expected = expected
+    }
+
+    func arrive() {
+        let toResume: [CheckedContinuation<Void, Never>] = lock.withLock {
+            arrived += 1
+            guard arrived >= expected else { return [] }
+            defer { waiters.removeAll() }
+            return waiters
+        }
+        toResume.forEach { $0.resume() }
+    }
+
+    func wait() async {
+        await withCheckedContinuation { continuation in
+            let isOpen: Bool = lock.withLock {
+                if arrived >= expected { return true }
+                waiters.append(continuation)
+                return false
+            }
+            if isOpen { continuation.resume() }
+        }
+    }
 }
 
 

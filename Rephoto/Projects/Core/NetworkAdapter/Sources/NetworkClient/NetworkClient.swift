@@ -65,8 +65,12 @@ public actor NetworkClient {
         try await tokenStore.clear()
     }
 
-    /// 토큰 저장 (로그인 성공 후 호출)
+    /// 토큰 저장 (로그인 성공 후 호출). 진행 중인 갱신은 `logout()`처럼 취소하고 끝난 뒤 저장한다.
     public func saveTokens(accessToken: String, refreshToken: String) async throws {
+        let task = refreshTask
+        refreshTask = nil
+        task?.cancel()
+        _ = try? await task?.value
         try await tokenStore.save(accessToken: accessToken, refreshToken: refreshToken)
         hasNotifiedRefreshFailure = false
     }
