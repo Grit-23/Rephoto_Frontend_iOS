@@ -61,6 +61,7 @@ PhotoCapture(카메라 촬영), 지도 탭(Map 화면 — 사진 상세의 위�
 - 모든 Feature는 Example 앱으로 동작 확인 후 PR. iPhone 전용
 - 새 워크스페이스는 전 모듈 Swift 6 언어 모드(PR 1부터, 예외 없음). 옮기면서 생기는 Swift 6 에러는 그 모듈에서 바로 고친다. 기존 xcodeproj는 Swift 5 유지
 - **PR 2 (Core 분리 · 에러 통합)**: `NetworkAdapter`(Core)와 `DesignSystem`(Shared, MainActor) 분리, 첫 테스트 타깃과 `Rephoto.xctestplan`. 에러는 계층 enum(`NetworkError` · `RepositoryError` · `DomainError`)이 분류만 하고 사용자 문구 · 재시도 정책은 `AppError` 한 곳에서 결정, UI는 `ErrorHandler`(Alert) · `ErrorStateView`(인라인) 둘만 둔다 — `ErrorDisplay` · `ErrorContext` · `PresentableError` 타입 삭제, `GlobalErrorAlert`는 public 타입에서 `globalErrorAlert(_:)` 모디파이어의 private 구현으로, `DomainError.custom` 삭제, `RepositoryError`는 `invalidData(detail:)` 하나, `NetworkAdapter.request`는 `Data`만 반환(`NetworkResponse` 삭제), `Loadable`은 case만 남김(접근자는 쓰는 곳이 생길 때 추가). 11/2 결정으로 "공통 프로토콜" 안은 폐기
+- **PR 2 인증 단순화 (11/3)**: Tuist의 `KeychainTokenStore`는 `TokenPair`를 단일 `tokens` 항목에 저장하는 동기 struct로 바꿔 두 키의 부분 저장·롤백을 없앤다. `NetworkClient` actor가 세션 세대 확인과 저장·삭제를 중단 없이 수행하므로, 전환 카운터와 이전 갱신 종료 대기도 제거한다. 동시 갱신은 단일 Task를 공유하고, 이전 세션의 인증 요청·갱신 결과는 취소로 끝낸다. 공개 경로(`/login` · `/join` · `/auth/refresh`)는 세대 검사와 401 갱신을 거치지 않는다.
 - **PR 4 (Home 이관)**: `HomeViewModel`의 `photos` · `isLoading` · `loadError`를 `Loadable<[Photo]>` 하나로. `visiblePhotos` · `sensitivePhotos` 파생 캐싱은 `didSet`으로 유지하고, 사진이 이미 있을 때는 `.loading`으로 바꾸지 않고 실패만 Alert로 알리는 기존 동작을 지킨다. API · Repository · UseCase는 변경 없음
 - 보류: 민감 사진을 Home에서 내려받지 않고 Face ID 통과 후 별도 요청으로 받는 설계. 프라이버시 이점은 있으나 엔드포인트 · Search 매핑까지 갈라야 해 전환 범위 밖
 
