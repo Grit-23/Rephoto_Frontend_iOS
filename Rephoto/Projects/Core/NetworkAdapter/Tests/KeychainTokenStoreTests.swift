@@ -3,9 +3,8 @@
 //  NetworkAdapterTests
 //
 //  KeychainTokenStore의 동작 검증. Keychain 대신 메모리 항목 저장소를 주입한다.
-//  - 저장/조회/삭제/덮어쓰기, 빈 상태 nil 반환, service 격리
-//  - 두 번째 쓰기 실패 시 첫 번째 쓰기 되돌리기(롤백)
-//  - 동시 접근 직렬화
+//  - 토큰 쌍 저장/조회/삭제/덮어쓰기, 빈 상태 nil 반환, service 격리
+//  - 저장·삭제 실패 시 기존 토큰 쌍 보존, 손상된 데이터 처리
 //
 //  호스트 앱 없는 xctest 번들은 Keychain에 접근할 수 없어(errSecMissingEntitlement)
 //  SecItemStore 자체는 여기서 돌리지 않는다.
@@ -27,137 +26,134 @@ struct KeychainTokenStoreTests {
         KeychainTokenStore(service: service, items: items)
     }
 
-    @Test("저장한 토큰이 그대로 조회된다")
-    func saveThenGetReturnsStoredTokens() async throws {
+    @Test("저장한 토큰 쌍이 그대로 조회된다")
+    func saveThenLoadReturnsStoredTokens() throws {
         let sut = makeStore()
+        let tokens = TokenPair(accessToken: "access-1", refreshToken: "refresh-1")
 
-        try await sut.save(accessToken: "access-1", refreshToken: "refresh-1")
+        try sut.save(tokens)
 
-        let access = await sut.getAccessToken()
-        let refresh = await sut.getRefreshToken()
-        #expect(access == "access-1")
-        #expect(refresh == "refresh-1")
+        #expect(sut.load() == tokens)
     }
 
     @Test("저장된 것이 없으면 nil을 반환한다")
-    func getWhenEmptyReturnsNil() async {
+    func loadWhenEmptyReturnsNil() {
         let sut = makeStore()
 
-        let access = await sut.getAccessToken()
-        let refresh = await sut.getRefreshToken()
-        #expect(access == nil)
-        #expect(refresh == nil)
+        #expect(sut.load() == nil)
     }
 
-    @Test("같은 키에 다시 저장하면 이전 값을 덮어쓴다")
-    func saveTwiceOverwritesPreviousValue() async throws {
+    @Test("다시 저장하면 토큰 쌍 전체를 덮어쓴다")
+    func saveTwiceOverwritesPreviousPair() throws {
         let sut = makeStore()
-        try await sut.save(accessToken: "old", refreshToken: "old-r")
+        try sut.save(TokenPair(accessToken: "old", refreshToken: "old-r"))
+        let tokens = TokenPair(accessToken: "new", refreshToken: "new-r")
 
-        try await sut.save(accessToken: "new", refreshToken: "new-r")
+        try sut.save(tokens)
 
-        let access = await sut.getAccessToken()
-        let refresh = await sut.getRefreshToken()
-        #expect(access == "new")
-        #expect(refresh == "new-r")
+        #expect(sut.load() == tokens)
     }
 
-    @Test("clear는 저장된 토큰을 모두 삭제한다")
-    func clearRemovesAllTokens() async throws {
+    @Test("clear는 토큰 쌍을 삭제한다")
+    func clearRemovesStoredPair() throws {
         let sut = makeStore()
-        try await sut.save(accessToken: "a", refreshToken: "r")
+        try sut.save(TokenPair(accessToken: "a", refreshToken: "r"))
 
-        try await sut.clear()
+        try sut.clear()
 
-        let access = await sut.getAccessToken()
-        let refresh = await sut.getRefreshToken()
-        #expect(access == nil)
-        #expect(refresh == nil)
+        #expect(sut.load() == nil)
     }
 
-    @Test("서로 다른 service의 저장소는 토큰을 공유하지 않는다")
-    func differentServicesAreIsolated() async throws {
+    @Test("서로 다른 service의 저장소는 토큰 쌍을 공유하지 않는다")
+    func differentServicesAreIsolated() throws {
         let items = InMemoryKeychainItems()
         let sut = makeStore(service: "com.rephoto.tests.a", items: items)
         let other = makeStore(service: "com.rephoto.tests.b", items: items)
 
-        try await sut.save(accessToken: "mine", refreshToken: "r")
+        try sut.save(TokenPair(accessToken: "mine", refreshToken: "r"))
 
-        let otherAccess = await other.getAccessToken()
-        #expect(otherAccess == nil, "다른 service에선 보이지 않아야 한다")
+        #expect(other.load() == nil)
     }
 
-    @Test("refresh 쓰기가 실패하면 access를 이전 값으로 되돌린다")
-    func failedRefreshWriteRestoresPreviousAccessToken() async throws {
+    @Test("삭제 실패는 오류를 던지고 기존 토큰 쌍은 남는다")
+    func clearFailurePreservesStoredPair() throws {
         let items = InMemoryKeychainItems()
         let sut = makeStore(items: items)
-        try await sut.save(accessToken: "old", refreshToken: "old-r")
-        items.failWrites(to: "refreshToken")
+        let tokens = TokenPair(accessToken: "a", refreshToken: "r")
+        try sut.save(tokens)
+        items.failDeletes()
 
-        await #expect(throws: KeychainError.self) {
-            try await sut.save(accessToken: "new", refreshToken: "new-r")
+        #expect(throws: KeychainError.self) {
+            try sut.clear()
         }
 
-        let access = await sut.getAccessToken()
-        let refresh = await sut.getRefreshToken()
-        #expect(access == "old", "첫 번째 쓰기를 되돌려 쌍이 어긋나지 않아야 한다")
-        #expect(refresh == "old-r")
+        #expect(sut.load() == tokens)
     }
 
-    @Test("이전 값이 없을 때 refresh 쓰기가 실패하면 access를 지운다")
-    func failedRefreshWriteWithoutPreviousValueDeletesAccessToken() async throws {
-        let items = InMemoryKeychainItems()
-        let sut = makeStore(items: items)
-        items.failWrites(to: "refreshToken")
-
-        await #expect(throws: KeychainError.self) {
-            try await sut.save(accessToken: "new", refreshToken: "new-r")
-        }
-
-        let access = await sut.getAccessToken()
-        let refresh = await sut.getRefreshToken()
-        #expect(access == nil, "짝 없는 access가 남으면 안 된다")
-        #expect(refresh == nil)
-    }
-
-    @Test("동시 다발 저장/조회가 actor로 직렬화되어 일관된 상태로 끝난다")
-    func concurrentAccessIsSerialized() async throws {
+    @Test("저장된 것이 없어도 clear는 성공한다")
+    func clearWhenEmptySucceeds() throws {
         let sut = makeStore()
 
-        await withTaskGroup(of: Void.self) { group in
-            for index in 0..<100 {
-                group.addTask {
-                    if index % 2 == 0 {
-                        try? await sut.save(accessToken: "a-\(index)", refreshToken: "r-\(index)")
-                    } else {
-                        _ = await sut.getAccessToken()
-                    }
-                }
-            }
+        try sut.clear()
+    }
+
+    @Test("저장 실패는 기존 토큰 쌍을 보존한다")
+    func failedWritePreservesPreviousPair() throws {
+        let items = InMemoryKeychainItems()
+        let sut = makeStore(items: items)
+        let tokens = TokenPair(accessToken: "old", refreshToken: "old-r")
+        try sut.save(tokens)
+        items.failWrites()
+
+        #expect(throws: KeychainError.self) {
+            try sut.save(TokenPair(accessToken: "new", refreshToken: "new-r"))
         }
 
-        // save는 access·refresh를 두 번의 쓰기로 저장한다. 직렬화가 깨지면 서로 다른 index의
-        // 쓰기가 끼어들어 쌍이 어긋나므로, 마지막에 남은 두 값이 같은 index인지로 검증한다.
-        let access = try #require(await sut.getAccessToken())
-        let refresh = await sut.getRefreshToken()
-        #expect(refresh == "r-\(access.dropFirst(2))")
+        #expect(sut.load() == tokens)
+    }
+
+    @Test("첫 저장이 실패하면 토큰 쌍이 남지 않는다")
+    func failedFirstWriteLeavesStoreEmpty() {
+        let items = InMemoryKeychainItems()
+        let sut = makeStore(items: items)
+        items.failWrites()
+
+        #expect(throws: KeychainError.self) {
+            try sut.save(TokenPair(accessToken: "new", refreshToken: "new-r"))
+        }
+
+        #expect(sut.load() == nil)
+    }
+
+    @Test("토큰 쌍으로 디코딩할 수 없는 데이터는 nil을 반환한다")
+    func corruptDataReturnsNil() throws {
+        let items = InMemoryKeychainItems()
+        let sut = makeStore(items: items)
+        try items.write(Data("invalid tokens".utf8), service: "com.rephoto.tests", account: "tokens")
+
+        #expect(sut.load() == nil)
     }
 }
 
 // MARK: - Test Doubles
 
-/// 메모리에 항목을 담는 Keychain 더블. `failWrites(to:)`로 지정한 account의 쓰기는 실패시킨다.
+/// 메모리에 항목을 담는 Keychain 더블. 저장·삭제 오류를 주입할 수 있다.
 final class InMemoryKeychainItems: KeychainItemStore {
 
     private struct State {
         var storage: [String: Data] = [:]
-        var failingAccount: String?
+        var shouldFailWrites = false
+        var shouldFailDeletes = false
     }
 
     private let state = Mutex(State())
 
-    func failWrites(to account: String) {
-        state.withLock { $0.failingAccount = account }
+    func failWrites() {
+        state.withLock { $0.shouldFailWrites = true }
+    }
+
+    func failDeletes() {
+        state.withLock { $0.shouldFailDeletes = true }
     }
 
     func read(service: String, account: String) -> Data? {
@@ -166,15 +162,20 @@ final class InMemoryKeychainItems: KeychainItemStore {
 
     func write(_ data: Data, service: String, account: String) throws {
         try state.withLock { state in
-            guard state.failingAccount != account else {
+            guard !state.shouldFailWrites else {
                 throw KeychainError.saveFailed(status: errSecIO)
             }
             state.storage[key(service, account)] = data
         }
     }
 
-    func delete(service: String, account: String) {
-        state.withLock { _ = $0.storage.removeValue(forKey: key(service, account)) }
+    func delete(service: String, account: String) throws {
+        try state.withLock { state in
+            guard !state.shouldFailDeletes else {
+                throw KeychainError.deleteFailed(status: errSecIO)
+            }
+            _ = state.storage.removeValue(forKey: key(service, account))
+        }
     }
 
     private func key(_ service: String, _ account: String) -> String {

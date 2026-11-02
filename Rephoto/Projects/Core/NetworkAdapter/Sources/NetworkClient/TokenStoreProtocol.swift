@@ -7,11 +7,11 @@
 
 import Foundation
 
+/// NetworkClient actor 안에서 동기로 읽고 쓴다. 세션 확인과 저장 사이에 재진입하지 않는다.
 public protocol TokenStore: Sendable {
-    func getAccessToken() async -> String?
-    func getRefreshToken() async -> String?
-    func save(accessToken: String, refreshToken: String) async throws
-    func clear() async throws
+    func load() -> TokenPair?
+    func save(_ tokens: TokenPair) throws
+    func clear() throws
 }
 
 public protocol TokenRefreshService: Sendable {

@@ -119,7 +119,7 @@ extension StubURLProtocolSuites {
             #expect(response.statusCode == 200)
             let refreshCount = await refresh.count()
             #expect(refreshCount == 1)
-            let savedAccess = await store.getAccessToken()
+            let savedAccess = store.load()?.accessToken
             #expect(savedAccess == "new", "갱신된 토큰이 저장소에 반영돼야 한다")
         }
 
@@ -170,7 +170,7 @@ extension StubURLProtocolSuites {
 
             let loggedIn = await client.isLoggedIn()
             #expect(loggedIn == false)
-            let refreshToken = await store.getRefreshToken()
+            let refreshToken = store.load()?.refreshToken
             #expect(refreshToken == nil, "refresh token까지 삭제돼야 재실행 시 자동 로그인되지 않는다")
         }
 
@@ -189,7 +189,7 @@ extension StubURLProtocolSuites {
             }
 
             #expect(counter.value == 1)
-            let refreshToken = await store.getRefreshToken()
+            let refreshToken = store.load()?.refreshToken
             #expect(refreshToken == nil)
         }
 
@@ -209,7 +209,7 @@ extension StubURLProtocolSuites {
             }
 
             #expect(counter.value == 0, "일시적 실패는 세션 종료 통지를 보내면 안 된다")
-            let refreshToken = await store.getRefreshToken()
+            let refreshToken = store.load()?.refreshToken
             #expect(refreshToken == "r", "일시적 실패로 토큰을 지우면 안 된다")
         }
 
@@ -272,12 +272,25 @@ extension StubURLProtocolSuites {
             await client.setOnRefreshFailed { counter.increment() }
 
             let req = request(path: "/photos")
-            await withTaskGroup(of: Void.self) { group in
+            let unauthorizedCount = await withTaskGroup(of: Bool.self) { group in
                 for _ in 0..<requestCount {
-                    group.addTask { _ = try? await client.request(req) }
+                    group.addTask {
+                        do {
+                            _ = try await client.request(req)
+                            return false
+                        } catch NetworkError.unauthorized {
+                            return true
+                        } catch {
+                            return false
+                        }
+                    }
                 }
+                var count = 0
+                for await isUnauthorized in group where isUnauthorized { count += 1 }
+                return count
             }
 
+            #expect(unauthorizedCount == requestCount, "대기하던 요청 전원이 unauthorized로 끝나야 한다")
             // 통지는 요청이 throw하기 전에 끝나므로, 그룹이 끝난 시점에 카운트는 확정이다.
             #expect(counter.value == 1, "동시 401 20건이 같은 갱신 실패를 공유해도 통지는 1회여야 한다")
             let refreshCount = await refresh.count()
@@ -328,110 +341,177 @@ extension StubURLProtocolSuites {
 
             let after = await client.isLoggedIn()
             #expect(after == false)
-            let access = await store.getAccessToken()
+            let access = store.load()?.accessToken
             #expect(access == nil)
         }
 
-        /// 갱신 응답이 이미 도착해 session.data(for:)의 취소 관측 지점을 지나친 뒤 logout이 오는 창.
-        /// 저장 직전의 checkCancellation이 저장을 건너뛰고 CancellationError를 전달하는지 검증한다.
-        ///
-        /// GatedRefreshService는 취소를 무시하고 신호가 올 때까지 응답을 붙잡아 둬,
-        /// "응답은 왔지만 아직 저장 전" 상태에서 logout을 끼워 넣는 순서를 결정적으로 만든다.
-        // 게이트는 신호가 없으면 영원히 기다린다. 갱신이 호출되지 않는 방향으로 회귀하면
-        // 무한 대기가 되어 .serialized 컨테이너의 뒤 스위트까지 막히므로 시간 제한을 둔다(분 단위만 허용).
-        @Test("갱신 응답 도착 후 logout이 오면 새 토큰을 저장하지 않는다", .timeLimit(.minutes(1)))
-        func logoutDuringRefreshDoesNotResurrectTokens() async throws {
+        @Test(
+            "세션 전환은 이전 갱신을 기다리지 않고, 뒤늦은 성공·실패는 현재 세션에 영향을 주지 않는다",
+            .timeLimit(.minutes(1)),
+            arguments: [true, false], [true, false]
+        )
+        func sessionSwitchDiscardsPendingRefresh(refreshSucceeds: Bool, logsOut: Bool) async throws {
             let store = MockTokenStore(accessToken: "old", refreshToken: "r")
-            let refresh = GatedRefreshService(success: TokenPair(accessToken: "new", refreshToken: "r2"))
+            let stale = TokenPair(accessToken: "stale", refreshToken: "stale-r")
+            let refresh = GatedRefreshService(success: refreshSucceeds ? stale : nil)
             let client = makeClient(tokenStore: store, refreshService: refresh)
-            // 새 토큰이면 200. 항상 401로 두면 checkCancellation이 없어도 재시도 한도 초과 경로가
-            // 토큰을 지워 버려, 아래 "저장소가 비어 있다" 단언이 변이를 잡지 못한다.
             StubURLProtocol.handler = { req in
-                let authorized = req.value(forHTTPHeaderField: "Authorization") == "Bearer new"
-                return (Self.response(req.url, authorized ? 200 : 401), Data("{}".utf8))
+                let isOldToken = req.value(forHTTPHeaderField: "Authorization") == "Bearer old"
+                return (Self.response(req.url, isOldToken ? 401 : 200), Data())
             }
+            let counter = CallCounter()
+            await client.setOnRefreshFailed { counter.increment() }
 
             let req = request(path: "/photos")
             let inFlight = Task { try await client.request(req) }
             await refresh.gate.waitUntilEntered()
 
-            // logout은 갱신 Task 종료를 기다리므로 별도 Task로 띄운다.
-            // cancel()이 갱신 Task에 도달한 것을 확인한 뒤 응답을 풀어야 "취소된 뒤 도착한 응답" 순서가 된다.
-            let logout = Task { try await client.logout() }
-            await refresh.gate.waitUntilCancelled()
+            // 취소에 협조하지 않는 갱신을 풀기 전에 세션 전환이 끝나야 한다.
+            if logsOut {
+                try await client.logout()
+            } else {
+                try await client.saveTokens(accessToken: "login", refreshToken: "login-r")
+            }
+            let expected = logsOut ? nil : TokenPair(accessToken: "login", refreshToken: "login-r")
+            #expect(store.load() == expected)
             await refresh.gate.release()
-            try await logout.value
 
             await #expect(throws: CancellationError.self) {
                 _ = try await inFlight.value
             }
-            let access = await store.getAccessToken()
-            #expect(access == nil, "logout 뒤 도착한 갱신 결과가 저장소를 되살리면 안 된다")
-            let refreshToken = await store.getRefreshToken()
-            #expect(refreshToken == nil)
-            // 최초 401 1건만 나갔어야 한다. 저장이 됐다면 새 토큰으로 재시도가 한 번 더 기록된다.
-            #expect(StubURLProtocol.recordedRequests.count == 1, "logout 뒤 새 토큰으로 재시도하면 안 된다")
+            #expect(store.load() == expected)
+            #expect(counter.value == 0, "이전 세션의 실패로 현재 세션을 종료하면 안 된다")
+            #expect(StubURLProtocol.recordedRequests.count == 1, "이전 요청을 새 세션으로 재시도하면 안 된다")
         }
 
-        /// checkCancellation을 통과해 저장 단계에 들어간 뒤 logout이 오는 창.
-        /// logout이 갱신 Task 종료를 기다리지 않으면 clear가 먼저 실행되고 뒤늦은 save가 토큰을 되살린다.
-        /// 저장을 게이트로 붙잡아 두고 그 사이에 logout을 끼워 넣어, clear가 save 뒤에 오는지 검증한다.
-        @Test("저장 단계에서 logout이 오면 갱신 Task가 끝난 뒤 토큰을 지운다", .timeLimit(.minutes(1)))
-        func logoutWaitsForInFlightSaveBeforeClearing() async throws {
-            let store = GatedTokenStore(accessToken: "old", refreshToken: "r")
-            let refresh = SpyRefreshService(success: TokenPair(accessToken: "new", refreshToken: "r2"))
+        @Test(
+            "세션 전환 뒤 도착한 이전 HTTP 응답은 성공·401 모두 취소로 끝난다",
+            .timeLimit(.minutes(1)),
+            arguments: [200, 401], [true, false]
+        )
+        func sessionSwitchDiscardsPendingResponse(statusCode: Int, logsOut: Bool) async throws {
+            let store = MockTokenStore(accessToken: "old", refreshToken: "r")
+            let refresh = SpyRefreshService(success: TokenPair(accessToken: "new", refreshToken: "new-r"))
             let client = makeClient(tokenStore: store, refreshService: refresh)
+            let requestStarted = ArrivalLatch(expected: 1)
+            let releaseResponse = DispatchSemaphore(value: 0)
+            StubURLProtocol.handler = { req in
+                if req.value(forHTTPHeaderField: "Authorization") == "Bearer old" {
+                    requestStarted.arrive()
+                    releaseResponse.wait()
+                    return (Self.response(req.url, statusCode), Data())
+                }
+                return (Self.response(req.url, 200), Data())
+            }
+            defer { releaseResponse.signal() }
+            let counter = CallCounter()
+            await client.setOnRefreshFailed { counter.increment() }
+
+            let req = request(path: "/photos", method: "POST")
+            let inFlight = Task { try await client.request(req) }
+            await requestStarted.wait()
+            if logsOut {
+                try await client.logout()
+            } else {
+                try await client.saveTokens(accessToken: "login", refreshToken: "login-r")
+            }
+            releaseResponse.signal()
+
+            await #expect(throws: CancellationError.self) {
+                _ = try await inFlight.value
+            }
+            let refreshCount = await refresh.count()
+            #expect(refreshCount == 0, "이전 요청의 401로 현재 세션을 갱신하면 안 된다")
+            #expect(counter.value == 0)
+            #expect(StubURLProtocol.recordedRequests.count == 1)
+            let expected = logsOut ? nil : TokenPair(accessToken: "login", refreshToken: "login-r")
+            #expect(store.load() == expected)
+        }
+
+        @Test("공개 경로의 401은 갱신·통지 없이 httpError로 돌려준다")
+        func publicPath401IsReturnedAsHttpError() async throws {
+            let store = MockTokenStore(accessToken: "a", refreshToken: "r")
+            let refresh = SpyRefreshService(success: TokenPair(accessToken: "new", refreshToken: "new-r"))
+            let client = makeClient(tokenStore: store, refreshService: refresh)
+            StubURLProtocol.handler = { req in (Self.response(req.url, 401), Data("wrong".utf8)) }
+            let counter = CallCounter()
+            await client.setOnRefreshFailed { counter.increment() }
+
+            await #expect(throws: NetworkError.httpError(statusCode: 401, data: Data("wrong".utf8))) {
+                _ = try await client.request(self.request(path: "/login", method: "POST"))
+            }
+
+            let refreshCount = await refresh.count()
+            #expect(refreshCount == 0)
+            #expect(counter.value == 0)
+            #expect(store.load() == TokenPair(accessToken: "a", refreshToken: "r"))
+        }
+
+        @Test("세션 전환 뒤 도착한 공개 경로 응답은 취소하지 않는다", .timeLimit(.minutes(1)), arguments: [true, false])
+        func sessionSwitchKeepsPendingPublicResponse(logsOut: Bool) async throws {
+            let client = makeClient()
+            let requestStarted = ArrivalLatch(expected: 1)
+            let releaseResponse = DispatchSemaphore(value: 0)
+            StubURLProtocol.handler = { req in
+                requestStarted.arrive()
+                releaseResponse.wait()
+                return (Self.response(req.url, 200), Data())
+            }
+            defer { releaseResponse.signal() }
+
+            let req = request(path: "/join", method: "POST")
+            let inFlight = Task { try await client.request(req) }
+            await requestStarted.wait()
+            if logsOut {
+                try await client.logout()
+            } else {
+                try await client.saveTokens(accessToken: "login", refreshToken: "login-r")
+            }
+            releaseResponse.signal()
+
+            let (_, response) = try await inFlight.value
+            #expect(response.statusCode == 200)
+        }
+
+        @Test("이전 갱신이 끝나도 현재 세션의 진행 중인 갱신을 공유한다", .timeLimit(.minutes(1)))
+        func staleRefreshCompletionKeepsCurrentRefreshTask() async throws {
+            let store = MockTokenStore(accessToken: "old", refreshToken: "old-r")
+            let oldRefresh = GatedRefreshService(success: TokenPair(accessToken: "stale", refreshToken: "stale-r"))
+            let newTokens = TokenPair(accessToken: "new", refreshToken: "new-r")
+            let currentRefresh = GatedRefreshService(success: newTokens)
+            let allUnauthorized = ArrivalLatch(expected: 3)
+            let client = makeClient(
+                tokenStore: store,
+                refreshService: SessionRefreshService(previous: oldRefresh, current: currentRefresh),
+                authPolicy: LatchingAuthenticationPolicy(latch: allUnauthorized)
+            )
             StubURLProtocol.handler = { req in
                 let authorized = req.value(forHTTPHeaderField: "Authorization") == "Bearer new"
-                return (Self.response(req.url, authorized ? 200 : 401), Data("{}".utf8))
+                return (Self.response(req.url, authorized ? 200 : 401), Data())
             }
 
             let req = request(path: "/photos")
-            let inFlight = Task { try await client.request(req) }
-            await store.saveGate.waitUntilEntered()
+            let oldRequest = Task { try await client.request(req) }
+            await oldRefresh.gate.waitUntilEntered()
+            try await client.saveTokens(accessToken: "login", refreshToken: "login-r")
 
-            let logout = Task { try await client.logout() }
-            // logout이 cancel()까지 진행한 시점. 기다리는 구현이면 여기서 save 완료를 대기하고,
-            // 기다리지 않는 구현이면 이미 clear()를 호출했다.
-            await store.saveGate.waitUntilCancelled()
-            await store.saveGate.release()
-            try await logout.value
-            // 재시도는 clear와 경합하므로 결과는 보지 않고 끝나기만 기다린다(늦은 clear 기록 방지).
-            _ = try? await inFlight.value
-
-            let events = await store.events
-            #expect(events.first == "save", "clear는 진행 중인 save가 끝난 뒤여야 한다: \(events)")
-            let access = await store.getAccessToken()
-            #expect(access == nil, "logout이 끝난 뒤 토큰이 남으면 안 된다")
-        }
-
-        /// 로그인 사이에 늦게 끝난 이전 갱신이 새 계정 토큰을 덮어쓰면 안 된다.
-        @Test("갱신 응답 도착 후 saveTokens가 오면 이전 갱신 결과로 덮어쓰지 않는다", .timeLimit(.minutes(1)))
-        func saveTokensDuringRefreshDiscardsStaleResult() async throws {
-            let store = MockTokenStore(accessToken: "old", refreshToken: "r")
-            let refresh = GatedRefreshService(success: TokenPair(accessToken: "stale", refreshToken: "stale-r"))
-            let client = makeClient(tokenStore: store, refreshService: refresh)
-            StubURLProtocol.handler = { req in
-                let authorized = req.value(forHTTPHeaderField: "Authorization") == "Bearer stale"
-                return (Self.response(req.url, authorized ? 200 : 401), Data("{}".utf8))
-            }
-
-            let req = request(path: "/photos")
-            let inFlight = Task { try await client.request(req) }
-            await refresh.gate.waitUntilEntered()
-
-            let login = Task { try await client.saveTokens(accessToken: "login", refreshToken: "login-r") }
-            await refresh.gate.waitUntilCancelled()
-            await refresh.gate.release()
-            try await login.value
-
+            let firstCurrentRequest = Task { try await client.request(req) }
+            await currentRefresh.gate.waitUntilEntered()
+            await oldRefresh.gate.release()
             await #expect(throws: CancellationError.self) {
-                _ = try await inFlight.value
+                _ = try await oldRequest.value
             }
-            let access = await store.getAccessToken()
-            #expect(access == "login", "로그인 뒤 도착한 갱신 결과가 새 계정 토큰을 덮어쓰면 안 된다")
-            let refreshToken = await store.getRefreshToken()
-            #expect(refreshToken == "login-r")
+
+            let secondCurrentRequest = Task { try await client.request(req) }
+            await allUnauthorized.wait()
+            await currentRefresh.gate.release()
+            let (_, firstResponse) = try await firstCurrentRequest.value
+            let (_, secondResponse) = try await secondCurrentRequest.value
+
+            #expect(firstResponse.statusCode == 200)
+            #expect(secondResponse.statusCode == 200)
+            #expect(currentRefresh.calls.value == 1, "이전 Task의 정리가 새 갱신 슬롯을 지우면 안 된다")
+            #expect(store.load() == newTokens)
         }
     }
 }
@@ -540,99 +620,61 @@ actor ScriptedRefreshService: TokenRefreshService {
     }
 }
 
-/// 진입을 알리고 release()가 올 때까지 호출자를 붙잡아 두는 게이트.
-///
-/// 붙잡힌 Task의 취소는 무시하되 관측만 한다. 실제 URLSession이라면 "응답을 이미 받아
-/// 취소 확인 지점을 지난 뒤"에 해당하는 상태를 흉내 내고, 테스트는 waitUntilCancelled()로
-/// logout의 cancel()이 도달한 시점을 잡아 그 뒤에 release()하는 순서를 결정적으로 만든다.
+/// 취소에 협조하지 않는 응답을 재현한다. release() 전에는 호출자를 재개하지 않는다.
 actor TestGate {
     private var hasEntered = false
     private var isReleased = false
-    private var isCancelled = false
     private var enteredWaiter: CheckedContinuation<Void, Never>?
-    private var releaseWaiter: CheckedContinuation<Void, Never>?
-    private var cancelWaiter: CheckedContinuation<Void, Never>?
+    private var releaseWaiters: [CheckedContinuation<Void, Never>] = []
 
-    /// 붙잡히는 쪽이 호출한다. release()까지 대기하며, 이미 풀렸으면 즉시 반환.
     func hold() async {
         hasEntered = true
         enteredWaiter?.resume()
         enteredWaiter = nil
-        guard isReleased == false else { return }
-        await withTaskCancellationHandler {
-            await withCheckedContinuation { releaseWaiter = $0 }
-        } onCancel: {
-            Task { await self.markCancelled() }
-        }
+        guard !isReleased else { return }
+        await withCheckedContinuation { releaseWaiters.append($0) }
     }
 
-    /// hold()가 호출될 때까지 기다린다. 이미 호출됐으면 즉시 반환.
     func waitUntilEntered() async {
         if hasEntered { return }
         await withCheckedContinuation { enteredWaiter = $0 }
     }
 
-    /// 붙잡힌 Task가 취소될 때까지 기다린다. 이미 취소됐으면 즉시 반환.
-    func waitUntilCancelled() async {
-        if isCancelled { return }
-        await withCheckedContinuation { cancelWaiter = $0 }
-    }
-
-    /// 붙잡아 둔 호출자를 풀어 준다.
     func release() {
         isReleased = true
-        releaseWaiter?.resume()
-        releaseWaiter = nil
-    }
-
-    private func markCancelled() {
-        isCancelled = true
-        cancelWaiter?.resume()
-        cancelWaiter = nil
+        releaseWaiters.forEach { $0.resume() }
+        releaseWaiters.removeAll()
     }
 }
 
 /// 게이트가 풀릴 때까지 응답을 붙잡아 두는 토큰 갱신 서비스.
 struct GatedRefreshService: TokenRefreshService {
     let gate = TestGate()
-    private let newTokens: TokenPair
+    let calls = CallCounter()
+    private let newTokens: TokenPair?
 
-    init(success: TokenPair) {
+    init(success: TokenPair?) {
         self.newTokens = success
     }
 
     func refresh(_ refreshToken: String) async throws -> TokenPair {
+        calls.increment()
         await gate.hold()
+        guard let newTokens else { throw NetworkError.unauthorized }
         return newTokens
     }
 }
 
-/// save를 게이트로 붙잡아 두고 save/clear 호출 순서를 기록하는 토큰 저장소.
-actor GatedTokenStore: TokenStore {
-    let saveGate = TestGate()
-    private(set) var events: [String] = []
-    private var access: String?
-    private var refresh: String?
+/// 이전 계정과 현재 계정의 갱신을 각각 다른 게이트로 제어한다.
+struct SessionRefreshService: TokenRefreshService {
+    let previous: GatedRefreshService
+    let current: GatedRefreshService
 
-    init(accessToken: String?, refreshToken: String?) {
-        self.access = accessToken
-        self.refresh = refreshToken
-    }
-
-    func getAccessToken() async -> String? { access }
-    func getRefreshToken() async -> String? { refresh }
-
-    func save(accessToken: String, refreshToken: String) async throws {
-        await saveGate.hold()
-        access = accessToken
-        refresh = refreshToken
-        events.append("save")
-    }
-
-    func clear() async throws {
-        access = nil
-        refresh = nil
-        events.append("clear")
+    func refresh(_ refreshToken: String) async throws -> TokenPair {
+        if refreshToken == "old-r" {
+            return try await previous.refresh(refreshToken)
+        }
+        return try await current.refresh(refreshToken)
     }
 }
 

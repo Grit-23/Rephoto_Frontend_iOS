@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct TokenPair: Sendable, Equatable {
+public struct TokenPair: Sendable, Equatable, Codable {
     public let accessToken: String
     public let refreshToken: String
 

@@ -6,31 +6,32 @@
 //
 
 import Foundation
+import Synchronization
 import NetworkAdapter
 
 // MARK: - MockTokenStore
 
 /// 메모리에만 저장하는 토큰 저장소. Keychain 없이 `NetworkClient`를 조립할 때 쓴다.
-public final actor MockTokenStore: TokenStore {
-    private var access: String?
-    private var refresh: String?
+public final class MockTokenStore: TokenStore {
+    private let tokens: Mutex<TokenPair?>
 
     public init(accessToken: String? = "test-access", refreshToken: String? = "test-refresh") {
-        self.access = accessToken
-        self.refresh = refreshToken
+        let pair: TokenPair? = if let accessToken, let refreshToken {
+            TokenPair(accessToken: accessToken, refreshToken: refreshToken)
+        } else {
+            nil
+        }
+        tokens = Mutex(pair)
     }
 
-    public func getAccessToken() async -> String? { access }
-    public func getRefreshToken() async -> String? { refresh }
+    public func load() -> TokenPair? { tokens.withLock { $0 } }
 
-    public func save(accessToken: String, refreshToken: String) async throws {
-        access = accessToken
-        refresh = refreshToken
+    public func save(_ tokens: TokenPair) {
+        self.tokens.withLock { $0 = tokens }
     }
 
-    public func clear() async throws {
-        access = nil
-        refresh = nil
+    public func clear() {
+        tokens.withLock { $0 = nil }
     }
 }
 

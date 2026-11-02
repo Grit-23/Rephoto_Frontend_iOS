@@ -8,12 +8,11 @@
 import Foundation
 import Security
 
-public actor KeychainTokenStore: TokenStore {
+public struct KeychainTokenStore: TokenStore {
 
     private let service: String
     private let items: KeychainItemStore
-    private let accessTokenKey: String = "accessToken"
-    private let refreshTokenKey: String = "refreshToken"
+    private let tokensKey = "tokens"
 
     public init(service: String = "com.rephoto.tokens") {
         self.init(service: service, items: SecItemStore())
@@ -27,48 +26,19 @@ public actor KeychainTokenStore: TokenStore {
 
     // MARK: - TokenStore Protocol
 
-    public func getAccessToken() async -> String? {
-        return load(key: accessTokenKey)
+    public func load() -> TokenPair? {
+        guard let data = items.read(service: service, account: tokensKey) else { return nil }
+        return try? JSONDecoder().decode(TokenPair.self, from: data)
     }
 
-    public func getRefreshToken() async -> String? {
-        return load(key: refreshTokenKey)
+    /// 두 토큰을 하나의 Keychain 항목으로 저장해 서로 다른 세션의 토큰이 섞이지 않게 한다.
+    public func save(_ tokens: TokenPair) throws {
+        let data = try JSONEncoder().encode(tokens)
+        try items.write(data, service: service, account: tokensKey)
     }
 
-    /// access·refresh를 순서대로 저장한다. 두 번째 쓰기가 실패하면 첫 번째를 이전 값으로 되돌려
-    /// 쌍이 어긋나지 않게 한다. 이전 값이 없었다면 삭제한다.
-    public func save(accessToken: String, refreshToken: String) async throws {
-        let previousAccessToken = load(key: accessTokenKey)
-        try save(key: accessTokenKey, value: accessToken)
-        do {
-            try save(key: refreshTokenKey, value: refreshToken)
-        } catch {
-            if let previousAccessToken {
-                try? save(key: accessTokenKey, value: previousAccessToken)
-            } else {
-                items.delete(service: service, account: accessTokenKey)
-            }
-            throw error
-        }
-    }
-
-    public func clear() async throws {
-        items.delete(service: service, account: accessTokenKey)
-        items.delete(service: service, account: refreshTokenKey)
-    }
-
-    // MARK: - Private Methods
-
-    private func save(key: String, value: String) throws {
-        guard let data = value.data(using: .utf8) else {
-            throw KeychainError.encodingFailed
-        }
-        try items.write(data, service: service, account: key)
-    }
-
-    private func load(key: String) -> String? {
-        guard let data = items.read(service: service, account: key) else { return nil }
-        return String(data: data, encoding: .utf8)
+    public func clear() throws {
+        try items.delete(service: service, account: tokensKey)
     }
 }
 
@@ -78,7 +48,7 @@ public actor KeychainTokenStore: TokenStore {
 protocol KeychainItemStore: Sendable {
     func read(service: String, account: String) -> Data?
     func write(_ data: Data, service: String, account: String) throws
-    func delete(service: String, account: String)
+    func delete(service: String, account: String) throws
 }
 
 /// `SecItem*` API로 generic password 항목을 다루는 실제 구현.
@@ -121,8 +91,11 @@ struct SecItemStore: KeychainItemStore {
         }
     }
 
-    func delete(service: String, account: String) {
-        SecItemDelete(baseQuery(service: service, account: account) as CFDictionary)
+    func delete(service: String, account: String) throws {
+        let status = SecItemDelete(baseQuery(service: service, account: account) as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw KeychainError.deleteFailed(status: status)
+        }
     }
 
     private func baseQuery(service: String, account: String) -> [String: Any] {
@@ -137,15 +110,15 @@ struct SecItemStore: KeychainItemStore {
 // MARK: - Errors
 
 public enum KeychainError: Error, LocalizedError {
-    case encodingFailed
     case saveFailed(status: OSStatus)
+    case deleteFailed(status: OSStatus)
 
     public var errorDescription: String? {
         switch self {
-        case .encodingFailed:
-            return "토큰 인코딩 실패"
         case .saveFailed(let status):
             return "Keychain 저장 실패 (status: \(status))"
+        case .deleteFailed(let status):
+            return "Keychain 삭제 실패 (status: \(status))"
         }
     }
 }
