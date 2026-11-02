@@ -1,7 +1,7 @@
 name: Tuist
 
 # Tuist 멀티모듈(Rephoto/) 빌드 · 테스트 게이트.
-# 기존 iOS.yml(Rephoto_iOS.xcodeproj)은 전환이 끝나는 PR 5까지 함께 돈다.
+# 기존 iOS.yml(Rephoto_iOS.xcodeproj)은 Feature 이관 후 최종 통합 검증까지 함께 돈다.
 # 로컬과 같은 Rephoto/Makefile과 Tuist 전용 Rephoto.xctestplan을 쓴다.
 
 on:

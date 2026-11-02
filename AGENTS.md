@@ -39,6 +39,14 @@ make clean                            # 생성물 삭제 후 처음부터
 
 **Done criteria**: `tuist.yml`과 `iOS.yml` 둘 다 통과. Feature 모듈 변경은 해당 `<Name>FeatureExample` 앱으로 동작 확인. 성능에 닿는 변경은 `Rephoto_Performance` 플랜으로 메인 스레드 확인.
 
+## Tuist 전환 순서
+
+**Home → Search → User** 순서로, 각 화면에 필요한 Domain과 Feature를 함께 이관한다. 단계별 범위 · 완료 확인 · 진행 상태는 `docs/REFACTORING_HISTORY.md` Step 4의 "남은 이관 순서"를 따른다.
+
+- Domain 전체를 먼저 옮기지 않는다. PreviewSupport · Mock도 해당 화면에 필요한 만큼만 추가한다
+- Home은 프로필 버튼 액션을 주입받고, 계정 시트 표시는 App이 소유한다. User Interface나 공용 라우터를 미리 만들지 않는다
+- 최종 통합 검증 전에는 기존 빌드 축(`Rephoto_iOS.xcodeproj` · `iOS.yml`)을 제거하지 않는다
+
 ## Architecture
 
 ```

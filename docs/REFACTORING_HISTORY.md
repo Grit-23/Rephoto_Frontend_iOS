@@ -2,9 +2,9 @@
 
 아키텍처 · Concurrency · 모듈화 · 테스트 · CI/CD 순으로 진행하는 리팩토링 로드맵. 에이전트 작업 지침은 [AGENTS.md](../AGENTS.md)에 있고, 이 문서는 단계별 배경 · 결정 · 진행 상태를 기록한다.
 
-> **진행 현황 (2026-11-01 기준)**: 안정화 수정 2건 머지 — 로그아웃 토큰 잔존·진행률 스레드(#76 → PR #77), 토큰 재발급 구조체 중복·로그아웃-갱신 경합(#78 → PR #79). 이후 Step 4(Tuist)를 마일스톤 "Tuist 멀티모듈 전환"으로 착수.
+> **진행 현황**: PR 0–2가 `main`에 반영됨(`a31c825`). 다음은 Home → Search → User 순서로 화면에 필요한 Domain과 Feature를 함께 이관한다.
 > - Step 1–3 **완료** (#14·#21·#23·#27·#44 / #29·#32 / #31)
-> - Step 4 (Tuist 멀티모듈) — **진행 중**. PR 0(#90 → #91) 빌드 기준값 기록, PR 1(#92) Tuist 설정 + DependencyPlugin + Shared/Foundation 분리. 나머지 모듈 이관은 PR 2부터
+> - Step 4 (Tuist 멀티모듈) — **진행 중**. PR 0(#91) 빌드 기준값, PR 1(#93) Tuist·DependencyPlugin·Foundation, PR 2(#95) NetworkAdapter·DesignSystem·에러 통합 완료. PR 3 Home → PR 4 Search → PR 5 User → 최종 통합 검증 순서
 > - Step 5 **부분 완료**: 단위·계약 테스트 95케이스(Swift Testing 83 + XCTest 12), 성능 플랜 18개(측정 전용). 미완: UseCase 전수 테스트, UI Test
 > - Step 6 **부분 완료**: PR마다 빌드 + 유닛 플랜 실행 + `xccov` 커버리지 요약(#56). 미완: SwiftLint 워크플로, Fastlane TestFlight
 > - Step 7 **부분 완료**: DateFormatter static 캐싱, 이미지 다운샘플·압축(#34·#49), Home 관찰 성능(#47·#59), 검색 디바운스(#53). 미완: ETag 캐시, Dictionary O(1) 태그 조회
@@ -52,7 +52,8 @@ PhotoCapture(카메라 촬영), 지도 탭(Map 화면 — 사진 상세의 위�
 ## Step 4. 🔶 Tuist + 멀티모듈 분리 (진행 중)
 
 **리팩토링 전**: 단일 앱 타겟. .xcodeproj 직접 관리. Feature 간 암묵적 의존(Search가 Home의 `PhotoInfoView`를, Home이 User의 `SettingsView`를 직접 참조). `AppContainer`가 Core에 있으면서 모든 Feature 구현을 앎.
-**현재**: `Rephoto/` 폴더에 Tuist 워크스페이스. 기존 `Rephoto_iOS.xcodeproj`는 전환이 끝날 때까지 병행 유지. PR 1에서 `Shared/Foundation`(Config · Error 타입 · Date 확장)과 임시 App 타깃까지 분리.
+**착수 전 안정화**: 로그아웃 토큰 잔존·진행률 스레드(#76 → PR #77), 토큰 재발급 구조체 중복·로그아웃-갱신 경합(#78 → PR #79) 수정 후 마일스톤 "Tuist 멀티모듈 전환"으로 착수.
+**현재**: `Rephoto/`에 Tuist 워크스페이스와 임시 App 타깃, Shared/Foundation·DesignSystem, Core/NetworkAdapter까지 분리 완료(PR 0 #91 · PR 1 #93 · PR 2 #95). 기존 `Rephoto_iOS.xcodeproj`와 `iOS.yml`은 Feature 이관 후 최종 통합 검증까지 병행 유지한다.
 **목표**:
 - **계층 4개**: Shared(Foundation · DesignSystem) · Core(NetworkAdapter 등 공유 인프라) · Domain(Photo, Tag, Album, User 등 업무 단위 + PreviewSupport) · Feature(Home, Search, User). 기존 Feature 폴더의 Domain/Data는 Domain 모듈로, Presentation만 Feature 모듈로 간다
 - **모듈 = Tuist 프로젝트 1개**, 타깃은 `Interface · Sources · Testing · Tests`(Feature는 `Example` 추가) 중 필요한 것만. Interface는 프로토콜·모델만, Sources가 구현, Testing은 mockolo가 만든 Mock, Example은 Feature 단독 실행 앱
@@ -60,10 +61,27 @@ PhotoCapture(카메라 촬영), 지도 탭(Map 화면 — 사진 상세의 위�
 - **DependencyPlugin**: 폴더 이름 → 모듈 enum(`GeneratedModules.swift`) 자동 생성, `.feature(interface: .Home)` 같은 타입 안전 의존성 헬퍼, `Project.feature(...)` 한 줄로 타깃 일괄 생성. 모듈 추가는 `make module type= name=`
 - 모든 Feature는 Example 앱으로 동작 확인 후 PR. iPhone 전용
 - 새 워크스페이스는 전 모듈 Swift 6 언어 모드(PR 1부터, 예외 없음). 옮기면서 생기는 Swift 6 에러는 그 모듈에서 바로 고친다. 기존 xcodeproj는 Swift 5 유지
-- **PR 2 (Core 분리 · 에러 통합)**: `NetworkAdapter`(Core)와 `DesignSystem`(Shared, MainActor) 분리, 첫 테스트 타깃과 `Rephoto.xctestplan`. 에러는 계층 enum(`NetworkError` · `RepositoryError` · `DomainError`)이 분류만 하고 사용자 문구 · 재시도 정책은 `AppError` 한 곳에서 결정, UI는 `ErrorHandler`(Alert) · `ErrorStateView`(인라인) 둘만 둔다 — `ErrorDisplay` · `ErrorContext` · `PresentableError` 타입 삭제, `GlobalErrorAlert`는 public 타입에서 `globalErrorAlert(_:)` 모디파이어의 private 구현으로, `DomainError.custom` 삭제, `RepositoryError`는 `invalidData(detail:)` 하나, `NetworkAdapter.request`는 `Data`만 반환(`NetworkResponse` 삭제), `Loadable`은 case만 남김(접근자는 쓰는 곳이 생길 때 추가). 11/2 결정으로 "공통 프로토콜" 안은 폐기
-- **PR 2 인증 단순화 (11/3)**: Tuist의 `KeychainTokenStore`는 `TokenPair`를 단일 `tokens` 항목에 저장하는 동기 struct로 바꿔 두 키의 부분 저장·롤백을 없앤다. `NetworkClient` actor가 세션 세대 확인과 저장·삭제를 중단 없이 수행하므로, 전환 카운터와 이전 갱신 종료 대기도 제거한다. 동시 갱신은 단일 Task를 공유하고, 이전 세션의 인증 요청·갱신 결과는 취소로 끝낸다. 공개 경로(`/login` · `/join` · `/auth/refresh`)는 세대 검사와 401 갱신을 거치지 않는다.
-- **PR 4 (Home 이관)**: `HomeViewModel`의 `photos` · `isLoading` · `loadError`를 `Loadable<[Photo]>` 하나로. `visiblePhotos` · `sensitivePhotos` 파생 캐싱은 `didSet`으로 유지하고, 사진이 이미 있을 때는 `.loading`으로 바꾸지 않고 실패만 Alert로 알리는 기존 동작을 지킨다. API · Repository · UseCase는 변경 없음
+- **PR 2 완료 (Core 분리 · 에러 통합, #95)**: `NetworkAdapter`(Core)와 `DesignSystem`(Shared, MainActor) 분리, 첫 테스트 타깃과 `Rephoto.xctestplan`. 에러는 계층 enum(`NetworkError` · `RepositoryError` · `DomainError`)이 분류만 하고 사용자 문구 · 재시도 정책은 `AppError` 한 곳에서 결정, UI는 `ErrorHandler`(Alert) · `ErrorStateView`(인라인) 둘만 둔다 — `ErrorDisplay` · `ErrorContext` · `PresentableError` 타입 삭제, `GlobalErrorAlert`는 public 타입에서 `globalErrorAlert(_:)` 모디파이어의 private 구현으로, `DomainError.custom` 삭제, `RepositoryError`는 `invalidData(detail:)` 하나, `NetworkAdapter.request`는 `Data`만 반환(`NetworkResponse` 삭제), `Loadable`은 case만 남김(접근자는 쓰는 곳이 생길 때 추가). "공통 프로토콜" 안은 폐기
+- **PR 2 인증 단순화**: Tuist의 `KeychainTokenStore`는 `TokenPair`를 단일 `tokens` 항목에 저장하는 동기 struct로 바꿔 두 키의 부분 저장·롤백을 없앤다. `NetworkClient` actor가 세션 세대 확인과 저장·삭제를 중단 없이 수행하므로, 전환 카운터와 이전 갱신 종료 대기도 제거한다. 동시 갱신은 단일 Task를 공유하고, 이전 세션의 인증 요청·갱신 결과는 취소로 끝낸다. 공개 경로(`/login` · `/join` · `/auth/refresh`)는 세대 검사와 401 갱신을 거치지 않는다.
 - 보류: 민감 사진을 Home에서 내려받지 않고 Face ID 통과 후 별도 요청으로 받는 설계. 프라이버시 이점은 있으나 엔드포인트 · Search 매핑까지 갈라야 해 전환 범위 밖
+
+### 남은 이관 순서
+
+Domain 전체를 먼저 옮기는 단계는 두지 않는다. **Home → Search → User** 순서로 필요한 Domain·Feature·테스트·Example을 함께 완료한다. PreviewSupport와 Mock도 각 화면에서 필요한 것만 추가한다.
+
+| 단계 | 이관 범위 | 완료 확인 |
+| --- | --- | --- |
+| PR 3 · Home | Photo·Tag Domain, HomeFeature·HomeFeatureExample. 사진 설명·메타데이터 추출·업로드는 PhotoDomain에 포함 | Domain·ViewModel 테스트, 목록·업로드·상세·태그·민감 사진을 Home Example에서 확인 |
+| PR 4 · Search | AlbumDomain, PhotoDomain의 검색 모델·Repository·UseCase, SearchFeature·SearchFeatureExample. Search가 사용하는 HomeFeatureInterface 사진 상세 팩토리 추가 | 검색·앨범 테스트, Search Example에서 검색·앨범·사진 상세 연결 확인 |
+| PR 5 · User | UserDomain, UserFeature·UserFeatureExample, 계정 시트·설정, SessionStore·App 인증 연결 | 인증·세션 테스트, User Example와 App에서 로그인·복원·로그아웃·갱신 실패 확인 |
+| 최종 통합 검증 | App의 전체 탭·DI 연결, 성능 테스트 코드·fixture·`Rephoto_Performance` 플랜의 Tuist 이관, 빌드 시간 재측정, README·벤치마크 갱신 | Tuist에서 전체 테스트·성능 플랜·전체 플로우 확인과 양쪽 CI 통과 후 기존 프로젝트·`iOS.yml` 정리 및 전환 완료 |
+
+- **Home–User 경계**: Home은 프로필 버튼 액션을 주입받는다. App이 계정 시트 표시를 소유하고, 기존 `HomeSheetView`의 계정 UI·설정·세션 연결은 PR 5에서 User와 함께 옮긴다. PR 3 Example에서는 주입한 액션을 확인하며, User Interface나 공용 라우터를 선행 도입하지 않는다
+- **Home 상태 보존(PR 3)**: `HomeViewModel`의 `photos` · `isLoading` · `loadError`를 `Loadable<[Photo]>` 하나로 바꾼다. `visiblePhotos` · `sensitivePhotos` 파생 캐싱은 `didSet`으로 유지한다. 사진이 이미 있을 때는 `.loading`으로 바꾸지 않고 실패만 Alert로 알리는 기존 동작을 지킨다. 이 상태 변경을 위해 API · Repository · UseCase 동작은 바꾸지 않는다
+- **Search 경계**: `SearchResult`·`SearchRepository`·`SearchUseCase`는 PhotoDomain에 포함하고 별도 SearchDomain은 만들지 않는다. `GetPhotosUseCase`는 PhotoDomainInterface로, 사진 상세는 HomeFeatureInterface로 사용한다. DTO는 각 구현 모듈 안에 두고 Interface로 노출하지 않는다
+- **작업 크기**: 기본은 Feature별 PR 하나다. Home 업로드의 Swift 6 수정량이 실제로 커질 때만 분리하며, 처음부터 추가 계층이나 모듈을 만들지 않는다
+- **각 PR의 완료 기준**: 해당 Domain·Feature 테스트와 `<Name>FeatureExample` 동작 확인, `tuist.yml`·`iOS.yml` 모두 통과. 성능에 닿는 변경은 `Rephoto_Performance` 플랜으로 확인한다. 최종 통합 검증 전에 기존 빌드 축을 제거하지 않는다
+- **범위**: 기존 사용자가 없는 개인 학습 프로젝트이므로 사용자 데이터·토큰 마이그레이션은 추가하지 않는다
 
 빌드 시간 기준값: `docs/benchmarks/2026-10-29_build_time.md`.
 
@@ -81,7 +99,7 @@ PhotoCapture(카메라 촬영), 지도 탭(Map 화면 — 사진 상세의 위�
 ## Step 6. 🔶 CI/CD (GitHub Actions + Fastlane) (부분 완료)
 
 **리팩토링 전**: 수동 빌드/배포. 코드 스타일 규칙 미적용.
-**현재**: `iOS.yml` 하나가 PR마다 `build-for-testing` → `test-without-building`(`-testPlan Rephoto_iOS`) → `xcrun xccov` 커버리지 요약까지 수행(#56). `tuist.yml`이 Tuist 워크스페이스를 generic 시뮬레이터로 빌드. SwiftLint 워크플로와 Fastlane은 미착수.
+**현재**: `iOS.yml`이 PR마다 `build-for-testing` → `test-without-building`(`-testPlan Rephoto_iOS`) → `xcrun xccov` 커버리지 요약까지 수행(#56). `tuist.yml`은 `make build`로 generic 시뮬레이터 빌드 후 `make test`로 Tuist 테스트 플랜을 실행한다. 두 CI는 Step 4의 최종 통합 검증까지 유지한다. SwiftLint 워크플로와 Fastlane은 미착수.
 **목표**:
 - GitHub Actions workflow: PR 생성 시 자동 빌드 + 전체 테스트 실행
 - SwiftLint 자동 체크 (PR에 violation 코멘트)
