@@ -21,6 +21,8 @@ SCHEME ?= Rephoto
 CONFIGURATION ?= Debug
 DESTINATION ?= generic/platform=iOS Simulator
 TEST_DESTINATION ?= platform=iOS Simulator,name=iPhone 18 Pro
+# 앱 스킴은 Tuist 전용 플랜을 사용한다. 모듈 스킴은 자체 테스트 목록을 유지한다.
+TEST_PLAN ?= $(if $(filter Rephoto,$(SCHEME)),Rephoto)
 
 .PHONY: help install generate open edit build test graph module modules mock clean
 
@@ -48,11 +50,12 @@ build: ## 빌드 (SCHEME · DESTINATION 지정 가능)
 		-configuration $(CONFIGURATION) \
 		-destination "$(DESTINATION)"
 
-test: ## 테스트 (SCHEME · TEST_DESTINATION 지정 가능)
+test: ## 테스트 (SCHEME · TEST_PLAN · TEST_DESTINATION 지정 가능)
 	@xcodebuild test \
 		-workspace $(WORKSPACE) \
 		-scheme $(SCHEME) \
 		-configuration $(CONFIGURATION) \
+		$(if $(TEST_PLAN),-testPlan "$(TEST_PLAN)") \
 		-destination "$(TEST_DESTINATION)"
 
 graph: ## 의존성 그래프(graph.png) 생성

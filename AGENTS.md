@@ -10,7 +10,7 @@ AI 코딩 에이전트용 프로젝트 지침. `CLAUDE.md`는 이 파일을 impo
 
 | 축 | 위치 | 용도 |
 | --- | --- | --- |
-| 현행 앱 | `Rephoto_iOS.xcodeproj` | 출시 중인 코드. 버그 수정만. CI `iOS.yml` |
+| 현행 앱 | `Rephoto_iOS.xcodeproj` | 기존 코드. 버그 수정만. CI `iOS.yml` |
 | Tuist 워크스페이스 | `Rephoto/` | 모든 신규·이관 작업. CI `tuist.yml` |
 
 - SwiftUI. Tuist 워크스페이스는 **전 모듈 Swift 6 언어 모드**(`rephotoBaseSettings`), 예외 없음. 기존 `Rephoto_iOS.xcodeproj`는 Swift 5 유지
@@ -49,8 +49,8 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 
 | 계층 | 모듈 | 기본 격리 | 역할 |
 | --- | --- | --- | --- |
-| Shared | Foundation(`RephotoFoundation`) | nonisolated | Config · Error 타입 · Loadable · 공용 확장 |
-| Core | NetworkAdapter, UIComponents 등 | nonisolated | Feature · Domain이 공유하는 인프라 |
+| Shared | Foundation(`RephotoFoundation`), DesignSystem | nonisolated (DesignSystem만 MainActor) | Config · Error 타입 · Loadable · 색 토큰 · 공용 컴포넌트 · `ErrorHandler` |
+| Core | NetworkAdapter 등 | nonisolated | Feature · Domain이 공유하는 인프라 |
 | Domain | Photo, Tag, Album, User, PreviewSupport | nonisolated | 업무 단위. 모델 · UseCase · Repository |
 | Feature | Home, Search, User | MainActor | 화면 · ViewModel · UseCaseProvider |
 | App | `Projects/App` | MainActor | 유일한 조립 지점. `AppContainer`가 구현을 등록 |
@@ -75,13 +75,13 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 ### 격리와 동시성
 
 - Feature · App은 `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`. ViewModel · View에 `@MainActor`를 명시하지 않는다
-- Domain · Core · Shared는 `nonisolated`. UI 타입을 두지 않는다
+- Domain · Core · Shared는 `nonisolated`. UI 타입을 두지 않는다. 예외는 Shared/DesignSystem 하나 — UI 모듈이라 `MainActor`
 - 전 모듈 `SWIFT_APPROACHABLE_CONCURRENCY = YES` → nonisolated async 함수는 호출자 액터에서 돈다. **디코딩 · 다운샘플 같은 CPU 작업은 `@concurrent`**
 - 빌드 설정은 `Rephoto/Plugins/DependencyPlugin/ProjectDescriptionHelpers/Settings+Recommended.swift`와 각 Project.swift에서만 바꾼다. Xcode UI 변경은 generate 때 사라진다
 
 ### 핵심 플로우
 
-- **인증**: `KeychainTokenStore`(actor) → `NetworkClient`가 Bearer 주입. 401이면 `TokenRefreshService`로 갱신 후 재시도(동시 갱신은 단일 Task). 갱신 실패 시 `SessionStore.forceLogout()`
+- **인증**: `NetworkClient` actor가 동기 `TokenStore`를 통해 토큰을 관리하고 Bearer를 주입한다. `KeychainTokenStore`는 `TokenPair`를 한 항목에 저장한다. 401이면 단일 Task로 갱신 후 재시도하며, 로그인·로그아웃 전의 요청·갱신 결과는 세대 검사로 버린다. 갱신 실패 시 `SessionStore.forceLogout()`
 - **업로드**: `PhotosPicker` → `HomeViewModel.handlePickedPhotos`가 `TaskGroup`으로 장별 병렬 → EXIF/GPS 추출 → 다운샘플 + JPEG 압축(ImageIO) → S3 업로드 → 메타데이터 일괄 저장
 - **DTO → 도메인 모델** 매핑은 Repository에서. Presentation은 도메인 모델만 본다
 
@@ -104,8 +104,8 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 ## Testing
 
 - Swift Testing 기본(`@Test("한글 설명")`). 성능 측정만 XCTest
-- 테스트 플랜 2개: `Rephoto_iOS`(단위 · 계약, CI 게이트) / `Rephoto_Performance`(측정 전용, 수동)
-- 네트워크 스텁은 `StubURLProtocol`. 스위트는 직렬화
+- 테스트 플랜 3개: `Rephoto_iOS`(기존 프로젝트 단위 · 계약, CI 게이트) / `Rephoto_Performance`(측정 전용, 수동) / `Rephoto/Rephoto.xctestplan`(Tuist 모듈 테스트 전부, `make test`와 `tuist.yml`이 사용)
+- 네트워크 스텁은 `StubURLProtocol`(Tuist 쪽은 `NetworkAdapterTesting`). 스위트는 직렬화
 - Tuist Testing 타깃의 Mock은 Interface 프로토콜에 `/// @mockable`을 붙이면 `make generate`가 만든다
 - 가이드: `Rephoto_iOSTests/TEST_GUIDE.md`, 프레임워크 선택 기준 `Rephoto_iOSTests/TESTING.md`
 

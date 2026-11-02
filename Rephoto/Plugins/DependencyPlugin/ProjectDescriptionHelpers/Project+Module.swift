@@ -96,6 +96,9 @@ extension Project {
     }
 
     /// Core 모듈. 기본 격리는 `nonisolated`.
+    ///
+    /// Tests는 호스트 앱 없이 돈다. 호스트 앱을 붙이면 테스트 실패 때 xcodebuild가 시뮬레이터 진단
+    /// 수집에 들어가 10분 가까이 멈추므로, Keychain처럼 앱 identity가 필요한 코드는 주입으로 떼어 낸다.
     public static func core(
         _ module: CoreModule,
         hasInterface: Bool = false,
@@ -106,7 +109,8 @@ extension Project {
         testingDependencies: [TargetDependency] = [],
         testsDependencies: [TargetDependency] = [],
         resources: ResourceFileElements? = nil,
-        isolation: ActorIsolation = .nonisolated
+        isolation: ActorIsolation = .nonisolated,
+        settings: SettingsDictionary = [:]
     ) -> Project {
         makeModule(
             targets: ModuleTargets(
@@ -123,16 +127,23 @@ extension Project {
             testingDependencies: testingDependencies,
             testsDependencies: testsDependencies,
             resources: resources,
-            isolation: isolation
+            isolation: isolation,
+            settings: settings
         )
     }
 
-    /// Shared 모듈. 구현 타깃 하나만 만든다. 기본 격리는 `nonisolated`.
+    /// Shared 모듈. 구현 타깃과 (필요하면) Tests만 둔다. 기본 격리는 `nonisolated`.
+    ///
+    /// 프로토콜이 없는 계층이라 Interface · Testing은 만들지 않는다.
+    /// DesignSystem처럼 UI를 담는 모듈은 `isolation: .mainActor`로 넘긴다.
     public static func shared(
         _ module: SharedModule,
+        hasTests: Bool = false,
         dependencies: [TargetDependency] = [],
+        testsDependencies: [TargetDependency] = [],
         resources: ResourceFileElements? = nil,
-        isolation: ActorIsolation = .nonisolated
+        isolation: ActorIsolation = .nonisolated,
+        settings: SettingsDictionary = [:]
     ) -> Project {
         let name = module.implementationTarget
         return makeModule(
@@ -144,13 +155,14 @@ extension Project {
             ),
             hasInterface: false,
             hasTesting: false,
-            hasTests: false,
+            hasTests: hasTests,
             interfaceDependencies: [],
             implementationDependencies: dependencies,
             testingDependencies: [],
-            testsDependencies: [],
+            testsDependencies: testsDependencies,
             resources: resources,
-            isolation: isolation
+            isolation: isolation,
+            settings: settings
         )
     }
 }
@@ -181,7 +193,8 @@ extension Project {
         testsDependencies: [TargetDependency],
         exampleDependencies: [TargetDependency] = [],
         resources: ResourceFileElements?,
-        isolation: ActorIsolation
+        isolation: ActorIsolation,
+        settings: SettingsDictionary = [:]
     ) -> Project {
         var result: [Target] = []
 
@@ -259,7 +272,7 @@ extension Project {
 
         return Project(
             name: targets.implementation,
-            settings: .settings(base: rephotoBaseSettings),
+            settings: .settings(base: rephotoBaseSettings.merging(settings)),
             targets: result
         )
     }

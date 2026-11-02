@@ -16,11 +16,26 @@ let projects: [Path] = ["Projects/App"]
     + CoreModule.allCases.map { .relativeToRoot($0.path) }
     + SharedModule.allCases.map { .relativeToRoot($0.path) }
 
+let app: TargetReference = .project(path: "Projects/App", target: "Rephoto")
+
 let workspace = Workspace(
     name: "Rephoto",
     projects: projects,
+    // 플랜과 같은 위치에서 여러 프로젝트의 테스트를 참조한다.
+    schemes: [
+        .scheme(
+            name: "Rephoto",
+            buildAction: .buildAction(targets: [app]),
+            testAction: .testPlans(["Rephoto.xctestplan"]),
+            runAction: .runAction(configuration: .debug, executable: app),
+            archiveAction: .archiveAction(configuration: .release),
+            profileAction: .profileAction(configuration: .release, executable: app),
+            analyzeAction: .analyzeAction(configuration: .debug)
+        ),
+    ],
     additionalFiles: [
         "Makefile",
+        "Rephoto.xctestplan",
         "mise.toml",
         ".gitignore",
         "Scripts/**",

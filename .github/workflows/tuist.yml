@@ -1,9 +1,8 @@
 name: Tuist
 
-# Tuist 멀티모듈(Rephoto/) 빌드 게이트.
+# Tuist 멀티모듈(Rephoto/) 빌드 · 테스트 게이트.
 # 기존 iOS.yml(Rephoto_iOS.xcodeproj)은 전환이 끝나는 PR 5까지 함께 돈다.
-# 빌드 진입점은 로컬과 같은 Rephoto/Makefile을 쓴다.
-# 테스트 단계는 첫 테스트 타깃이 생기는 PR 2에서 붙인다.
+# 로컬과 같은 Rephoto/Makefile과 Tuist 전용 Rephoto.xctestplan을 쓴다.
 
 on:
   push:
@@ -74,3 +73,6 @@ jobs:
       # 기기 이름에 묶이지 않도록 generic 목적지로 빌드한다.
       - name: Build
         run: make build
+
+      - name: Test
+        run: make test TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro'

@@ -5,8 +5,6 @@
 //  Created by Doyeon Kim on 8/28/26.
 //
 
-import Foundation
-
 /// 비동기 로딩 상태를 하나의 값으로 표현한다.
 ///
 /// `isLoading: Bool` + `items: [T]` + `errorMessage: String?` 세 필드를 조합하던 방식은
@@ -52,66 +50,4 @@ public enum Loadable<T: Equatable>: Equatable {
 
     /// 로딩 실패
     case failed(AppError)
-
-    // MARK: - Accessors
-
-    /// `.loaded`일 때의 값
-    public var value: T? {
-        if case .loaded(let value) = self { return value }
-        return nil
-    }
-
-    /// `.failed`일 때의 에러
-    public var error: AppError? {
-        if case .failed(let error) = self { return error }
-        return nil
-    }
-
-    public var isLoading: Bool {
-        if case .loading = self { return true }
-        return false
-    }
-
-    public var isIdle: Bool {
-        if case .idle = self { return true }
-        return false
-    }
-
-    /// 성공이든 실패든 한 번은 끝났는지
-    public var isComplete: Bool {
-        switch self {
-        case .loaded, .failed:
-            return true
-        case .idle, .loading:
-            return false
-        }
-    }
-
-    // MARK: - Mapping
-
-    /// 상태는 유지하고 값만 변환한다.
-    public func map<U: Equatable>(_ transform: (T) -> U) -> Loadable<U> {
-        switch self {
-        case .idle:
-            return .idle
-        case .loading:
-            return .loading
-        case .loaded(let value):
-            return .loaded(transform(value))
-        case .failed(let error):
-            return .failed(error)
-        }
-    }
-}
-
-// MARK: - Collection Convenience
-
-extension Loadable where T: Collection {
-    /// 로딩에 성공했지만 결과가 비어 있는 상태.
-    ///
-    /// `.failed`와 명확히 구분되므로 "결과 없음" 문구를 안전하게 띄울 수 있다.
-    public var isLoadedEmpty: Bool {
-        guard case .loaded(let value) = self else { return false }
-        return value.isEmpty
-    }
 }

@@ -12,8 +12,10 @@ public enum DomainModule: CaseIterable {
 }
 
 public enum CoreModule: CaseIterable {
+    case NetworkAdapter
 }
 
 public enum SharedModule: CaseIterable {
+    case DesignSystem
     case Foundation
 }
