@@ -7,7 +7,6 @@ import DependencyPlugin
 /// Testing은 `StubURLProtocol`과 손으로 만든 토큰 더블을 담는다 — Domain 모듈의 Repository 테스트가 가져다 쓴다.
 let project = Project.core(
     .NetworkAdapter,
-    hasTestHost: true,
     implementationDependencies: [
         .shared(.Foundation),
     ],

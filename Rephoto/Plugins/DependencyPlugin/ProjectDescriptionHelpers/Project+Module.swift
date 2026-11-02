@@ -18,7 +18,6 @@ import ProjectDescription
 /// | 구현 | `Sources/**` | Interface + `implementationDependencies` |
 /// | Testing | `Testing/Sources/**`, `Testing/Generated/**` | Interface(없으면 구현) + `testingDependencies` |
 /// | Tests | `Tests/**` | 구현 + Testing + `testsDependencies` |
-/// | TestHost (Core만) | `TestHost/**` | 없음. Keychain처럼 앱 identity가 필요한 테스트의 호스트 |
 /// | Example (Feature만) | `Example/Sources/**` | 구현 + `exampleDependencies` |
 extension Project {
 
@@ -98,14 +97,13 @@ extension Project {
 
     /// Core 모듈. 기본 격리는 `nonisolated`.
     ///
-    /// `hasTestHost`를 켜면 `TestHost/**`로 빈 앱을 만들어 Tests의 호스트로 붙인다.
-    /// Keychain처럼 앱 identity가 있어야 동작하는 코드를 테스트할 때만 쓴다.
+    /// Tests는 호스트 앱 없이 돈다. 호스트 앱을 붙이면 테스트 실패 때 xcodebuild가 시뮬레이터 진단
+    /// 수집에 들어가 10분 가까이 멈추므로, Keychain처럼 앱 identity가 필요한 코드는 주입으로 떼어 낸다.
     public static func core(
         _ module: CoreModule,
         hasInterface: Bool = false,
         hasTesting: Bool = true,
         hasTests: Bool = true,
-        hasTestHost: Bool = false,
         interfaceDependencies: [TargetDependency] = [],
         implementationDependencies: [TargetDependency] = [],
         testingDependencies: [TargetDependency] = [],
@@ -119,8 +117,7 @@ extension Project {
                 interface: module.interfaceTarget,
                 implementation: module.implementationTarget,
                 testing: module.testingTarget,
-                tests: module.testsTarget,
-                testHost: hasTestHost ? "\(module.implementationTarget)TestHost" : nil
+                tests: module.testsTarget
             ),
             hasInterface: hasInterface,
             hasTesting: hasTesting,
@@ -179,8 +176,6 @@ private struct ModuleTargets {
     let tests: String
     /// Example 앱 타깃 이름. `nil`이면 만들지 않는다 (Feature만 쓴다).
     var example: String? = nil
-    /// Tests의 실행 호스트 앱 이름. `nil`이면 호스트 없이 돈다 (Core만 쓴다).
-    var testHost: String? = nil
 }
 
 extension Project {
@@ -238,22 +233,6 @@ extension Project {
             )
         }
 
-        if let testHost = targets.testHost {
-            // 빈 앱. Tests가 이 타깃을 의존하면 Tuist가 TEST_HOST로 연결한다.
-            result.append(
-                .target(
-                    name: testHost,
-                    destinations: rephotoDestinations,
-                    product: .app,
-                    bundleId: bundleId(testHost),
-                    deploymentTargets: rephotoDeploymentTargets,
-                    infoPlist: .extendingDefault(with: ["UILaunchScreen": [:]]),
-                    sources: ["TestHost/**"],
-                    settings: .settings(base: isolationSettings(.mainActor))
-                )
-            )
-        }
-
         if hasTests {
             result.append(
                 .target(
@@ -265,7 +244,6 @@ extension Project {
                     sources: ["Tests/**"],
                     dependencies: [.target(name: targets.implementation)]
                         + (hasTesting ? [.target(name: targets.testing)] : [])
-                        + (targets.testHost.map { [.target(name: $0)] } ?? [])
                         + testsDependencies,
                     settings: .settings(base: isolationSettings(isolation))
                 )
