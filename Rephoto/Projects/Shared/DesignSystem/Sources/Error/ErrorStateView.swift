@@ -13,6 +13,7 @@ import RephotoFoundation
 /// 아이콘·제목은 `AppError+Display`가, 재시도 버튼 노출 여부는 `AppError.isRetryable`이
 /// 결정하므로 호출부는 에러와 재시도 동작만 넘긴다. 재시도 불가능한 에러(4xx·도메인 규칙
 /// 위반)에는 버튼이 자동으로 빠진다.
+/// `.cancelled`는 넘기지 않는다. 호출부가 `isCancellation`으로 거른다(`ErrorHandler.handle`과 같은 계약).
 public struct ErrorStateView: View {
     private let error: AppError
     private let onRetry: (() async -> Void)?
