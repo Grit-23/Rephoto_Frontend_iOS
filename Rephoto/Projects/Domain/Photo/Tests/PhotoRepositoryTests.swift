@@ -166,6 +166,31 @@ extension StubURLProtocolSuites {
             #expect(batchCalls.count == 1, "batch save는 정확히 1회 호출돼야 한다")
         }
 
+        @Test("동시 실행 상한보다 많은 item도 전부 올라가고 진행률은 1부터 순서대로 보고된다")
+        func uploadsMoreItemsThanConcurrencyLimit() async throws {
+            let sut = makeSUT()
+            let count = PhotoRepository.maxConcurrentUploads * 2 + 2
+            let items = try (0..<count).map { try makeUploadItem(id: $0) }
+
+            StubURLProtocol.handler = { request in
+                let path = request.url?.path ?? ""
+                if path.hasSuffix("/photos/s3") {
+                    return (Self.okResponse(for: request), Data(#"{"imageUrl":"https://s3.test/uploaded.jpg"}"#.utf8))
+                }
+                return (Self.okResponse(for: request), Data("{}".utf8))
+            }
+
+            let progress = Mutex<[Int]>([])
+            try await sut.uploadPhotos(items: items) { completed in
+                progress.withLock { $0.append(completed) }
+            }
+
+            let recorded = StubURLProtocol.recordedRequests
+            #expect(recorded.filter { $0.url?.path.hasSuffix("/photos/s3") == true }.count == count)
+            #expect(recorded.filter { $0.url?.path.hasSuffix("/photos/batch") == true }.count == 1)
+            #expect(progress.withLock { $0 } == Array(1...count))
+        }
+
         @Test("S3 업로드 중 한 건이라도 실패하면 throw하고 batch save는 호출되지 않는다")
         func anyS3FailureThrowsAndSkipsBatchSave() async throws {
             let sut = makeSUT()
