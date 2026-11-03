@@ -28,8 +28,8 @@ public final class PreviewPhotoRepository: PhotoRepositoryProtocol, Sendable {
 
     public func uploadPhotos(items: [PhotoUploadItem], onItemUploaded: (@MainActor @Sendable (Int) -> Void)?) async throws {
         for (index, item) in items.enumerated() {
-            // 진행 배너가 보이도록 서버 왕복 시간을 흉내 낸다
-            try? await Task.sleep(for: .milliseconds(400))
+            // 진행 배너가 보이도록 서버 왕복 시간을 흉내 낸다. 취소되면 실제 Repository처럼 여기서 중단된다
+            try await Task.sleep(for: .milliseconds(400))
             photos.withLock { photos in
                 let nextId = (photos.map(\.photoId).max() ?? 0) + 1
                 let photo = Photo(

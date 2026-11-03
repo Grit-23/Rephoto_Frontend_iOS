@@ -127,7 +127,7 @@ public enum PreviewPhotoFixtures {
     ]
 
     public static func entry(photoId: Int) -> Entry? {
-        guard entries.indices.contains(photoId - 1) else { return nil }
+        guard photoId >= 1, photoId <= entries.count else { return nil }
         return entries[photoId - 1]
     }
 
