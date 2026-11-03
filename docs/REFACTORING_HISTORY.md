@@ -53,7 +53,7 @@ PhotoCapture(카메라 촬영), 지도 탭(Map 화면 — 사진 상세의 위�
 
 **리팩토링 전**: 단일 앱 타겟. .xcodeproj 직접 관리. Feature 간 암묵적 의존(Search가 Home의 `PhotoInfoView`를, Home이 User의 `SettingsView`를 직접 참조). `AppContainer`가 Core에 있으면서 모든 Feature 구현을 앎.
 **착수 전 안정화**: 로그아웃 토큰 잔존·진행률 스레드(#76 → PR #77), 토큰 재발급 구조체 중복·로그아웃-갱신 경합(#78 → PR #79) 수정 후 마일스톤 "Tuist 멀티모듈 전환"으로 착수.
-**현재**: `Rephoto/`에 Tuist 워크스페이스와 임시 App 타깃, Shared/Foundation·DesignSystem, Core/NetworkAdapter까지 분리 완료(PR 0 #91 · PR 1 #93 · PR 2 #95). 기존 `Rephoto_iOS.xcodeproj`와 `iOS.yml`은 Feature 이관 후 최종 통합 검증까지 병행 유지한다.
+**현재**: `Rephoto/`에 Tuist 워크스페이스와 임시 App 타깃, Shared/Foundation·DesignSystem, Core/NetworkAdapter, Domain/Photo·Tag·PreviewSupport까지 분리 완료(PR 0 #91 · PR 1 #93 · PR 2 #95 · PR 3-1 #98). 기존 `Rephoto_iOS.xcodeproj`와 `iOS.yml`은 Feature 이관 후 최종 통합 검증까지 병행 유지한다.
 **목표**:
 - **계층 4개**: Shared(Foundation · DesignSystem) · Core(NetworkAdapter 등 공유 인프라) · Domain(Photo, Tag, Album, User 등 업무 단위 + PreviewSupport) · Feature(Home, Search, User). 기존 Feature 폴더의 Domain/Data는 Domain 모듈로, Presentation만 Feature 모듈로 간다
 - **모듈 = Tuist 프로젝트 1개**, 타깃은 `Interface · Sources · Testing · Tests`(Feature는 `Example` 추가) 중 필요한 것만. Interface는 프로토콜·모델만, Sources가 구현, Testing은 mockolo가 만든 Mock, Example은 Feature 단독 실행 앱
@@ -71,7 +71,8 @@ Domain 전체를 먼저 옮기는 단계는 두지 않는다. **Home → Search 
 
 | 단계 | 이관 범위 | 완료 확인 |
 | --- | --- | --- |
-| PR 3 · Home | Photo·Tag Domain, HomeFeature·HomeFeatureExample. 사진 설명·메타데이터 추출·업로드는 PhotoDomain에 포함 | Domain·ViewModel 테스트, 목록·업로드·상세·태그·민감 사진을 Home Example에서 확인 |
+| PR 3-1 · Home Domain (#98) | Photo·Tag Domain, PreviewSupport(Repository 메모리 구현 + 샘플 사진). 사진 설명·메타데이터 추출·업로드는 PhotoDomain에 포함. Interface 프로토콜에 `Sendable`·`/// @mockable` 첫 적용 | Repository·UseCase 테스트, 디코딩이 메인 액터 밖에서 도는지 테스트로 확인 |
+| PR 3-2 · Home Feature | HomeFeature·HomeFeatureExample, App 조립(`AppContainer`), AGENTS.md DI 규칙 | ViewModel 테스트, 목록·업로드·상세·태그·민감 사진·프로필 액션을 Home Example에서 확인 |
 | PR 4 · Search | AlbumDomain, PhotoDomain의 검색 모델·Repository·UseCase, SearchFeature·SearchFeatureExample. Search가 사용하는 HomeFeatureInterface 사진 상세 팩토리 추가 | 검색·앨범 테스트, Search Example에서 검색·앨범·사진 상세 연결 확인 |
 | PR 5 · User | UserDomain, UserFeature·UserFeatureExample, 계정 시트·설정, SessionStore·App 인증 연결 | 인증·세션 테스트, User Example와 App에서 로그인·복원·로그아웃·갱신 실패 확인 |
 | 최종 통합 검증 | App의 전체 탭·DI 연결, 성능 테스트 코드·fixture·`Rephoto_Performance` 플랜의 Tuist 이관, 빌드 시간 재측정, README·벤치마크 갱신 | Tuist에서 전체 테스트·성능 플랜·전체 플로우 확인과 양쪽 CI 통과 후 기존 프로젝트·`iOS.yml` 정리 및 전환 완료 |
@@ -79,7 +80,8 @@ Domain 전체를 먼저 옮기는 단계는 두지 않는다. **Home → Search 
 - **Home–User 경계**: Home은 프로필 버튼 액션을 주입받는다. App이 계정 시트 표시를 소유하고, 기존 `HomeSheetView`의 계정 UI·설정·세션 연결은 PR 5에서 User와 함께 옮긴다. PR 3 Example에서는 주입한 액션을 확인하며, User Interface나 공용 라우터를 선행 도입하지 않는다
 - **Home 상태 보존(PR 3)**: `HomeViewModel`의 `photos` · `isLoading` · `loadError`를 `Loadable<[Photo]>` 하나로 바꾼다. `visiblePhotos` · `sensitivePhotos` 파생 캐싱은 `didSet`으로 유지한다. 사진이 이미 있을 때는 `.loading`으로 바꾸지 않고 실패만 Alert로 알리는 기존 동작을 지킨다. 이 상태 변경을 위해 API · Repository · UseCase 동작은 바꾸지 않는다
 - **Search 경계**: `SearchResult`·`SearchRepository`·`SearchUseCase`는 PhotoDomain에 포함하고 별도 SearchDomain은 만들지 않는다. `GetPhotosUseCase`는 PhotoDomainInterface로, 사진 상세는 HomeFeatureInterface로 사용한다. DTO는 각 구현 모듈 안에 두고 Interface로 노출하지 않는다
-- **작업 크기**: 기본은 Feature별 PR 하나다. Home 업로드의 Swift 6 수정량이 실제로 커질 때만 분리하며, 처음부터 추가 계층이나 모듈을 만들지 않는다
+- **작업 크기**: 기본은 Feature별 PR 하나다. Home은 파일 수가 많아 Domain(3-1) · Feature(3-2)로 나눴다. 나눌 때는 Domain PR이 테스트만으로 검증 가능한 단위가 되도록 자르고, 처음부터 추가 계층이나 모듈을 만들지 않는다
+- **PR 3-1에서 확인한 것**: `ISO8601DateFormatter`는 Swift 6에서 non-Sendable이라 `static let`에 둘 수 없다(`DateFormatter`는 가능). 값 타입 `Date(_:strategy: .iso8601)`로 대체한다. mockolo는 `Sendable` 프로토콜의 Mock을 `@unchecked Sendable` + `Mutex`로 생성한다. Tests 타깃이 Testing 타깃을 import하지 않으면 `tuist inspect dependencies`가 중복 의존으로 잡으므로, Mock을 쓰는 테스트가 모듈마다 하나는 있어야 한다
 - **각 PR의 완료 기준**: 해당 Domain·Feature 테스트와 `<Name>FeatureExample` 동작 확인, `tuist.yml`·`iOS.yml` 모두 통과. 성능에 닿는 변경은 `Rephoto_Performance` 플랜으로 확인한다. 최종 통합 검증 전에 기존 빌드 축을 제거하지 않는다
 - **범위**: 기존 사용자가 없는 개인 학습 프로젝트이므로 사용자 데이터·토큰 마이그레이션은 추가하지 않는다
 
