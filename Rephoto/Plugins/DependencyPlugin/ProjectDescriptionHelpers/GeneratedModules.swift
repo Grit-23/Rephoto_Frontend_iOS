@@ -9,6 +9,9 @@ public enum FeatureModule: CaseIterable {
 }
 
 public enum DomainModule: CaseIterable {
+    case Photo
+    case PreviewSupport
+    case Tag
 }
 
 public enum CoreModule: CaseIterable {
