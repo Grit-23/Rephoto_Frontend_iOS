@@ -35,6 +35,22 @@
         "identifier" : "0F708BB592F173C2660727CA",
         "name" : "DesignSystemTests"
       }
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:Projects/Domain/Tag/TagDomain.xcodeproj",
+        "identifier" : "D402AE639BF0BC55AE47ACFF",
+        "name" : "TagDomainTests"
+      }
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:Projects/Domain/Photo/PhotoDomain.xcodeproj",
+        "identifier" : "2C57E21B039389866ECE81F2",
+        "name" : "PhotoDomainTests"
+      }
     }
   ],
   "version" : 1

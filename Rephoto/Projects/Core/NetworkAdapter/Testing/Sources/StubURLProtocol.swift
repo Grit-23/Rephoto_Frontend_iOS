@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Synchronization
 
 /// URLSession의 모든 요청을 가로채 핸들러로 응답을 반환하는 stub.
 ///
@@ -19,24 +20,24 @@ public final class StubURLProtocol: URLProtocol, @unchecked Sendable {
 
     public typealias Handler = @Sendable (URLRequest) throws -> (HTTPURLResponse, Data)
 
-    private static let lock = NSLock()
-    nonisolated(unsafe) private static var _handler: Handler?
-    nonisolated(unsafe) private static var _recordedRequests: [URLRequest] = []
+    private struct State {
+        var handler: Handler?
+        var recordedRequests: [URLRequest] = []
+    }
+
+    private static let state = Mutex(State())
 
     public static var handler: Handler? {
-        get { lock.withLock { _handler } }
-        set { lock.withLock { _handler = newValue } }
+        get { state.withLock { $0.handler } }
+        set { state.withLock { $0.handler = newValue } }
     }
 
     public static var recordedRequests: [URLRequest] {
-        lock.withLock { _recordedRequests }
+        state.withLock { $0.recordedRequests }
     }
 
     public static func reset() {
-        lock.withLock {
-            _handler = nil
-            _recordedRequests = []
-        }
+        state.withLock { $0 = State() }
     }
 
     public static func session() -> URLSession {
@@ -51,7 +52,7 @@ public final class StubURLProtocol: URLProtocol, @unchecked Sendable {
     public override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     public override func startLoading() {
-        Self.lock.withLock { Self._recordedRequests.append(request) }
+        Self.state.withLock { $0.recordedRequests.append(request) }
 
         guard let handler = Self.handler else {
             client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
