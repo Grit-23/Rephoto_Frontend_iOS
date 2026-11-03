@@ -1,0 +1,22 @@
+//
+//  PhotoRepositoryProtocol.swift
+//  PhotoDomainInterface
+//
+//  Created by 김도연 on 5/17/26.
+//
+
+import Foundation
+
+/// @mockable
+public protocol PhotoRepositoryProtocol: Sendable {
+    func getAllPhotos() async throws -> [Photo]
+    func deletePhoto(photoId: Int) async throws
+    /// - Parameter onItemUploaded: 개별 사진 업로드 완료 시마다 누적 완료 개수를 메인 액터에서 전달
+    func uploadPhotos(items: [PhotoUploadItem], onItemUploaded: (@MainActor @Sendable (Int) -> Void)?) async throws
+}
+
+extension PhotoRepositoryProtocol {
+    public func uploadPhotos(items: [PhotoUploadItem]) async throws {
+        try await uploadPhotos(items: items, onItemUploaded: nil)
+    }
+}
