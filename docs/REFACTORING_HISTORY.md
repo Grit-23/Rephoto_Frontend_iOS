@@ -53,7 +53,7 @@ PhotoCapture(카메라 촬영), 지도 탭(Map 화면 — 사진 상세의 위�
 
 **리팩토링 전**: 단일 앱 타겟. .xcodeproj 직접 관리. Feature 간 암묵적 의존(Search가 Home의 `PhotoInfoView`를, Home이 User의 `SettingsView`를 직접 참조). `AppContainer`가 Core에 있으면서 모든 Feature 구현을 앎.
 **착수 전 안정화**: 로그아웃 토큰 잔존·진행률 스레드(#76 → PR #77), 토큰 재발급 구조체 중복·로그아웃-갱신 경합(#78 → PR #79) 수정 후 마일스톤 "Tuist 멀티모듈 전환"으로 착수.
-**현재**: `Rephoto/`에 Tuist 워크스페이스와 임시 App 타깃, Shared/Foundation·DesignSystem, Core/NetworkAdapter, Domain/Photo·Tag·PreviewSupport까지 분리 완료(PR 0 #91 · PR 1 #93 · PR 2 #95 · PR 3-1 #98). 기존 `Rephoto_iOS.xcodeproj`와 `iOS.yml`은 Feature 이관 후 최종 통합 검증까지 병행 유지한다.
+**현재**: `Rephoto/`에 Tuist 워크스페이스와 임시 App 타깃, Shared/Foundation·DesignSystem, Core/NetworkAdapter, Domain/Photo·Tag·PreviewSupport, Feature/Home(Example · App 조립)까지 분리 완료(PR 0 #91 · PR 1 #93 · PR 2 #95 · PR 3-1 #98 · PR 3-2 #97). 기존 `Rephoto_iOS.xcodeproj`와 `iOS.yml`은 Feature 이관 후 최종 통합 검증까지 병행 유지한다.
 **목표**:
 - **계층 4개**: Shared(Foundation · DesignSystem) · Core(NetworkAdapter 등 공유 인프라) · Domain(Photo, Tag, Album, User 등 업무 단위 + PreviewSupport) · Feature(Home, Search, User). 기존 Feature 폴더의 Domain/Data는 Domain 모듈로, Presentation만 Feature 모듈로 간다
 - **모듈 = Tuist 프로젝트 1개**, 타깃은 `Interface · Sources · Testing · Tests`(Feature는 `Example` 추가) 중 필요한 것만. Interface는 프로토콜·모델만, Sources가 구현, Testing은 mockolo가 만든 Mock, Example은 Feature 단독 실행 앱
@@ -72,7 +72,7 @@ Domain 전체를 먼저 옮기는 단계는 두지 않는다. **Home → Search 
 | 단계 | 이관 범위 | 완료 확인 |
 | --- | --- | --- |
 | PR 3-1 · Home Domain (#98) | Photo·Tag Domain, PreviewSupport(Repository 메모리 구현 + 샘플 사진). 사진 설명·메타데이터 추출·업로드는 PhotoDomain에 포함. Interface 프로토콜에 `Sendable`·`/// @mockable` 첫 적용 | Repository·UseCase 테스트, 디코딩이 메인 액터 밖에서 도는지 테스트로 확인 |
-| PR 3-2 · Home Feature | HomeFeature·HomeFeatureExample, App 조립(`AppContainer`), AGENTS.md DI 규칙 | ViewModel 테스트, 목록·업로드·상세·태그·민감 사진·프로필 액션을 Home Example에서 확인 |
+| PR 3-2 · Home Feature (#97) | HomeFeature·HomeFeatureExample, App 조립(`AppContainer`), AGENTS.md DI 규칙. `HomeView`는 Provider · `ErrorHandler` · 프로필 액션을 init으로 받고 Factory는 App만 import. `HomeViewModel` 상태는 `Loadable<[Photo]>` 하나. App이 Factory를 링크하면서 Xcode 27이 외부 패키지 리소스 번들(Factory PrivacyInfo)의 iOS 13 배포 타깃을 에러로 막아, `make generate`가 `Scripts/patch-package-deployment-target`로 생성물을 보정 | ViewModel 테스트, 목록·업로드·상세·태그·민감 사진·프로필 액션을 Home Example에서 확인 |
 | PR 4 · Search | AlbumDomain, PhotoDomain의 검색 모델·Repository·UseCase, SearchFeature·SearchFeatureExample. Search가 사용하는 HomeFeatureInterface 사진 상세 팩토리 추가 | 검색·앨범 테스트, Search Example에서 검색·앨범·사진 상세 연결 확인 |
 | PR 5 · User | UserDomain, UserFeature·UserFeatureExample, 계정 시트·설정, SessionStore·App 인증 연결 | 인증·세션 테스트, User Example와 App에서 로그인·복원·로그아웃·갱신 실패 확인 |
 | 최종 통합 검증 | App의 전체 탭·DI 연결, 성능 테스트 코드·fixture·`Rephoto_Performance` 플랜의 Tuist 이관, 빌드 시간 재측정, README·벤치마크 갱신 | Tuist에서 전체 테스트·성능 플랜·전체 플로우 확인과 양쪽 CI 통과 후 기존 프로젝트·`iOS.yml` 정리 및 전환 완료 |
