@@ -262,6 +262,7 @@ extension Project {
                     infoPlist: .extendingDefault(with: [
                         "UILaunchScreen": [:],
                         "NSPhotoLibraryUsageDescription": "사진권한",
+                        "NSFaceIDUsageDescription": "숨겨진 민감한 사진을 보려면 Face ID 인증이 필요해요.",
                     ]),
                     sources: ["Example/Sources/**"],
                     dependencies: [.target(name: targets.implementation)] + exampleDependencies,

@@ -35,6 +35,7 @@ install: ## mise 도구(tuist · mockolo)와 SPM 의존성 설치
 
 generate: mock ## Mock 생성 후 워크스페이스 생성
 	@$(TUIST) generate --no-open
+	@./Scripts/patch-package-deployment-target
 
 open: ## Xcode로 워크스페이스 열기
 	@[ -d $(WORKSPACE) ] || $(MAKE) generate

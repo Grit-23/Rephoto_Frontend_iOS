@@ -12,10 +12,13 @@ import PackageDescription
     import struct ProjectDescription.PackageSettings
 
     /// 외부 패키지도 모듈과 같은 staticFramework로 링크한다 (기본값).
+    /// 앱과 같은 최소 버전으로 생성해 최신 Xcode의 지원 범위를 맞춘다.
+    /// 리소스 번들 타깃(Factory의 PrivacyInfo)에는 이 설정이 닿지 않아 generate 뒤
+    /// `Scripts/patch-package-deployment-target`가 마저 맞춘다.
     let packageSettings = PackageSettings(
         productTypes: [:],
         targetSettings: [
-            // 앱과 같은 최소 버전으로 생성해 최신 Xcode의 지원 범위를 맞춘다.
+            "Factory": .settings(base: ["IPHONEOS_DEPLOYMENT_TARGET": "26.0"]),
             "Nuke": .settings(base: ["IPHONEOS_DEPLOYMENT_TARGET": "26.0"]),
             "NukeUI": .settings(base: ["IPHONEOS_DEPLOYMENT_TARGET": "26.0"]),
         ]

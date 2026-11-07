@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+#  patch-package-deployment-target
+#  Rephoto
+#
+#  Created by Doyeon Kim on 11/6/26.
+#
+#  Tuist가 만든 외부 패키지 프로젝트의 리소스 번들 타깃(Factory의 PrivacyInfo)에는
+#  PackageSettings의 targetSettings · baseSettings가 적용되지 않아 패키지 선언값(iOS 13)이 남는다.
+#  Xcode 27은 15 미만 배포 타깃을 에러로 막으므로 generate 뒤에 앱 최소 버전으로 맞춘다.
+#  tuist/tuist#11163
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Settings+Recommended.swift의 rephotoDeploymentTargets와 같은 값
+TARGET="26.0"
+
+shopt -s nullglob
+for project in "$ROOT"/Tuist/.build/tuist-derived/*/*.xcodeproj/project.pbxproj; do
+    if grep -qE 'IPHONEOS_DEPLOYMENT_TARGET = [0-9]+\.[0-9]+;' "$project"; then
+        sed -i '' -E "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9]+\.[0-9]+;/IPHONEOS_DEPLOYMENT_TARGET = ${TARGET};/g" "$project"
+    fi
+done
