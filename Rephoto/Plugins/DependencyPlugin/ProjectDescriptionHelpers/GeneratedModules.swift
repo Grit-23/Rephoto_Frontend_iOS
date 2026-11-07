@@ -6,6 +6,7 @@
 //
 
 public enum FeatureModule: CaseIterable {
+    case Home
 }
 
 public enum DomainModule: CaseIterable {
