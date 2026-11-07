@@ -1,0 +1,142 @@
+//
+//  HomeView.swift
+//  HomeFeature
+//
+//  Created by 김도연 on 5/17/26.
+//
+
+import SwiftUI
+import PhotosUI
+import DesignSystem
+import PhotoDomainInterface
+import RephotoFoundation
+
+public struct HomeView: View {
+    @State private var vm: HomeViewModel
+    @State private var selectedPickerItems: [PhotosPickerItem] = []
+    @Namespace private var photoZoom
+    private let errorHandler: ErrorHandler
+    /// 프로필 버튼 동작. 계정 시트는 User 기능에 속하므로 App이 소유하고 Home은 액션만 받는다.
+    private let onProfileTap: () -> Void
+
+    public init(
+        provider: any HomeUseCaseProviderProtocol,
+        errorHandler: ErrorHandler,
+        onProfileTap: @escaping () -> Void
+    ) {
+        self._vm = State(initialValue: HomeViewModel(provider: provider, errorHandler: errorHandler))
+        self.errorHandler = errorHandler
+        self.onProfileTap = onProfileTap
+    }
+
+    public var body: some View {
+        NavigationStack {
+            Group {
+                switch vm.photos {
+                case .idle, .loading:
+                    PhotoGridSkeletonView()
+                case .failed(let error):
+                    ErrorStateView(error: error) {
+                        await vm.fetchPhotos()
+                    }
+                case .loaded(let photos) where photos.isEmpty:
+                    HomeEmptyStateView(selection: $selectedPickerItems)
+                case .loaded:
+                    PhotoGridView(
+                        photos: vm.visiblePhotos,
+                        sensitiveCount: vm.sensitiveCount,
+                        namespace: photoZoom
+                    )
+                }
+            }
+            // 에러·빈 상태 뷰는 콘텐츠 크기만큼만 잡히므로, 배경이 화면 전체를 덮도록
+            // 컨테이너를 먼저 최대 크기로 늘린 뒤 배경을 깐다
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.base.ignoresSafeArea())
+            .navigationTitle("앨범")
+            .navigationDestination(for: Photo.self) { photo in
+                PhotoInfoView(photo: photo, provider: vm.provider, errorHandler: errorHandler)
+                    // 그리드 타일에서 사진이 확대되어 튀어나오는 줌 전환
+                    .navigationTransition(.zoom(sourceID: photo.photoId, in: photoZoom))
+            }
+            .navigationDestination(for: SensitivePhotosRoute.self) { _ in
+                SensitivePhotosView(photos: vm.sensitivePhotos, namespace: photoZoom)
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: onProfileTap) {
+                        Image(systemName: "person.fill")
+                    }
+                    .tint(.primary)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    PhotosPicker(
+                        selection: $selectedPickerItems,
+                        matching: .images
+                    ) {
+                        Image(systemName: "plus")
+                    }
+                    .tint(.primary)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if let progress = vm.uploadProgress {
+                    UploadProgressBanner(progress: progress)
+                }
+            }
+            .task {
+                await vm.fetchPhotos()
+            }
+            .onChange(of: selectedPickerItems) { _, items in
+                guard !items.isEmpty else { return }
+                Task {
+                    await vm.handlePickedPhotos(items)
+                    selectedPickerItems = []
+                }
+            }
+        }
+    }
+}
+
+// MARK: - PhotoGridView
+
+private struct PhotoGridView: View {
+    let photos: [Photo]
+    let sensitiveCount: Int
+    let namespace: Namespace.ID
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                if sensitiveCount > 0 {
+                    NavigationLink(value: SensitivePhotosRoute()) {
+                        SensitiveChip(count: sensitiveCount)
+                    }
+                }
+
+                PhotoNavGrid(items: photos, imageUrl: \.imageUrl, namespace: namespace)
+            }
+        }
+    }
+}
+
+// MARK: - SensitiveChip
+
+private struct SensitiveChip: View {
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("민감한 사진 \(count)장은 숨겨져 있어요")
+                .font(.footnote)
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+        }
+        // NavigationLink 라벨은 foreground가 액센트가 되므로, 계층적 .secondary 대신
+        // 구체 색상을 지정해 틴트가 번지지 않게 함
+        .foregroundStyle(Color.secondary)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .glassEffect(.regular, in: Capsule())
+    }
+}

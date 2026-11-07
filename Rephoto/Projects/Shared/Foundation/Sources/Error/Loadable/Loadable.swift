@@ -50,4 +50,10 @@ public enum Loadable<T: Equatable>: Equatable {
 
     /// 로딩 실패
     case failed(AppError)
+
+    /// 성공 값. 성공 상태가 아니면 `nil`.
+    public var value: T? {
+        if case .loaded(let value) = self { return value }
+        return nil
+    }
 }
