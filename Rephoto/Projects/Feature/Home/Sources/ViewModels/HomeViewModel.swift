@@ -102,6 +102,7 @@ final class HomeViewModel {
         }
 
         guard !items.isEmpty else { return }
+        uploadProgress?.total = items.count
 
         do {
             try await provider.makeUploadPhotosUseCase().execute(items: items) { [weak self] completed in
