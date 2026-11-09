@@ -168,10 +168,12 @@ public enum PreviewPhotoFixtures {
         ("고양이", ["IMG_8415.JPG"]),
     ]
 
-    /// 앨범에 속한 사진의 파일명. 없는 앨범이면 빈 배열.
-    public static func albumFileNames(tagId: Int) -> [String] {
-        guard albumGroups.indices.contains(tagId - 1) else { return [] }
-        return albumGroups[tagId - 1].fileNames
+    /// 앨범에 속한 픽스처 사진의 photoId. 없는 앨범이면 빈 배열.
+    public static func albumPhotoIds(tagId: Int) -> [Int] {
+        guard tagId >= 1, tagId <= albumGroups.count else { return [] }
+        return albumGroups[tagId - 1].fileNames.compactMap { fileName in
+            entries.firstIndex { $0.fileName == fileName }.map { $0 + 1 }
+        }
     }
 
     /// 리소스 번들의 이미지 URL. 없으면 존재하지 않는 파일 URL을 반환해 회색 플레이스홀더가 보이게 한다.
