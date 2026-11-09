@@ -15,7 +15,7 @@ AI 코딩 에이전트용 프로젝트 지침. `CLAUDE.md`는 이 파일을 impo
 
 - SwiftUI. Tuist 워크스페이스는 **전 모듈 Swift 6 언어 모드**(`rephotoBaseSettings`), 예외 없음. 기존 `Rephoto_iOS.xcodeproj`는 Swift 5 유지
 - 네트워크: 자체 레이어. `APITargetType`(엔드포인트) → `NetworkAdapter`(URLRequest 조립) → `NetworkClient`(actor, URLSession 실행·Bearer 주입·401 갱신)
-- DI: Factory (`AppContainer`, `@Injected`). DEBUG에서 Mock provider 자동 주입
+- DI: Factory (`AppContainer`). App만 import한다. DEBUG에서는 Repository만 PreviewSupport의 메모리 구현으로 교체
 - 이미지: Nuke. 패키지: SPM (`Rephoto/Tuist/Package.swift`, Factory 2.5.3 · Nuke 12.8.0 exact)
 - 도구 버전: `Rephoto/mise.toml` (tuist 4.155.0 · mockolo 2.7.0)
 
@@ -77,7 +77,7 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 
 - Feature → Domain Interface · Core · Shared. **구현 모듈(`XxxFeature`, `XxxDomain`) import 금지** — `tuist.yml`이 grep으로 차단
 - Feature 간 참조는 상대 Feature의 Interface만 (예: Search가 Home의 사진 상세를 열 때 `HomeFeatureInterface`의 팩토리 프로토콜). Interface는 실제로 참조되는 Feature에만 둔다 — `Project.feature`의 `hasInterface` 기본값이 `false`인 이유
-- 구현체 주입은 App의 `AppContainer`에서만. Feature는 `Container` extension에 프로토콜 Factory와 Preview 기본값만 선언한다
+- 구현체 주입은 App의 `AppContainer`에서만. Feature는 의존성(UseCase Provider · `ErrorHandler` · 화면 밖 액션)을 View init으로 받는다. Factory는 App만 import한다
 - 매니페스트는 문자열 대신 `DependencyPlugin` 헬퍼로 쓴다: `.domain(interface: .Photo)`, `.feature(interface: .Home)`, `.shared(.Foundation)`
 
 ### 격리와 동시성

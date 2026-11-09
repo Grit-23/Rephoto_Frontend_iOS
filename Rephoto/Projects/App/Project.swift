@@ -43,9 +43,18 @@ let project = Project(
                 ],
             ]),
             sources: ["Sources/**"],
+            // App만 구현 모듈(Domain · Feature)과 Factory를 링크한다. Feature는 Interface만 본다.
             dependencies: [
                 .shared(.Foundation),
                 .shared(.DesignSystem),
+                .core(implementation: .NetworkAdapter),
+                .domain(interface: .Photo),
+                .domain(interface: .Tag),
+                .domain(implementation: .Photo),
+                .domain(implementation: .Tag),
+                .domain(implementation: .PreviewSupport),
+                .feature(implementation: .Home),
+                .external(name: "Factory"),
             ],
             settings: .settings(
                 base: isolationSettings(.mainActor),

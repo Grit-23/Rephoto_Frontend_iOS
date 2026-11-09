@@ -31,4 +31,13 @@ struct LoadableTests {
         #expect(failed == .failed(.network(.timeout)))
         #expect(failed != .failed(.network(.noNetwork)))
     }
+
+    @Test("value는 성공 상태에서만 값을 돌려준다")
+    func valueIsAvailableOnlyWhenLoaded() {
+        #expect(Loadable<[Int]>.loaded([1, 2]).value == [1, 2])
+        #expect(Loadable<[Int]>.loaded([]).value == [])
+        #expect(Loadable<[Int]>.idle.value == nil)
+        #expect(Loadable<[Int]>.loading.value == nil)
+        #expect(Loadable<[Int]>.failed(.network(.timeout)).value == nil)
+    }
 }

@@ -6,26 +6,30 @@
 //
 
 import SwiftUI
-import RephotoFoundation
+import Factory
 import DesignSystem
+import HomeFeature
 
-/// Tuist 전환 중 임시 진입점.
+/// Tuist 전환 중 임시 진입점. 로그인 · 탭 · 계정 시트는 Search · User 이관 때 붙는다.
 ///
-/// 화면은 PR 4에서 기존 `ContentView` · `RephotoTabView`로 바뀐다.
-/// 지금은 모듈 링크가 되는지만 보여준다 — RephotoFoundation의 `Config.baseURL`(xcconfig → Info.plist 주입)과
-/// DesignSystem의 `ErrorStateView`(정적 프레임워크 리소스 번들의 색 `mainGreen` 포함).
+/// Home은 프로필 버튼 액션만 받고, 계정 시트 표시는 App이 소유한다.
+/// 전역 에러 Alert은 루트에 한 번만 붙이며, ViewModel이 쓰는 `ErrorHandler`와 같은 인스턴스다.
 @main
 struct RephotoApp: App {
+    private let provider = Container.shared.homeUseCaseProvider()
+    private let errorHandler = Container.shared.errorHandler()
+    @State private var isPresentingAccount = false
+
     var body: some Scene {
         WindowGroup {
-            VStack(spacing: 8) {
-                Text("Rephoto")
-                    .font(.largeTitle.bold())
-                Text(Config.baseURL)
-                    .font(.footnote.monospaced())
-                    .foregroundStyle(.secondary)
-                ErrorStateView(error: .network(.noNetwork)) {}
+            HomeView(provider: provider, errorHandler: errorHandler) {
+                isPresentingAccount = true
             }
+            .sheet(isPresented: $isPresentingAccount) {
+                ContentUnavailableView("내 정보", systemImage: "person.fill")
+                    .presentationDetents([.medium])
+            }
+            .globalErrorAlert(errorHandler)
         }
     }
 }

@@ -88,6 +88,8 @@ public enum AppError: Error, LocalizedError, Equatable {
             guard let reason else { return "이 기기에서는 인증을 사용할 수 없어요." }
             // LocalAuthentication이 이미 시스템 로케일로 지역화한 안내다.
             return LocalizedStringResource(stringLiteral: reason)
+        case .domain(.uploadPreparationFailed(let count)):
+            return "사진 \(count)장은 올리지 못했어요. \n다시 선택해주세요."
         case .cancelled:
             return ""
         case .unknown:
