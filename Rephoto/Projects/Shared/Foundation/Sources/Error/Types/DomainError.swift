@@ -32,12 +32,18 @@ public enum DomainError: Error, LocalizedError, Equatable, Sendable {
     /// `reason`은 LocalAuthentication이 넘겨준 시스템 안내 문장이다.
     case biometricUnavailable(reason: String?)
 
+    // MARK: - 사진 업로드
+
+    case uploadPreparationFailed(count: Int)
+
     public var errorDescription: String? {
         switch self {
         case .emptyCredentials:
             return "비어 있는 자격 증명"
         case .biometricUnavailable(let reason):
             return "생체 인증 사용 불가: \(reason ?? "사유 없음")"
+        case .uploadPreparationFailed(let count):
+            return "업로드 준비 실패: \(count)장"
         }
     }
 }

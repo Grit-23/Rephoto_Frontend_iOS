@@ -101,7 +101,11 @@ final class HomeViewModel {
             return results
         }
 
-        guard !items.isEmpty else { return }
+        let failedCount = pickerItems.count - items.count
+        guard !items.isEmpty else {
+            errorHandler.handle(DomainError.uploadPreparationFailed(count: failedCount))
+            return
+        }
         uploadProgress?.total = items.count
 
         do {
@@ -109,6 +113,9 @@ final class HomeViewModel {
                 self?.uploadProgress?.completed = completed
             }
             await fetchPhotos()
+            if failedCount > 0 {
+                errorHandler.handle(DomainError.uploadPreparationFailed(count: failedCount))
+            }
         } catch {
             // 업로드 실패는 사용자가 시작한 작업이 끊긴 경우 — 전역 Alert + 재시도
             errorHandler.handle(error, retry: { [weak self] in await self?.handlePickedPhotos(pickerItems) })

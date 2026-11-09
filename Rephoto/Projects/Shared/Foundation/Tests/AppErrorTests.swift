@@ -113,6 +113,7 @@ struct AppErrorPresentationTests {
             (.domain(.emptyCredentials), "아이디와 비밀번호를 입력해주세요.", false),
             (.domain(.biometricUnavailable(reason: nil)), "이 기기에서는 인증을 사용할 수 없어요.", false),
             (.domain(.biometricUnavailable(reason: "Face ID를 설정해주세요.")), "Face ID를 설정해주세요.", false),
+            (.domain(.uploadPreparationFailed(count: 2)), "사진 2장은 올리지 못했어요. \n다시 선택해주세요.", false),
             (.cancelled, "", false),
             (.unknown(message: "private detail"), "일시적인 오류가 발생했어요. \n다시 시도해주세요.", true),
         ]
