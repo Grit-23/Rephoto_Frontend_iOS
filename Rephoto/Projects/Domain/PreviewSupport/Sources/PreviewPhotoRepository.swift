@@ -22,6 +22,12 @@ public final class PreviewPhotoRepository: PhotoRepositoryProtocol, Sendable {
         photos.withLock { $0 }
     }
 
+    public func getPhotos(tagId: Int) async throws -> [Photo] {
+        let fileNames = PreviewPhotoFixtures.albumFileNames(tagId: tagId)
+        let current = photos.withLock { $0 }
+        return fileNames.compactMap { fileName in current.first { $0.fileName == fileName } }
+    }
+
     public func deletePhoto(photoId: Int) async throws {
         photos.withLock { $0.removeAll { $0.photoId == photoId } }
     }

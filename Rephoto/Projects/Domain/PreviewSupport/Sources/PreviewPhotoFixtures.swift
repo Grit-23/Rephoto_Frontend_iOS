@@ -158,6 +158,22 @@ public enum PreviewPhotoFixtures {
         }
     }
 
+    /// 앨범 구성. 태그 테마별로 픽스처 사진을 묶는다. 앨범 tagId는 배열 순서 기반 index + 1.
+    public static let albumGroups: [(tagName: String, fileNames: [String])] = [
+        ("커피", ["IMG_0813.jpeg", "IMG_0356.jpeg", "IMG_0673.jpeg"]),
+        ("남산", ["IMG_0275.jpeg", "IMG_0689.jpeg", "IMG_2015.JPG"]),
+        ("봄", ["IMG_9898.jpeg", "IMG_0871.jpeg"]),
+        ("바다", ["IMG_9563.jpeg"]),
+        ("한강", ["IMG_0099.jpeg"]),
+        ("고양이", ["IMG_8415.JPG"]),
+    ]
+
+    /// 앨범에 속한 사진의 파일명. 없는 앨범이면 빈 배열.
+    public static func albumFileNames(tagId: Int) -> [String] {
+        guard albumGroups.indices.contains(tagId - 1) else { return [] }
+        return albumGroups[tagId - 1].fileNames
+    }
+
     /// 리소스 번들의 이미지 URL. 없으면 존재하지 않는 파일 URL을 반환해 회색 플레이스홀더가 보이게 한다.
     public static func imageUrl(fileName: String) -> URL {
         let name = (fileName as NSString).deletingPathExtension

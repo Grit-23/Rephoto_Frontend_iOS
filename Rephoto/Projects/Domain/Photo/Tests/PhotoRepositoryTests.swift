@@ -127,6 +127,35 @@ extension StubURLProtocolSuites {
             #expect(decoder.decodedOnMainThread.withLock { $0 } == false)
         }
 
+        // MARK: - getPhotos(tagId:)
+
+        @Test("getPhotos(tagId:) — 앨범 하위 경로로 GET하고 응답을 도메인 모델로 매핑한다")
+        func getPhotosByTagMapsResponse() async throws {
+            let sut = makeSUT()
+            StubURLProtocol.handler = { request in
+                (Self.okResponse(for: request), Data("[\(Self.photoJSON(photoId: 3)),\(Self.photoJSON(photoId: 5))]".utf8))
+            }
+
+            let photos = try await sut.getPhotos(tagId: 7)
+
+            let request = try #require(StubURLProtocol.recordedRequests.first)
+            #expect(request.url?.path == "/albums/7/photos")
+            #expect(request.httpMethod == "GET")
+            #expect(photos.map(\.id) == [3, 5])
+        }
+
+        @Test("getPhotos(tagId:) — 메인 액터에서 호출해도 디코딩은 메인 스레드 밖에서 실행된다")
+        func getPhotosByTagDecodesOutsideMainActor() async throws {
+            MainActor.preconditionIsolated()
+            let decoder = RecordingDecoder()
+            let sut = makeSUT(decoder: decoder)
+            StubURLProtocol.handler = { request in (Self.okResponse(for: request), Data("[]".utf8)) }
+
+            _ = try await sut.getPhotos(tagId: 7)
+
+            #expect(decoder.decodedOnMainThread.withLock { $0 } == false)
+        }
+
         // MARK: - uploadPhotos
 
         @Test("빈 배열은 어떤 네트워크 요청도 발생시키지 않고 즉시 반환한다")

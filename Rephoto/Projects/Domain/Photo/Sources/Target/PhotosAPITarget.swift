@@ -10,6 +10,7 @@ import NetworkAdapter
 
 enum PhotosAPITarget {
     case getAllPhotos
+    case getAlbumPhotos(tagId: Int)
     case deletePhoto(photoId: Int)
     case s3Upload(file: Data)
     case savePhotosBatch(request: PhotoBatchRequestDTO)
@@ -20,6 +21,8 @@ extension PhotosAPITarget: APITargetType {
         switch self {
         case .getAllPhotos:
             return "/photos"
+        case .getAlbumPhotos(let tagId):
+            return "/albums/\(tagId)/photos"
         case .deletePhoto(let photoId):
             return "/photos/\(photoId)"
         case .s3Upload:
@@ -31,7 +34,7 @@ extension PhotosAPITarget: APITargetType {
 
     var method: HTTPMethod {
         switch self {
-        case .getAllPhotos:
+        case .getAllPhotos, .getAlbumPhotos:
             return .get
         case .deletePhoto:
             return .delete
@@ -42,7 +45,7 @@ extension PhotosAPITarget: APITargetType {
 
     var task: RequestTask {
         switch self {
-        case .getAllPhotos, .deletePhoto:
+        case .getAllPhotos, .getAlbumPhotos, .deletePhoto:
             return .plain
         case .s3Upload(let file):
             let item = MultipartFormItem(

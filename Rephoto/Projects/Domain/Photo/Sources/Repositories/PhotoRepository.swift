@@ -28,6 +28,13 @@ public final class PhotoRepository: PhotoRepositoryProtocol, Sendable {
         return try dtos.map { try $0.toDomain() }
     }
 
+    @concurrent
+    public func getPhotos(tagId: Int) async throws -> [Photo] {
+        let data = try await adapter.request(PhotosAPITarget.getAlbumPhotos(tagId: tagId))
+        let dtos = try decoder.decode([PhotoResponseDTO].self, from: data)
+        return try dtos.map { try $0.toDomain() }
+    }
+
     public func deletePhoto(photoId: Int) async throws {
         _ = try await adapter.request(PhotosAPITarget.deletePhoto(photoId: photoId))
     }
