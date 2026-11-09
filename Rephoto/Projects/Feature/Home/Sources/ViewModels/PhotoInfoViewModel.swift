@@ -20,6 +20,13 @@ final class PhotoInfoViewModel {
     private(set) var isDeleted: Bool = false
     private(set) var tags: [PhotoTag] = []
     private(set) var description: String = ""
+    private(set) var pendingAddCount: Int = 0
+
+    static let maxTagCount = 3
+
+    var canAddTag: Bool {
+        tags.count + pendingAddCount < Self.maxTagCount
+    }
 
     init(provider: any HomeUseCaseProviderProtocol, errorHandler: ErrorHandler) {
         self.provider = provider
@@ -48,6 +55,9 @@ final class PhotoInfoViewModel {
     }
 
     func addTag(photoId: Int, tagName: String) async {
+        guard canAddTag else { return }
+        pendingAddCount += 1
+        defer { pendingAddCount -= 1 }
         do {
             let newTag = try await provider.makeAddTagUseCase().execute(photoId: photoId, tagName: tagName)
             tags.append(newTag)

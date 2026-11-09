@@ -12,6 +12,7 @@ import TagDomainInterface
 /// 사진 상세의 태그 칩 목록 + 추가 버튼. 칩/버튼은 태그 편집 시트 줌 전환의 source가 됨
 struct TagSection: View {
     let tags: [PhotoTag]
+    let canAddTag: Bool
     let namespace: Namespace.ID
     let onTapTag: (PhotoTag) -> Void
     let onTapAdd: () -> Void
@@ -36,7 +37,7 @@ struct TagSection: View {
                     .matchedTransitionSource(id: tag.photoTagId, in: namespace)
                 }
 
-                if tags.count < 3 {
+                if canAddTag {
                     Button(action: onTapAdd) {
                         Image(systemName: "plus")
                             .font(.body.weight(.semibold))

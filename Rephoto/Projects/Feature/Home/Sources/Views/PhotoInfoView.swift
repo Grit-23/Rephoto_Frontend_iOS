@@ -32,6 +32,7 @@ struct PhotoInfoView: View {
 
                 TagSection(
                     tags: vm.tags,
+                    canAddTag: vm.canAddTag,
                     namespace: tagZoom,
                     onTapTag: { tagSheetMode = .edit($0) },
                     onTapAdd: { tagSheetMode = .add }

@@ -50,6 +50,47 @@ struct PhotoInfoViewModelTests {
         #expect(sut.tags.last?.tagName == "노을")
     }
 
+    @Test("태그가 이미 3개면 추가 요청을 보내지 않는다")
+    func addTagRespectsLimit() async {
+        provider.getTags.executeHandler = { _ in
+            [.stub(photoTagId: 11, name: "바다"), .stub(photoTagId: 12, name: "노을"), .stub(photoTagId: 13, name: "산책")]
+        }
+        let sut = makeSUT()
+        await sut.fetchTags(photoId: 1)
+
+        await sut.addTag(photoId: 1, tagName: "봄")
+
+        #expect(!sut.canAddTag)
+        #expect(provider.addTag.executeCallCount == 0)
+        #expect(sut.tags.count == 3)
+    }
+
+    @Test("응답을 기다리는 추가 요청도 개수 제한에 포함한다")
+    func pendingAddCountsTowardLimit() async {
+        provider.getTags.executeHandler = { _ in [.stub(photoTagId: 11, name: "바다"), .stub(photoTagId: 12, name: "노을")] }
+        let (gate, release) = AsyncStream<Void>.makeStream()
+        provider.addTag.executeHandler = { photoId, name in
+            for await _ in gate { break }
+            return .stub(photoTagId: 99, name: name, photoId: photoId)
+        }
+        let sut = makeSUT()
+        await sut.fetchTags(photoId: 1)
+
+        let first = Task { await sut.addTag(photoId: 1, tagName: "산책") }
+        while sut.pendingAddCount == 0 { await Task.yield() }
+
+        #expect(!sut.canAddTag)
+        await sut.addTag(photoId: 1, tagName: "봄")
+
+        release.yield()
+        release.finish()
+        await first.value
+
+        #expect(provider.addTag.executeCallCount == 1)
+        #expect(sut.tags.map(\.tagName) == ["바다", "노을", "산책"])
+        #expect(sut.pendingAddCount == 0)
+    }
+
     @Test("태그 수정 — 같은 id의 항목만 제자리에서 바꾼다")
     func updateTagReplacesInPlace() async {
         provider.getTags.executeHandler = { _ in [.stub(photoTagId: 11, name: "바다"), .stub(photoTagId: 12, name: "노을")] }
