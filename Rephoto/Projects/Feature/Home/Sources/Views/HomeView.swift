@@ -41,6 +41,7 @@ public struct HomeView: View {
                     }
                 case .loaded(let photos) where photos.isEmpty:
                     HomeEmptyStateView(selection: $selectedPickerItems)
+                        .disabled(vm.uploadProgress != nil)
                 case .loaded:
                     PhotoGridView(
                         photos: vm.visiblePhotos,
@@ -77,6 +78,7 @@ public struct HomeView: View {
                         Image(systemName: "plus")
                     }
                     .tint(.primary)
+                    .disabled(vm.uploadProgress != nil)
                 }
             }
             .safeAreaInset(edge: .bottom) {
