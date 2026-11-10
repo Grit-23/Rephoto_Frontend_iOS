@@ -76,7 +76,7 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 ### 의존 규칙
 
 - Feature → Domain Interface · Core · Shared. **구현 모듈(`XxxFeature`, `XxxDomain`) import 금지** — `tuist.yml`이 grep으로 차단
-- Feature 간 참조는 상대 Feature의 Interface만 (예: Search가 Home의 사진 상세를 열 때 `HomeFeatureInterface`의 팩토리 프로토콜). Interface는 실제로 참조되는 Feature에만 둔다 — `Project.feature`의 `hasInterface` 기본값이 `false`인 이유
+- Feature 간 참조는 상대 Feature의 Interface만 (예: Search가 Home의 사진 상세를 열 때 `HomeFeatureInterface`의 `PhotoDetailBuilding`을 init으로 받고, 구현 `PhotoDetailBuilder`는 App이 넣는다). Interface는 실제로 참조되는 Feature에만 둔다 — `Project.feature`의 `hasInterface` 기본값이 `false`인 이유
 - 구현체 주입은 App의 `AppContainer`에서만. Feature는 의존성(UseCase Provider · `ErrorHandler` · 화면 밖 액션)을 View init으로 받는다. Factory는 App만 import한다
 - 매니페스트는 문자열 대신 `DependencyPlugin` 헬퍼로 쓴다: `.domain(interface: .Photo)`, `.feature(interface: .Home)`, `.shared(.Foundation)`
 
