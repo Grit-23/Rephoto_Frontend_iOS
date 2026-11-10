@@ -29,6 +29,17 @@ struct PhotosAPITargetTests {
         #expect(target.task.isPlain)
     }
 
+    /// 앨범 상세는 앨범 자체가 아니라 사진 목록을 반환하므로 경로가 `/albums/{tagId}/photos`로 끝난다.
+    /// 경로 파라미터가 albumId가 아니라 tagId라는 점을 함께 고정한다.
+    @Test("getAlbumPhotos — tagId가 path에 보간되고 /photos로 끝난다", arguments: [1, 42, 9999])
+    func getAlbumPhotos(tagId: Int) {
+        let target = PhotosAPITarget.getAlbumPhotos(tagId: tagId)
+
+        #expect(target.path == "/albums/\(tagId)/photos")
+        #expect(target.method == .get)
+        #expect(target.task.isPlain)
+    }
+
     @Test("deletePhoto — photoId가 path에 보간된다", arguments: [1, 42, 9999])
     func deletePhoto(photoId: Int) {
         let target = PhotosAPITarget.deletePhoto(photoId: photoId)
@@ -103,6 +114,7 @@ struct PhotosAPITargetTests {
     func nonMultipartCasesUseJSONHeader() {
         let targets: [PhotosAPITarget] = [
             .getAllPhotos,
+            .getAlbumPhotos(tagId: 1),
             .deletePhoto(photoId: 1),
             .savePhotosBatch(request: PhotoBatchRequestDTO(photos: []))
         ]

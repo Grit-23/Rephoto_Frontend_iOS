@@ -9,6 +9,7 @@ let project = Project.domain(
     hasTesting: false,
     hasTests: false,
     implementationDependencies: [
+        .domain(interface: .Album),
         .domain(interface: .Photo),
         .domain(interface: .Tag),
         .shared(.Foundation),

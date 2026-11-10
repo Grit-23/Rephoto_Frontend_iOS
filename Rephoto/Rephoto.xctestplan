@@ -53,6 +53,14 @@
     {
       "parallelizable" : false,
       "target" : {
+        "containerPath" : "container:Projects/Domain/Album/AlbumDomain.xcodeproj",
+        "identifier" : "3C93179894A53D0509A5EB71",
+        "name" : "AlbumDomainTests"
+      }
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
         "containerPath" : "container:Projects/Feature/Home/HomeFeature.xcodeproj",
         "identifier" : "24DBE55391BEB954D6333D1C",
         "name" : "HomeFeatureTests"
