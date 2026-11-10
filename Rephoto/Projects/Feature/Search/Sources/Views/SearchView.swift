@@ -286,14 +286,15 @@ private struct SearchResultGrid: View {
 
 // MARK: - SearchEmptyStateView
 
-/// 앨범 없음/검색 결과 없음 공용 빈 상태 뷰
-private struct SearchEmptyStateView: View {
+/// 앨범 없음/검색 결과 없음/빈 앨범 공용 빈 상태 뷰
+struct SearchEmptyStateView: View {
+    var systemImage = "magnifyingglass"
     let title: String
     let subtitle: String
 
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "magnifyingglass")
+            Image(systemName: systemImage)
                 .font(.system(size: 36))
                 .foregroundStyle(.mainGreen)
                 .frame(width: 96, height: 96)

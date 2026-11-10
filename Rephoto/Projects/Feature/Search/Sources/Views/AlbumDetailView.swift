@@ -35,9 +35,13 @@ struct AlbumDetailView: View {
                     await albumVM.fetchAlbumPhotos(tagId: album.tagId)
                 }
                 .padding(.top, 80)
+            case .loaded(let photos) where photos.isEmpty:
+                SearchEmptyStateView(
+                    systemImage: "photo.on.rectangle.angled",
+                    title: "앨범에 사진이 없어요",
+                    subtitle: "이 태그가 붙은 사진이 더 이상 없어요"
+                )
             case .loaded(let photos):
-                // 배너 카드가 이끄는 카드 컴포지션 화면이라, 그리드도 같은 16pt 여백을 따른다
-                // (홈의 edge-to-edge 그리드와 의도적으로 다름. 검색 결과도 같은 여백을 쓴다)
                 VStack(alignment: .leading, spacing: 20) {
                     AlbumBanner(title: album.tagName, photos: photos)
 
@@ -104,7 +108,6 @@ private struct AlbumBanner: View {
         }
         .frame(height: 138)
         .clipShape(RoundedRectangle(cornerRadius: 24))
-        // 초록 그림자는 배너 아래 그라데이션처럼 번져 보여 무채색으로 뺐다
         .shadow(color: .gray.opacity(0.3), radius: 7, y: 6)
     }
 
@@ -124,30 +127,19 @@ private struct BannerCollage: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            if photos.isEmpty {
-                LinearGradient(
-                    colors: [.lightGreen, .mainGreen],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            } else {
-                ForEach(photos) { photo in
-                    // 앨범 카드 커버와 같은 티어를 써서 캐시를 공유한다 — 목록에서 이미 받아둔
-                    // 비트맵을 상세 배너가 재사용한다. 사진 1~2장 앨범은 스트립이 티어보다
-                    // 넓어져 흐려지지만, 스크림·타이틀이 덮는 배경이라 감수한다
-                    LazyImage(request: ThumbnailTier.card.request(photo.imageUrl)) { state in
-                        if let image = state.image {
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        } else {
-                            Color.gray.opacity(0.2)
-                        }
+            ForEach(photos) { photo in
+                LazyImage(request: ThumbnailTier.card.request(photo.imageUrl)) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        Color.gray.opacity(0.2)
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 138)
-                    .clipped()
                 }
+                .frame(maxWidth: .infinity)
+                .frame(height: 138)
+                .clipped()
             }
         }
     }
