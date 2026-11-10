@@ -14,16 +14,17 @@ let project = Project.feature(
         .feature(interface: .Home),
         .shared(.Foundation),
         .shared(.DesignSystem),
+        .external(name: "NukeUI"),
     ],
     testsDependencies: [
         .domain(interface: .Album),
         .domain(interface: .Photo),
         .domain(testing: .Album),
         .domain(testing: .Photo),
-        .feature(interface: .Home),
         .shared(.Foundation),
-        .shared(.DesignSystem),
     ],
+    // Example은 서버 대신 PreviewSupport의 메모리 Repository와 실제 UseCase로 조립하고,
+    // 사진 상세는 Home 구현 없이 대체 화면으로 띄운다.
     exampleDependencies: [
         .domain(interface: .Album),
         .domain(interface: .Photo),
