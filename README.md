@@ -3,7 +3,8 @@
 고령층을 위한 AI 사진 관리 앱 — 사진을 올리면 AI가 자동으로 설명과 태그를 달아주고, 일상적인 문장으로 사진을 찾을 수 있습니다.
 
 ![Platform](https://img.shields.io/badge/platform-iOS%2026.0%2B-blue)
-![Swift](https://img.shields.io/badge/Swift-5-orange)
+![Swift](https://img.shields.io/badge/Swift-5%20%7C%206-orange)
+![Tuist](https://img.shields.io/badge/Tuist-4.155-blueviolet)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 스크린샷
@@ -25,11 +26,40 @@
 
 - iOS 26.0+
 - Xcode 26.0+
-- Swift 5
+- Swift 5 (기존 프로젝트) · Swift 6 (Tuist 워크스페이스)
+- Tuist 워크스페이스: [mise](https://mise.jdx.dev) — Tuist · mockolo 버전을 `Rephoto/mise.toml`로 고정
 
 ## 아키텍처
 
-기능(Feature) 단위로 폴더를 나누고, 각 기능을 Data / Domain / Presentation 3계층으로 분리했습니다.
+### Tuist 멀티모듈 전환 (진행 중)
+
+단일 앱 타깃을 Tuist 워크스페이스(`Rephoto/`)의 4계층 모듈로 옮기고 있습니다. 전환이 끝날 때까지 기존 프로젝트(`Rephoto_iOS.xcodeproj`)와 CI를 함께 유지합니다.
+
+| 계층 | 모듈 | 역할 |
+|------|------|------|
+| App | `Projects/App` | 유일한 조립 지점 — `AppContainer`가 구현을 등록 |
+| Feature | Home · Search (User 예정) | 화면 · ViewModel |
+| Domain | Photo · Tag · Album · PreviewSupport (User 예정) | 모델 · UseCase · Repository |
+| Core | NetworkAdapter | 네트워크 · 인증 |
+| Shared | Foundation · DesignSystem | 에러 · 설정 · 색상 · 공용 UI |
+
+- **모듈 = Tuist 프로젝트 1개** — 타깃은 `Interface · Sources · Testing · Tests` 중 필요한 것만 둡니다. Feature에는 그 화면만 단독 실행하는 `Example` 앱을 추가해, 서버와 로그인 없이 동작을 확인한 뒤 App에 조립합니다.
+- **의존 규칙** — 아래 계층은 위 계층을 모릅니다. Feature는 다른 Feature · Domain의 Interface만 참조하고, 구현은 App 타깃에서 조립합니다. 구현 모듈 import는 CI(`.github/workflows/tuist.yml`)가 막습니다.
+- **모듈 추가 자동화** — 폴더 구조에서 모듈 enum을 생성하는 `DependencyPlugin`으로 의존성을 문자열 경로 대신 타입(`.feature(interface: .Home)`)으로 선언하고, 새 모듈은 `make module type=<feature|domain|core|shared> name=<Name>`으로 만듭니다.
+- **Swift 6** — 새 워크스페이스는 전 모듈 Swift 6 언어 모드입니다.
+
+```bash
+cd Rephoto
+make install    # mise 도구(tuist · mockolo)와 SPM 의존성 설치
+make generate   # Mock 생성 후 워크스페이스 생성
+make open
+```
+
+단계별 범위와 결정 기록은 [docs/REFACTORING_HISTORY.md](docs/REFACTORING_HISTORY.md)의 Step 4, 전환 전 빌드 시간 기준값은 [docs/benchmarks/2026-10-29_build_time.md](docs/benchmarks/2026-10-29_build_time.md)에 있습니다.
+
+### 기존 프로젝트 구조
+
+아래는 전환 전 단일 타깃(`Rephoto_iOS/`)의 구조입니다. 기능(Feature) 단위로 폴더를 나누고, 각 기능을 Data / Domain / Presentation 3계층으로 분리했습니다.
 
 ```
 Rephoto_iOS/
@@ -68,7 +98,7 @@ Rephoto_iOS/
 
 - 단위·계약 테스트 **95개**(Swift Testing 83 + XCTest 12) — `Rephoto_iOS.xctestplan`. 네트워크 코어(동시 401 → 갱신 1회, 로그아웃–갱신 경합, Keychain actor, 어댑터 조립)와 클라이언트 엔드포인트 명세 35케이스를 고정합니다.
 - 성능 벤치 **18개** — `Rephoto_Performance.xctestplan`, 수동 실행. 측정 결과와 조건은 [BASELINE_RESULTS.md](Rephoto_iOSTests/BASELINE_RESULTS.md), 가이드는 [TESTING.md](Rephoto_iOSTests/TESTING.md).
-- CI — PR마다 `build-for-testing` → `test-without-building` → `xccov` 커버리지 요약 (`.github/workflows/iOS.yml`).
+- CI — PR마다 `build-for-testing` → `test-without-building` → `xccov` 커버리지 요약 (`.github/workflows/iOS.yml`). Tuist 워크스페이스는 `tuist.yml`에서 구현 모듈 import 검사 → `tuist inspect dependencies` → 빌드 → 테스트를 따로 돌립니다.
 
 ## 로컬 목 서버
 
