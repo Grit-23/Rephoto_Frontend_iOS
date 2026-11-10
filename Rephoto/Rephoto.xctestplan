@@ -65,6 +65,14 @@
         "identifier" : "24DBE55391BEB954D6333D1C",
         "name" : "HomeFeatureTests"
       }
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:Projects/Feature/Search/SearchFeature.xcodeproj",
+        "identifier" : "E613C9FBC80E7921FC43AF60",
+        "name" : "SearchFeatureTests"
+      }
     }
   ],
   "version" : 1
