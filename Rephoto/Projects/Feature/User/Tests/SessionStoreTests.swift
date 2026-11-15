@@ -7,6 +7,7 @@
 
 import Foundation
 import Testing
+import RephotoFoundation
 import UserDomainInterface
 import UserDomainTesting
 @testable import UserFeature
@@ -77,10 +78,10 @@ struct SessionStoreTests {
 
     @Test("login 실패 — 에러를 던지고 로그아웃 상태로 남는다")
     func loginFailureThrowsAndStaysLoggedOut() async {
-        provider.login.executeHandler = { _, _ in throw StubUserError.loginFailed }
+        provider.login.executeHandler = { _, _ in throw NetworkError.timeout }
         let sut = makeSUT()
 
-        await #expect(throws: StubUserError.loginFailed) {
+        await #expect(throws: NetworkError.timeout) {
             try await sut.login(id: "dodle", password: "pw")
         }
 
@@ -106,7 +107,7 @@ struct SessionStoreTests {
     @Test("logout — 로그아웃 UseCase가 실패해도 화면 상태는 비운다")
     func logoutClearsStateEvenWhenUseCaseFails() async throws {
         provider.fetchUser.executeHandler = { .stub }
-        provider.logout.executeHandler = { throw StubUserError.logoutFailed }
+        provider.logout.executeHandler = { throw NetworkError.timeout }
         let sut = makeSUT()
         try await sut.login(id: "dodle", password: "pw")
 

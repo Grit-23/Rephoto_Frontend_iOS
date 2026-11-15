@@ -6,27 +6,33 @@
 //
 
 import Foundation
+import Synchronization
+import RephotoFoundation
 import UserDomainInterface
 import UserDomainTesting
 @testable import UserFeature
 
-enum StubUserError: Error {
-    case loginFailed
-    case fetchFailed
-    case logoutFailed
-}
-
 /// mockolo Mock 3개를 들고 있는 Provider. 테스트는 Mock의 Handler를 바꿔 UseCase 응답을 정한다.
+/// `Sendable` 프로토콜을 따르므로 바뀌는 값은 저장 프로퍼티 대신 `Mutex`에 둔다.
 final class StubUserUseCaseProvider: UserUseCaseProviderProtocol {
     let login = LoginUseCaseProtocolMock()
     let fetchUser = FetchUserUseCaseProtocolMock()
     let logout = LogoutUseCaseProtocolMock()
-    var hasTokensResult = false
-    private(set) var onRefreshFailed: (@Sendable () -> Void)?
+    private let hasTokens = Mutex(false)
+    private let refreshFailedHandler = Mutex<(@Sendable () -> Void)?>(nil)
 
     init() {
         // 반환값이 있는 Mock은 Handler가 없으면 fatalError라 기본을 실패로 둔다
-        fetchUser.executeHandler = { throw StubUserError.fetchFailed }
+        fetchUser.executeHandler = { throw NetworkError.noNetwork }
+    }
+
+    var hasTokensResult: Bool {
+        get { hasTokens.withLock { $0 } }
+        set { hasTokens.withLock { $0 = newValue } }
+    }
+
+    var onRefreshFailed: (@Sendable () -> Void)? {
+        refreshFailedHandler.withLock { $0 }
     }
 
     func makeLoginUseCase() -> any LoginUseCaseProtocol { login }
@@ -36,7 +42,7 @@ final class StubUserUseCaseProvider: UserUseCaseProviderProtocol {
     func hasTokens() async -> Bool { hasTokensResult }
 
     func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void) async {
-        onRefreshFailed = handler
+        refreshFailedHandler.withLock { $0 = handler }
     }
 }
 
