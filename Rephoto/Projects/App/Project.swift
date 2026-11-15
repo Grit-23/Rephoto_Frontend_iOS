@@ -43,6 +43,7 @@ let project = Project(
                 ],
             ]),
             sources: ["Sources/**"],
+            resources: ["Resources/**"],
             // App만 구현 모듈(Domain · Feature)과 Factory를 링크한다. Feature는 Interface만 본다.
             dependencies: [
                 .shared(.Foundation),
