@@ -1,0 +1,23 @@
+{
+  "configurations" : [
+    {
+      "id" : "6E0C7B6A-2F0B-4E8E-9C55-0C3E5B3D7A41",
+      "name" : "Performance",
+      "options" : {}
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:Projects/App/Rephoto.xcodeproj",
+        "identifier" : "817C88F61694680D4C33F9AA",
+        "name" : "RephotoPerformanceTests"
+      }
+    }
+  ],
+  "version" : 1
+}

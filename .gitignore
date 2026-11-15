@@ -16,6 +16,8 @@ TestResults.xcresult/
 ## 없으면 UploadMemoryBenchmark / DecodeVariantBenchTests는 자동 스킵된다
 MockImagesReal/
 Rephoto_iOSTests/Performance/Fixtures/
+Rephoto/Projects/App/PerformanceTests/Fixtures/*
+!Rephoto/Projects/App/PerformanceTests/Fixtures/.gitkeep
 
 # ignore xcconfig
 *.xcconfig

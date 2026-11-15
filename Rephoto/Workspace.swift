@@ -26,7 +26,8 @@ let workspace = Workspace(
         .scheme(
             name: "Rephoto",
             buildAction: .buildAction(targets: [app]),
-            testAction: .testPlans(["Rephoto.xctestplan"]),
+            // 첫 플랜이 기본이다. 성능 플랜(RephotoPerformanceTests)은 `make perf`로만 돈다.
+            testAction: .testPlans(["Rephoto.xctestplan", "Rephoto_Performance.xctestplan"]),
             // DEBUG는 기본으로 메모리 Repository를 쓴다. 서버에 붙으려면 스킴에서 이 인자를 켠다.
             runAction: .runAction(
                 configuration: .debug,
@@ -41,6 +42,7 @@ let workspace = Workspace(
     additionalFiles: [
         "Makefile",
         "Rephoto.xctestplan",
+        "Rephoto_Performance.xctestplan",
         "mise.toml",
         ".gitignore",
         "Scripts/**",

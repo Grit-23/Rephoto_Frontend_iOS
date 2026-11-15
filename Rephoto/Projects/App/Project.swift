@@ -72,5 +72,22 @@ let project = Project(
                 ]
             )
         ),
+        // 성능 벤치마크. 실기기는 호스트 앱이 있는 테스트만 돌릴 수 있어 모듈 Tests가 아니라 앱에 붙인다.
+        // Rephoto_Performance 플랜으로만 돈다. Fixtures는 개인 사진이라 커밋하지 않으며, 없으면 skip된다.
+        .target(
+            name: "RephotoPerformanceTests",
+            destinations: rephotoDestinations,
+            product: .unitTests,
+            bundleId: "com.dodle.rephoto.RephotoPerformanceTests",
+            deploymentTargets: rephotoDeploymentTargets,
+            sources: ["PerformanceTests/**"],
+            resources: ["PerformanceTests/Fixtures/**"],
+            dependencies: [
+                .target(name: "Rephoto"),
+                .domain(interface: .Photo),
+                .domain(implementation: .Photo),
+            ],
+            settings: .settings(base: isolationSettings(.nonisolated))
+        ),
     ]
 )

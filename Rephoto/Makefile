@@ -24,7 +24,7 @@ TEST_DESTINATION ?= platform=iOS Simulator,name=iPhone 18 Pro
 # 앱 스킴은 Tuist 전용 플랜을 사용한다. 모듈 스킴은 자체 테스트 목록을 유지한다.
 TEST_PLAN ?= $(if $(filter Rephoto,$(SCHEME)),Rephoto)
 
-.PHONY: help install generate open edit build test graph module modules mock clean
+.PHONY: help install generate open edit build test perf graph module modules mock clean
 
 help: ## 사용 가능한 명령
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -51,13 +51,17 @@ build: ## 빌드 (SCHEME · DESTINATION 지정 가능)
 		-configuration $(CONFIGURATION) \
 		-destination "$(DESTINATION)"
 
-test: ## 테스트 (SCHEME · TEST_PLAN · TEST_DESTINATION 지정 가능)
+test: ## 테스트 (SCHEME · TEST_PLAN · TEST_DESTINATION · RESULT_BUNDLE 지정 가능)
 	@xcodebuild test \
 		-workspace $(WORKSPACE) \
 		-scheme $(SCHEME) \
 		-configuration $(CONFIGURATION) \
 		$(if $(TEST_PLAN),-testPlan "$(TEST_PLAN)") \
+		$(if $(RESULT_BUNDLE),-resultBundlePath "$(RESULT_BUNDLE)" -enableCodeCoverage YES) \
 		-destination "$(TEST_DESTINATION)"
+
+perf: ## 성능 벤치마크 (Rephoto_Performance 플랜 — 수동 실행, 수치 판정은 실기기 + Release)
+	@$(MAKE) test SCHEME=Rephoto TEST_PLAN=Rephoto_Performance
 
 graph: ## 의존성 그래프(graph.png) 생성
 	@$(TUIST) graph --format png --output-path .
