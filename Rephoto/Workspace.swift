@@ -27,7 +27,12 @@ let workspace = Workspace(
             name: "Rephoto",
             buildAction: .buildAction(targets: [app]),
             testAction: .testPlans(["Rephoto.xctestplan"]),
-            runAction: .runAction(configuration: .debug, executable: app),
+            // DEBUG는 기본으로 메모리 Repository를 쓴다. 서버에 붙으려면 스킴에서 이 인자를 켠다.
+            runAction: .runAction(
+                configuration: .debug,
+                executable: app,
+                arguments: .arguments(launchArguments: [.launchArgument(name: "-useServer", isEnabled: false)])
+            ),
             archiveAction: .archiveAction(configuration: .release),
             profileAction: .profileAction(configuration: .release, executable: app),
             analyzeAction: .analyzeAction(configuration: .debug)

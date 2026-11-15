@@ -81,6 +81,14 @@
         "identifier" : "E613C9FBC80E7921FC43AF60",
         "name" : "SearchFeatureTests"
       }
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:Projects/Feature/User/UserFeature.xcodeproj",
+        "identifier" : "3972219B143DC19ADB6CDE31",
+        "name" : "UserFeatureTests"
+      }
     }
   ],
   "version" : 1
