@@ -12,6 +12,7 @@ let project = Project.domain(
         .domain(interface: .Album),
         .domain(interface: .Photo),
         .domain(interface: .Tag),
+        .domain(interface: .User),
         .shared(.Foundation),
     ],
     resources: ["Resources/**"]

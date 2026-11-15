@@ -15,6 +15,7 @@ public enum DomainModule: CaseIterable {
     case Photo
     case PreviewSupport
     case Tag
+    case User
 }
 
 public enum CoreModule: CaseIterable {
