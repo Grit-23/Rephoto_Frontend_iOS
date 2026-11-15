@@ -2,9 +2,9 @@
 
 아키텍처 · Concurrency · 모듈화 · 테스트 · CI/CD 순으로 진행하는 리팩토링 로드맵. 에이전트 작업 지침은 [AGENTS.md](../AGENTS.md)에 있고, 이 문서는 단계별 배경 · 결정 · 진행 상태를 기록한다.
 
-> **진행 현황**: Home · Search 이관(PR 4-2)까지 `main`에 반영됨(`3bc8471`). 남은 것은 User(Domain → Feature)와 최종 통합 검증이다.
+> **진행 현황**: Home · Search · User 이관(PR 5-2)까지 끝났다. 남은 것은 최종 통합 검증이다.
 > - Step 1–3 **완료** (#14·#21·#23·#27·#44 / #29·#32 / #31)
-> - Step 4 (Tuist 멀티모듈) — **진행 중**. PR 0(#91) 빌드 기준값, PR 1(#93) Tuist·DependencyPlugin·Foundation, PR 2(#95) NetworkAdapter·DesignSystem·에러 통합, PR 3(#98 · #99) Home, PR 4(#101 · #102) Search 완료. PR 5 User(5-1 Domain → 5-2 Feature) → 최종 통합 검증 순서
+> - Step 4 (Tuist 멀티모듈) — **진행 중**. PR 0(#91) 빌드 기준값, PR 1(#93) Tuist·DependencyPlugin·Foundation, PR 2(#95) NetworkAdapter·DesignSystem·에러 통합, PR 3(#98 · #99) Home, PR 4(#101 · #102) Search, PR 5(#104 · #106) User 완료. 남은 것은 최종 통합 검증
 > - Step 5 **부분 완료**: 단위·계약 테스트 95케이스(Swift Testing 83 + XCTest 12), 성능 플랜 18개(측정 전용). 미완: UseCase 전수 테스트, UI Test
 > - Step 6 **부분 완료**: PR마다 빌드 + 유닛 플랜 실행 + `xccov` 커버리지 요약(#56). 미완: SwiftLint 워크플로, Fastlane TestFlight
 > - Step 7 **부분 완료**: DateFormatter static 캐싱, 이미지 다운샘플·압축(#34·#49), Home 관찰 성능(#47·#59), 검색 디바운스(#53). 미완: ETag 캐시, Dictionary O(1) 태그 조회
@@ -53,7 +53,7 @@ PhotoCapture(카메라 촬영), 지도 탭(Map 화면 — 사진 상세의 위�
 
 **리팩토링 전**: 단일 앱 타겟. .xcodeproj 직접 관리. Feature 간 암묵적 의존(Search가 Home의 `PhotoInfoView`를, Home이 User의 `SettingsView`를 직접 참조). `AppContainer`가 Core에 있으면서 모든 Feature 구현을 앎.
 **착수 전 안정화**: 로그아웃 토큰 잔존·진행률 스레드(#76 → PR #77), 토큰 재발급 구조체 중복·로그아웃-갱신 경합(#78 → PR #79) 수정 후 마일스톤 "Tuist 멀티모듈 전환"으로 착수.
-**현재**: `Rephoto/`에 Tuist 워크스페이스와 임시 App 타깃, Shared/Foundation·DesignSystem, Core/NetworkAdapter, Domain/Photo·Tag·Album·User·PreviewSupport, Feature/Home·Search(Example · App 탭 조립)까지 분리 완료(PR 0 #91 · PR 1 #93 · PR 2 #95 · PR 3-1 #98 · PR 3-2 #99 · PR 4-1 #101 · PR 4-2 #102 · PR 5-1 #104). 기존 `Rephoto_iOS.xcodeproj`와 `iOS.yml`은 Feature 이관 후 최종 통합 검증까지 병행 유지한다.
+**현재**: `Rephoto/`에 Tuist 워크스페이스와 임시 App 타깃, Shared/Foundation·DesignSystem, Core/NetworkAdapter, Domain/Photo·Tag·Album·User·PreviewSupport, Feature/Home·Search·User(Example · App 탭 조립 · 로그인 분기)까지 분리 완료(PR 0 #91 · PR 1 #93 · PR 2 #95 · PR 3-1 #98 · PR 3-2 #99 · PR 4-1 #101 · PR 4-2 #102 · PR 5-1 #104 · PR 5-2 #106). 기존 `Rephoto_iOS.xcodeproj`와 `iOS.yml`은 Feature 이관 후 최종 통합 검증까지 병행 유지한다.
 **목표**:
 - **계층 4개**: Shared(Foundation · DesignSystem) · Core(NetworkAdapter 등 공유 인프라) · Domain(Photo, Tag, Album, User 등 업무 단위 + PreviewSupport) · Feature(Home, Search, User). 기존 Feature 폴더의 Domain/Data는 Domain 모듈로, Presentation만 Feature 모듈로 간다
 - **모듈 = Tuist 프로젝트 1개**, 타깃은 `Interface · Sources · Testing · Tests`(Feature는 `Example` 추가) 중 필요한 것만. Interface는 프로토콜·모델만, Sources가 구현, Testing은 mockolo가 만든 Mock, Example은 Feature 단독 실행 앱
@@ -76,7 +76,7 @@ Domain 전체를 먼저 옮기는 단계는 두지 않는다. **Home → Search 
 | PR 4-1 · Search Domain (#101) | AlbumDomain(앨범 목록 Repository, 앨범 목록·앨범 사진 UseCase), PhotoDomain의 검색 모델·Repository·UseCase와 태그별 사진 조회, PreviewSupport의 앨범·검색 메모리 구현. 앨범 사진 응답은 사진 형식이라 `PhotoRepositoryProtocol.getPhotos(tagId:)`가 맡고, `GetAlbumPhotosUseCase`가 PhotoDomainInterface로 호출한다 | Album·Search Repository·UseCase 테스트, 디코딩이 메인 액터 밖에서 도는지 테스트로 확인 |
 | PR 4-2 · Search Feature (#102) | SearchFeature·SearchFeatureExample, HomeFeatureInterface의 사진 상세 팩토리(`PhotoDetailBuilding` — HomeFeature의 `PhotoDetailBuilder`가 `PhotoInfoView`로 구현, App이 조립), App 탭 조립. `SearchView`는 Provider · 사진 상세 팩토리 · 검색어를 init으로 받고 Factory는 import하지 않는다. 검색 필드가 탭 바에 합쳐지도록 `.searchable`은 `TabView`를 가진 쪽(App의 `RephotoTabView`, Example)이 붙인다. 탭 뷰(`RephotoTabView`)는 App 타깃에 두고 컨테이너는 루트에서만 읽어 init으로 넘긴다. 앨범 사진·색인은 Home과 같은 `PhotoRepository` 싱글턴. Example은 사진 상세를 Home 없이 대체 화면으로 띄운다. 상세에서 삭제한 사진이 반영되도록 `SearchView`의 앨범·색인 `.task`는 NavigationStack 안쪽에 둬 돌아올 때 다시 돌고(`AlbumViewModel`은 목록이 있으면 `.loading` 전환 없이 교체, 갱신 실패 시 유지), PreviewSupport의 앨범·검색 Repository는 고정 fixture 대신 공유 `PreviewPhotoRepository` 상태로 집계한다 | ViewModel 테스트(검색·빈 결과·실패·늦은 결과 무시·색인 폴백, 앨범 목록·앨범 사진·갱신 시 목록 유지), Search Example에서 검색·앨범·사진 상세 연결과 삭제 반영 확인 |
 | PR 5-1 · User Domain (#104) | UserDomain(Repository · UseCase 3개 · API Target · DTO), PreviewSupport의 사용자 메모리 구현. `NetworkClient`는 UserDomain 구현만 쥐고 Interface로 드러내지 않는다. 호출하는 곳이 없는 `join` · `updateUser` · `deleteUser` 엔드포인트도 그대로 옮긴다 | User API Target 계약 · Repository(로그인 토큰 저장, 로그아웃 시 토큰 삭제) · UseCase 테스트, 디코딩이 메인 액터 밖에서 도는지 테스트로 확인 |
-| PR 5-2 · User Feature | UserFeature·UserFeatureExample, 계정 시트·설정, SessionStore·App 인증 연결 | 인증·세션 테스트, User Example와 App에서 로그인·복원·로그아웃·갱신 실패 확인 |
+| PR 5-2 · User Feature (#106) | UserFeature·UserFeatureExample, 계정 시트(`AccountSheetView`, 기존 `HomeSheetView`), `SessionStore`·App 인증 연결. 설정 화면은 없애고 계정 시트 한 장(medium 고정)에 프로필 · 버전 · 로그아웃을 모았다. 글래스는 아바타 · 버전 아이콘 · 로그아웃 버튼에만 쓴다. `SessionStore`는 App이 하나 만들어 `LoginView`와 계정 시트에 init으로 넘기고 탭 뷰에 `environment`로 싣지 않는다. 다른 Feature가 User를 참조하지 않아 Interface 타깃은 없다. 갱신 실패 핸들러는 `setOnRefreshFailed`가 `async`라 `SessionStore.init`이 아니라 `restore()`에서 등록을 기다린 뒤 토큰을 확인한다. App 루트(`RootView`)가 `isLoggedIn`으로 로그인 화면과 탭을 가르고, 계정 시트 표시 상태는 탭 뷰(`RephotoTabView`)가 가져 로그아웃하면 함께 사라진다. `ErrorHandler.onSessionExpired`는 `forceLogout()`으로 연결. `.searchable`은 `TabView` 전체가 아니라 검색 탭 콘텐츠에 붙인다 — `TabView`에 붙이면 선택된 탭의 내비게이션 바에 필드가 놓여 홈에도 검색 필드가 뜬다. DEBUG는 기본으로 메모리 Repository(로그인된 상태로 시작)를 쓰고 실행 인자 `-useServer`를 주면 `Config.baseURL` 서버에 붙는다 | 세션 8 · 로그인 ViewModel 4 테스트(XCTest → Swift Testing, mockolo Mock), User Example와 App에서 로그인·복원·로그아웃·갱신 실패 확인 |
 | 최종 통합 검증 | App의 전체 탭·DI 연결, 성능 테스트 코드·fixture·`Rephoto_Performance` 플랜의 Tuist 이관, 빌드 시간 재측정, README·벤치마크 갱신 | Tuist에서 전체 테스트·성능 플랜·전체 플로우 확인과 양쪽 CI 통과 후 기존 프로젝트·`iOS.yml` 정리 및 전환 완료 |
 
 - **Home–User 경계**: Home은 프로필 버튼 액션을 주입받는다. App이 계정 시트 표시를 소유하고, 기존 `HomeSheetView`의 계정 UI·설정·세션 연결은 PR 5에서 User와 함께 옮긴다. PR 3 Example에서는 주입한 액션을 확인하며, User Interface나 공용 라우터를 선행 도입하지 않는다

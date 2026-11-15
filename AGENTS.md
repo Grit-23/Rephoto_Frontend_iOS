@@ -15,7 +15,7 @@ AI 코딩 에이전트용 프로젝트 지침. `CLAUDE.md`는 이 파일을 impo
 
 - SwiftUI. Tuist 워크스페이스는 **전 모듈 Swift 6 언어 모드**(`rephotoBaseSettings`), 예외 없음. 기존 `Rephoto_iOS.xcodeproj`는 Swift 5 유지
 - 네트워크: 자체 레이어. `APITargetType`(엔드포인트) → `NetworkAdapter`(URLRequest 조립) → `NetworkClient`(actor, URLSession 실행·Bearer 주입·401 갱신)
-- DI: Factory (`AppContainer`). App만 import한다. DEBUG에서는 Repository만 PreviewSupport의 메모리 구현으로 교체
+- DI: Factory (`AppContainer`). App만 import한다. DEBUG에서는 Repository만 PreviewSupport의 메모리 구현으로 교체. 실행 인자 `-useServer`를 주면 DEBUG에서도 서버에 붙는다
 - 이미지: Nuke. 패키지: SPM (`Rephoto/Tuist/Package.swift`, Factory 2.5.3 · Nuke 12.8.0 exact)
 - 도구 버전: `Rephoto/mise.toml` (tuist 4.155.0 · mockolo 2.7.0)
 
@@ -89,7 +89,7 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 
 ### 핵심 플로우
 
-- **인증**: `NetworkClient` actor가 동기 `TokenStore`를 통해 토큰을 관리하고 Bearer를 주입한다. `KeychainTokenStore`는 `TokenPair`를 한 항목에 저장한다. 401이면 단일 Task로 갱신 후 재시도하며, 로그인·로그아웃 전의 요청·갱신 결과는 세대 검사로 버린다. 갱신 실패 시 `SessionStore.forceLogout()`
+- **인증**: `NetworkClient` actor가 동기 `TokenStore`를 통해 토큰을 관리하고 Bearer를 주입한다. `KeychainTokenStore`는 `TokenPair`를 한 항목에 저장한다. 401이면 단일 Task로 갱신 후 재시도하며, 로그인·로그아웃 전의 요청·갱신 결과는 세대 검사로 버린다. 갱신 실패 시 `SessionStore.forceLogout()`. 핸들러는 `SessionStore.restore()`가 등록한다
 - **업로드**: `PhotosPicker` → `HomeViewModel.handlePickedPhotos`가 `TaskGroup`으로 장별 병렬 → EXIF/GPS 추출 → 다운샘플 + JPEG 압축(ImageIO) → S3 업로드 → 메타데이터 일괄 저장
 - **DTO → 도메인 모델** 매핑은 Repository에서. Presentation은 도메인 모델만 본다
 
