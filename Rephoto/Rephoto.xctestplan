@@ -61,6 +61,14 @@
     {
       "parallelizable" : false,
       "target" : {
+        "containerPath" : "container:Projects/Domain/User/UserDomain.xcodeproj",
+        "identifier" : "A6EB25A625ACF66B2A27BAC9",
+        "name" : "UserDomainTests"
+      }
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
         "containerPath" : "container:Projects/Feature/Home/HomeFeature.xcodeproj",
         "identifier" : "24DBE55391BEB954D6333D1C",
         "name" : "HomeFeatureTests"
