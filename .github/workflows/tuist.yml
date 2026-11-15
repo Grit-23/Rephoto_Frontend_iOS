@@ -75,4 +75,14 @@ jobs:
         run: make build
 
       - name: Test
-        run: make test TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro'
+        run: make test TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro' RESULT_BUNDLE=TestResults.xcresult
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          if [ -d TestResults.xcresult ]; then
+            echo '## Code Coverage' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            xcrun xccov view --report --only-targets TestResults.xcresult >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
