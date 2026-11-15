@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Observation
 import Testing
 import RephotoFoundation
 import UserDomainInterface
@@ -117,9 +118,23 @@ struct SessionStoreTests {
         #expect(sut.userInfo == nil)
     }
 
+    @Test("logout 뒤 다른 계정의 사용자 정보 조회가 실패하면 이전 계정 이름을 쓰지 않는다")
+    func nameDoesNotLeakAcrossAccounts() async throws {
+        provider.fetchUser.executeHandler = { .stub }
+        let sut = makeSUT()
+        try await sut.login(id: "dodle", password: "pw")
+        await sut.logout()
+        provider.fetchUser.executeHandler = { throw NetworkError.timeout }
+
+        try await sut.login(id: "other", password: "pw")
+
+        #expect(sut.isLoggedIn)
+        #expect(sut.name == "리포토")
+    }
+
     // MARK: - 토큰 갱신 실패
 
-    @Test("restore가 등록한 핸들러가 호출되면 강제 로그아웃된다")
+    @Test("restore가 등록한 핸들러가 호출되면 강제 로그아웃된다", .timeLimit(.minutes(1)))
     func refreshFailureForcesLogout() async throws {
         provider.fetchUser.executeHandler = { .stub }
         let sut = makeSUT()
@@ -127,10 +142,14 @@ struct SessionStoreTests {
         try await sut.login(id: "dodle", password: "pw")
         let onRefreshFailed = try #require(provider.onRefreshFailed)
 
-        onRefreshFailed()
-        // 핸들러가 Task { @MainActor }로 넘기므로 메인 액터에 제어를 양보한다
-        for _ in 0..<10 where sut.isLoggedIn {
-            await Task.yield()
+        // 핸들러가 Task { @MainActor }로 넘기므로 isLoggedIn이 바뀌는 순간을 관찰해 기다린다
+        await withCheckedContinuation { continuation in
+            withObservationTracking {
+                _ = sut.isLoggedIn
+            } onChange: {
+                continuation.resume()
+            }
+            onRefreshFailed()
         }
 
         #expect(sut.isLoggedIn == false)

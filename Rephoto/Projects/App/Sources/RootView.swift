@@ -21,7 +21,7 @@ struct RootView: View {
     let errorHandler: ErrorHandler
 
     var body: some View {
-        Group {
+        ZStack {
             if session.isLoggedIn {
                 RephotoTabView(
                     session: session,

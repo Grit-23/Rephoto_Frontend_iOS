@@ -17,7 +17,9 @@ public final class SessionStore {
 
     public private(set) var isLoggedIn = false
     public private(set) var userInfo: UserInfo?
-    public private(set) var name: String = "리포토"
+
+    /// 사용자 정보가 없으면(조회 전 · 조회 실패 · 로그아웃) 기본 이름을 쓴다.
+    public var name: String { userInfo?.name ?? "리포토" }
 
     public init(provider: any UserUseCaseProviderProtocol) {
         self.provider = provider
@@ -57,6 +59,5 @@ public final class SessionStore {
     private func refreshUser() async {
         guard let info = try? await provider.makeFetchUserUseCase().execute() else { return }
         userInfo = info
-        name = info.name
     }
 }
