@@ -8,7 +8,19 @@ let project = Project.feature(
     hasInterface: false,
     hasTests: true,
     hasExample: true,
-    implementationDependencies: [],
-    // Example 앱에 주입할 Mock (예: .domain(implementation: .PreviewSupport))
-    exampleDependencies: []
+    implementationDependencies: [
+        .domain(interface: .User),
+        .shared(.Foundation),
+        .shared(.DesignSystem),
+    ],
+    testsDependencies: [
+        .domain(interface: .User),
+        .domain(testing: .User),
+        .shared(.Foundation),
+    ],
+    exampleDependencies: [
+        .domain(interface: .User),
+        .domain(implementation: .User),
+        .domain(implementation: .PreviewSupport),
+    ]
 )

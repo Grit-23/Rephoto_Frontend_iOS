@@ -9,14 +9,12 @@ import SwiftUI
 
 // MARK: - ProfileCard
 
-/// 아바타(이름 첫 글자) + 이름 글래스 프로필 카드 — 내 정보 시트/설정 화면 공용
+/// 글래스 아바타(이름 첫 글자) + 이름 — 내 정보 시트
 public struct ProfileCard: View {
     private let name: String
-    private let showsChevron: Bool
 
-    public init(name: String, showsChevron: Bool = false) {
+    public init(name: String) {
         self.name = name
-        self.showsChevron = showsChevron
     }
 
     public var body: some View {
@@ -25,33 +23,20 @@ public struct ProfileCard: View {
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: 52, height: 52)
-                .background(
-                    LinearGradient(colors: [.lightGreen, .mainGreen], startPoint: .top, endPoint: .bottom),
-                    in: Circle()
-                )
+                .glassEffect(.regular.tint(.mainGreen), in: Circle())
 
             Text(name)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(.labelPrimary)
 
             Spacer()
-
-            if showsChevron {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.labelTertiary)
-            }
         }
-        .padding(.leading, 14)
-        .padding(.trailing, 16)
-        .frame(height: 80)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18))
     }
 }
 
 // MARK: - LogoutCard
 
-/// 로그아웃 글래스 카드 버튼 — 내 정보 시트/설정 화면 공용
+/// 로그아웃 글래스 카드 버튼 — 내 정보 시트
 public struct LogoutCard: View {
     private let action: () -> Void
 
@@ -76,7 +61,6 @@ public struct LogoutCard: View {
 #Preview {
     VStack(spacing: 20) {
         ProfileCard(name: "김도연")
-        ProfileCard(name: "김도연", showsChevron: true)
         LogoutCard {}
     }
     .padding(22)
