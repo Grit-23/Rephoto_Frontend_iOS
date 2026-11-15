@@ -45,7 +45,7 @@ public final class PreviewUserRepository: UserRepositoryProtocol, Sendable {
         state.withLock { $0.isLoggedIn }
     }
 
-    public func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void) {
+    public func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void) async {
         state.withLock { $0.onRefreshFailed = handler }
     }
 

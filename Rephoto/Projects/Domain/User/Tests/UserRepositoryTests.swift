@@ -10,6 +10,7 @@ import Synchronization
 import Testing
 import NetworkAdapter
 import NetworkAdapterTesting
+import RephotoFoundation
 import UserDomainInterface
 @testable import UserDomain
 
@@ -23,6 +24,12 @@ private final class RecordingDecoder: JSONDecoder, @unchecked Sendable {
     }
 }
 
+private struct RejectingRefreshService: TokenRefreshService {
+    func refresh(_ refreshToken: String) async throws -> TokenPair {
+        throw NetworkError.unauthorized
+    }
+}
+
 extension StubURLProtocolSuites {
 
     @Suite("UserRepository")
@@ -30,13 +37,14 @@ extension StubURLProtocolSuites {
 
         private func makeSUT(
             tokenStore: MockTokenStore = MockTokenStore(),
+            refreshService: TokenRefreshService = MockTokenRefreshService(),
             decoder: JSONDecoder = JSONDecoder()
         ) -> UserRepository {
             StubURLProtocol.reset()
             let networkClient = NetworkClient(
                 session: StubURLProtocol.session(),
                 tokenStore: tokenStore,
-                refreshService: MockTokenRefreshService()
+                refreshService: refreshService
             )
             let adapter = NetworkAdapter(networkClient: networkClient, baseURL: URL(string: "https://api.test")!)
             return UserRepository(adapter: adapter, networkClient: networkClient, decoder: decoder)
@@ -145,6 +153,27 @@ extension StubURLProtocolSuites {
             try await sut.logout()
 
             #expect(await sut.hasTokens() == false, "서버 호출 실패가 로컬 토큰 삭제를 막으면 안 된다")
+            #expect(store.load() == nil)
+        }
+
+        // MARK: - setOnRefreshFailed
+
+        @Test("setOnRefreshFailed — 등록한 뒤 토큰 갱신이 거절되면 핸들러가 한 번 호출되고 토큰이 삭제된다")
+        func refreshFailureCallsRegisteredHandler() async throws {
+            let store = MockTokenStore(accessToken: "a", refreshToken: "r")
+            let sut = makeSUT(tokenStore: store, refreshService: RejectingRefreshService())
+            StubURLProtocol.handler = { request in
+                (HTTPURLResponse(url: request.url!, statusCode: 401, httpVersion: nil, headerFields: nil)!, Data("{}".utf8))
+            }
+
+            await confirmation("갱신 실패 시 핸들러 호출") { refreshFailed in
+                await sut.setOnRefreshFailed { refreshFailed() }
+
+                await #expect(throws: NetworkError.unauthorized) {
+                    _ = try await sut.fetchUser()
+                }
+            }
+
             #expect(store.load() == nil)
         }
     }

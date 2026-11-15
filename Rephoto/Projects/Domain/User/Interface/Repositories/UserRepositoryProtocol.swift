@@ -13,5 +13,5 @@ public protocol UserRepositoryProtocol: Sendable {
     func fetchUser() async throws -> UserInfo
     func logout() async throws
     func hasTokens() async -> Bool
-    func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void)
+    func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void) async
 }

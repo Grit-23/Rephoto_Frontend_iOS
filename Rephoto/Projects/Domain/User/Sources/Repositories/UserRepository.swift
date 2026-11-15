@@ -48,7 +48,7 @@ public final class UserRepository: UserRepositoryProtocol, Sendable {
         await networkClient.isLoggedIn()
     }
 
-    public func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void) {
-        Task { await networkClient.setOnRefreshFailed(handler) }
+    public func setOnRefreshFailed(_ handler: @escaping @Sendable () -> Void) async {
+        await networkClient.setOnRefreshFailed(handler)
     }
 }

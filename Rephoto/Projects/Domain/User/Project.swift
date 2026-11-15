@@ -10,5 +10,6 @@ let project = Project.domain(
         .domain(interface: .User),
         .core(implementation: .NetworkAdapter),
         .core(testing: .NetworkAdapter),
+        .shared(.Foundation),
     ]
 )
