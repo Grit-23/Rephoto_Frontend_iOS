@@ -179,7 +179,8 @@ final class UploadMemoryBenchmark: XCTestCase {
         nonisolated func stopPeak() -> UInt64 {
             lock.lock()
             running = false
-            let p = peak
+            // 폴링 스레드가 한 번도 돌기 전에 작업이 끝나도 증가분이 0으로 남지 않게 종료 시점 값을 함께 본다.
+            let p = max(peak, Self.current())
             lock.unlock()
             return p
         }
