@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rephoto 로컬 목 서버.
 
-iOS 앱의 APITargetType 계약에 맞춰 목 픽스처(MockPhotoFixtures) 14장을 그대로 내려준다.
+iOS 앱의 APITargetType 계약에 맞춰 목 픽스처(PreviewPhotoFixtures) 14장을 그대로 내려준다.
 DB 없이 인메모리 상태로 동작하며, 태그 추가/수정/삭제·사진 업로드/삭제도 반영된다(재시작 시 초기화).
 AI(태그·설명 생성, 자연어 검색)는 미구현 — 업로드 사진은 빈 태그 + 자리표시 설명,
 검색은 태그·설명 문자열 부분일치로 대체한다.
@@ -9,17 +9,16 @@ AI(태그·설명 생성, 자연어 검색)는 미구현 — 업로드 사진은
 실행:  python3 mock_server.py [포트] [응답지연ms] [호스트]   (기본 8080, 0, 127.0.0.1)
        시뮬레이터는 기본값으로 붙는다. 실기기로 붙일 때만 호스트를 0.0.0.0 으로
        — /debug/ 와 /images/ 는 인증 면제라 LAN에 열면 아무나 접근할 수 있다
-이미지: Rephoto_iOS/Resources/MockImages/ 를 /images/<파일명> 으로 정적 서빙
+이미지: Rephoto/Projects/Domain/PreviewSupport/Resources/MockImages/ 를 /images/<파일명> 으로 정적 서빙
 
-앱을 이 서버에 붙이려면 아래 두 가지를 직접 바꿔야 한다(자동 전환 스위치는 없다).
+앱(Tuist 워크스페이스)을 이 서버에 붙이려면 아래 두 가지를 맞춘다.
 
-  1. Config.xcconfig 의 BASE_URL 을 로컬 서버로
+  1. Rephoto/Config/Secrets.xcconfig 의 BASE_URL 을 로컬 서버로 (바꾼 뒤 make generate)
      — xcconfig는 // 를 주석으로 읽으므로 `http:/$()/127.0.0.1:8080` 처럼 $() 를 끼워 쓴다
      — 이 파일은 .gitignore 대상이라 변경이 로컬에만 남는다
-  2. AppContainer.autoRegister() 의 DEBUG Mock provider 등록 3줄을 주석 처리
-     — 등록된 상태로는 네트워크 레이어를 아예 타지 않아 이 서버로 요청이 오지 않는다
-     — 테스트가 끝나면 반드시 주석을 해제한다. 주석 상태로 커밋되면 DEBUG 빌드가
-       실서버를 때린다
+  2. 실행 인자 -useServer 를 켠다 (Rephoto 스킴 > Run > Arguments)
+     — DEBUG는 기본으로 PreviewSupport의 메모리 Repository를 써서 네트워크 레이어를
+       아예 타지 않는다. 인자를 켜야 이 서버로 요청이 온다
 
 두 값이 안 맞으면 조용히 실패하는 게 아니라 에러 화면이 뜬다. 서버가 없으면
 URLError(.cannotConnectToHost) → AppError.unknown 경로로 떨어진다.
@@ -49,9 +48,12 @@ if DELAY_MS < 0:
     # time.sleep()이 ValueError를 던지는데 그 호출은 try 밖이라 모든 요청이
     # 응답 없이 죽는다. 원인 찾기 어려운 실패라 시작 시점에 막는다
     sys.exit("응답 지연은 0 이상이어야 합니다.")
-MOCK_IMAGES_DIR = Path(__file__).resolve().parent / "Rephoto_iOS" / "Resources" / "MockImages"
+MOCK_IMAGES_DIR = (
+    Path(__file__).resolve().parent
+    / "Rephoto" / "Projects" / "Domain" / "PreviewSupport" / "Resources" / "MockImages"
+)
 
-# MockPhotoFixtures.entries 와 1:1 (photoId = index + 1, 최신순)
+# PreviewPhotoFixtures.entries 와 1:1 (photoId = index + 1, 최신순)
 FIXTURES = [
     ("IMG_2015.JPG", ["해방촌", "노을"],
      "해 질 녘 옥상에서 내려다본 해방촌 주택가 풍경입니다. 분홍빛으로 물든 하늘 아래 낮은 지붕들이 겹겹이 이어져 있어요.",

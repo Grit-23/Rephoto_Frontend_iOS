@@ -30,6 +30,7 @@ make generate                         # Mock 생성 → 워크스페이스 생�
 make open                             # Rephoto.xcworkspace 열기
 make build                            # generic 시뮬레이터 빌드 (SCHEME= 지정 가능)
 make test                             # 테스트 (SCHEME= TEST_DESTINATION= 지정 가능)
+make perf                             # 성능 벤치마크 (Rephoto_Performance 플랜, 수동)
 make module type=feature name=Foo     # 모듈 스캐폴딩 + enum 재생성
 make modules                          # GeneratedModules.swift만 재생성
 make clean                            # 생성물 삭제 후 처음부터
@@ -45,7 +46,7 @@ make clean                            # 생성물 삭제 후 처음부터
 
 - Domain 전체를 먼저 옮기지 않는다. PreviewSupport · Mock도 해당 화면에 필요한 만큼만 추가한다
 - Home은 프로필 버튼 액션을 주입받고, 계정 시트 표시는 App이 소유한다. User Interface나 공용 라우터를 미리 만들지 않는다
-- 최종 통합 검증 전에는 기존 빌드 축(`Rephoto_iOS.xcodeproj` · `iOS.yml`)을 제거하지 않는다
+- 최종 통합 검증(#108)까지 끝났다. 기존 빌드 축(`Rephoto_iOS.xcodeproj` · `iOS.yml`) 제거는 별도 이슈에서 한다
 
 ## Architecture
 
@@ -112,10 +113,11 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 ## Testing
 
 - Swift Testing 기본(`@Test("한글 설명")`). 성능 측정만 XCTest
-- 테스트 플랜 3개: `Rephoto_iOS`(기존 프로젝트 단위 · 계약, CI 게이트) / `Rephoto_Performance`(측정 전용, 수동) / `Rephoto/Rephoto.xctestplan`(Tuist 모듈 테스트 전부, `make test`와 `tuist.yml`이 사용)
+- 테스트 플랜: `Rephoto/Rephoto.xctestplan`(Tuist 모듈 테스트 전부, `make test`와 `tuist.yml`이 사용) / `Rephoto/Rephoto_Performance.xctestplan`(측정 전용, 수동 `make perf`). 기존 프로젝트의 `Rephoto_iOS`(`iOS.yml`) · 루트 `Rephoto_Performance`는 프로젝트를 제거할 때 함께 없앤다
+- 성능 벤치마크는 `Projects/App/PerformanceTests/`(`RephotoPerformanceTests`)에 있다. 실기기는 호스트 앱이 있는 테스트만 돌릴 수 있어 앱에 붙였다. 입력 사진(`Fixtures/`)은 개인 사진이라 gitignore — 커밋하지 않는다
 - 네트워크 스텁은 `StubURLProtocol`(Tuist 쪽은 `NetworkAdapterTesting`). 스위트는 직렬화
 - Tuist Testing 타깃의 Mock은 Interface 프로토콜에 `/// @mockable`을 붙이면 `make generate`가 만든다
-- 가이드: `Rephoto_iOSTests/TEST_GUIDE.md`, 프레임워크 선택 기준 `Rephoto_iOSTests/TESTING.md`
+- 가이드: `docs/TESTING.md`
 
 ## Git & PR
 
@@ -138,5 +140,5 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 | --- | --- |
 | `docs/REFACTORING_HISTORY.md` | Step 1–7 리팩토링 이력과 결정 근거. 왜 지금 구조가 됐는지 볼 때 |
 | `docs/benchmarks/` | 성능 · 빌드 시간 실측 원문 |
-| `Rephoto_iOSTests/BASELINE_RESULTS.md` | 성능 수치 정리본 |
+| `docs/BASELINE_RESULTS.md` | 성능 수치 정리본 |
 | `README.md` | 사용자용 소개 |

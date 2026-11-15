@@ -87,7 +87,7 @@ public struct PhotoMetadataExtractor: PhotoMetadataExtractorProtocol, Sendable {
     ///
     /// 원본 긴 변을 상한 이하가 될 때까지 반씩 나눠 JPEG 1/2ⁿ 서브샘플 디코드 경계에 맞춘다(#49).
     /// 경계에 안 맞으면(예: 4032px 원본에 2048 요청) 1/2ⁿ 축소 디코드를 쓰지 못해 처리 시간이 늘어난다.
-    /// 측정 결과는 Rephoto_iOSTests/BASELINE_RESULTS.md에 있다.
+    /// 측정 결과는 docs/BASELINE_RESULTS.md에 있다.
     ///
     /// 다만 정렬값이 하한보다 작으면(예: 24MP 5712px → 1428px) 줄어드는 시간보다 잃는 해상도가 크므로,
     /// 정렬을 포기하고 상한을 그대로 요청한다(#88).
