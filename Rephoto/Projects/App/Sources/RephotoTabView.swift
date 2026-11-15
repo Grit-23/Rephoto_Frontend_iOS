@@ -38,10 +38,10 @@ struct RephotoTabView: View {
             }
             Tab("검색", systemImage: "magnifyingglass", value: .search, role: .search) {
                 SearchView(provider: searchProvider, photoDetail: photoDetail, query: searchQuery)
+                    .searchable(text: $searchQuery, prompt: "사진을 검색해보세요!")
+                    .searchFocused($isSearchFocused)
             }
         }
-        .searchable(text: $searchQuery, prompt: "사진을 검색해보세요!")
-        .searchFocused($isSearchFocused)
         .tint(.mainGreen)
         .tabBarMinimizeBehavior(.onScrollDown)
         .sheet(isPresented: $isPresentingAccount) {
