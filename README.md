@@ -31,15 +31,15 @@
 
 ## 아키텍처
 
-### Tuist 멀티모듈 전환 (진행 중)
+### Tuist 멀티모듈
 
-단일 앱 타깃을 Tuist 워크스페이스(`Rephoto/`)의 4계층 모듈로 옮기고 있습니다. 전환이 끝날 때까지 기존 프로젝트(`Rephoto_iOS.xcodeproj`)와 CI를 함께 유지합니다.
+단일 앱 타깃을 Tuist 워크스페이스(`Rephoto/`)의 4계층 모듈로 옮겼습니다. 기존 프로젝트(`Rephoto_iOS.xcodeproj`)는 제거 전까지 함께 남아 있습니다.
 
 | 계층 | 모듈 | 역할 |
 |------|------|------|
 | App | `Projects/App` | 유일한 조립 지점 — `AppContainer`가 구현을 등록 |
-| Feature | Home · Search (User 예정) | 화면 · ViewModel |
-| Domain | Photo · Tag · Album · PreviewSupport (User 예정) | 모델 · UseCase · Repository |
+| Feature | Home · Search · User | 화면 · ViewModel |
+| Domain | Photo · Tag · Album · User · PreviewSupport | 모델 · UseCase · Repository |
 | Core | NetworkAdapter | 네트워크 · 인증 |
 | Shared | Foundation · DesignSystem | 에러 · 설정 · 색상 · 공용 UI |
 
@@ -53,9 +53,10 @@ cd Rephoto
 make install    # mise 도구(tuist · mockolo)와 SPM 의존성 설치
 make generate   # Mock 생성 후 워크스페이스 생성
 make open
+make test       # 단위 · 계약 테스트
 ```
 
-단계별 범위와 결정 기록은 [docs/REFACTORING_HISTORY.md](docs/REFACTORING_HISTORY.md)의 Step 4, 전환 전 빌드 시간 기준값은 [docs/benchmarks/2026-10-29_build_time.md](docs/benchmarks/2026-10-29_build_time.md)에 있습니다.
+전환 후 증분 빌드는 −38%, 클린 빌드는 +10%입니다([측정 기록](docs/benchmarks/2026-10-29_build_time.md)). 단계별 범위와 결정 기록은 [docs/REFACTORING_HISTORY.md](docs/REFACTORING_HISTORY.md)의 Step 4에 있습니다.
 
 ### 기존 프로젝트 구조
 
@@ -84,25 +85,25 @@ Rephoto_iOS/
 ### 설계 패턴
 
 - **Clean Architecture + MVVM** — View → ViewModel → UseCase → Repository 단방향 의존. Presentation은 Domain Model만 사용하고, DTO 매핑은 Data 계층에 격리됩니다.
-- **Swift Concurrency** — `async/await` 전면 사용. 토큰 저장소와 네트워크 클라이언트는 `actor`로 구현해 동시 접근을 직렬화합니다.
+- **Swift Concurrency** — `async/await` 전면 사용. 네트워크 클라이언트는 `actor`로 구현해 토큰 갱신과 저장을 직렬화합니다.
 - **자체 네트워크 레이어** — 엔드포인트를 `APITargetType` 프로토콜로 선언하면 `NetworkAdapter`가 `URLRequest`로 조립하고, `NetworkClient`(actor)가 Bearer 토큰 주입과 401 시 토큰 자동 갱신·재시도를 처리합니다.
-- **의존성 주입** — `Factory`로 의존성을 등록하고, DEBUG 빌드에서는 Mock provider를 자동 주입해 SwiftUI Preview와 테스트를 네트워크 없이 격리합니다.
+- **의존성 주입** — `Factory`로 의존성을 등록하고 App 타깃에서만 조립합니다. DEBUG 빌드는 Repository를 메모리 구현으로 바꿔 서버 없이 실행하고, 실행 인자 `-useServer`를 주면 서버에 붙습니다.
 
 ## 기술 포인트
 
-- **토큰 갱신 직렬화** — 갱신 진행 중 도착한 동시 401 20건을 단일 갱신으로 합칩니다(`NetworkClient` actor, 단일 `Task` 합류). 갱신 실패 통지도 1회로 접고, 로그아웃은 진행 중인 갱신이 끝난 뒤 토큰을 지웁니다. 테스트로 고정.
-- **업로드 전처리** — ImageIO 다운샘플로 페이로드 중앙값 −73%(받은 사진을 그대로 올리던 방식 대비), 목표 크기를 JPEG 1/2ⁿ 서브샘플 경계에 맞춰 장당 다운샘플·인코딩 시간 중앙값 −25%(정렬값이 1536px 미만이면 정렬 대신 2048px 요청). iPhone 14 Pro 1대 · 12MP 사진 15장 · Release 실측, [BASELINE_RESULTS.md](Rephoto_iOSTests/BASELINE_RESULTS.md).
+- **토큰 갱신 직렬화** — 갱신 진행 중 도착한 동시 401 20건을 단일 갱신으로 합칩니다(`NetworkClient` actor, 단일 `Task` 합류). 갱신 실패 통지도 1회로 접고, 세션이 바뀐 뒤 도착한 이전 세션의 응답은 버립니다. 테스트로 고정.
+- **업로드 전처리** — ImageIO 다운샘플로 페이로드 중앙값 −73%(받은 사진을 그대로 올리던 방식 대비), 목표 크기를 JPEG 1/2ⁿ 서브샘플 경계에 맞춰 장당 다운샘플·인코딩 시간 중앙값 −25%(정렬값이 1536px 미만이면 정렬 대신 2048px 요청). iPhone 14 Pro 1대 · 12MP 사진 15장 · Release 실측이고, Tuist 전환 후 재측정에서도 같은 값이 나왔습니다. [BASELINE_RESULTS.md](docs/BASELINE_RESULTS.md).
 - **에러 계층** — 계층별 에러를 `AppError`로 정규화하고, 화면 안에서 해결할 수 있는 실패는 `Loadable` 인라인, 흐름이 끊기는 실패는 전역 `ErrorHandler` Alert으로 나눕니다.
 
 ## 테스트 · CI
 
-- 단위·계약 테스트 **95개**(Swift Testing 83 + XCTest 12) — `Rephoto_iOS.xctestplan`. 네트워크 코어(동시 401 → 갱신 1회, 로그아웃–갱신 경합, Keychain actor, 어댑터 조립)와 클라이언트 엔드포인트 명세 35케이스를 고정합니다.
-- 성능 벤치 **18개** — `Rephoto_Performance.xctestplan`, 수동 실행. 측정 결과와 조건은 [BASELINE_RESULTS.md](Rephoto_iOSTests/BASELINE_RESULTS.md), 가이드는 [TESTING.md](Rephoto_iOSTests/TESTING.md).
-- CI — PR마다 `build-for-testing` → `test-without-building` → `xccov` 커버리지 요약 (`.github/workflows/iOS.yml`). Tuist 워크스페이스는 `tuist.yml`에서 구현 모듈 import 검사 → `tuist inspect dependencies` → 빌드 → 테스트를 따로 돌립니다.
+- 단위·계약 테스트 **200개**(Swift Testing) — `Rephoto/Rephoto.xctestplan`, 모듈 10개의 테스트 타깃. 네트워크 코어(동시 401 → 갱신 1회, 세션 전환, Keychain, 어댑터 조립), 클라이언트 엔드포인트 명세, ViewModel 상태 전이를 고정합니다.
+- 성능 벤치 **18개** — `Rephoto/Rephoto_Performance.xctestplan`, 수동 실행(`make perf`). 측정 결과와 조건은 [BASELINE_RESULTS.md](docs/BASELINE_RESULTS.md), 가이드는 [TESTING.md](docs/TESTING.md).
+- CI — PR마다 `tuist.yml`이 구현 모듈 import 검사 → `tuist inspect dependencies` → 빌드 → 테스트 → `xccov` 커버리지 요약을 돌립니다. 기존 프로젝트는 제거 전까지 `iOS.yml`이 따로 빌드 · 테스트합니다.
 
 ## 로컬 목 서버
 
-백엔드는 운영이 종료됐습니다. 리팩토링은 로컬 목 서버 `mock_server.py`를 API 명세로 삼아 진행했고, 일부 경로·필드는 원 서버와 다릅니다. `mock_server.py`는 앱의 API 계약에 맞춰 데모 픽스처 14장을 내려주는 인메모리 서버입니다(`python3 mock_server.py`). DEBUG 빌드는 앱 내 목 provider, 네트워크 경로는 mock_server — 연결 절차(BASE_URL · DEBUG Mock 등록 해제)는 파일 상단 주석에 있습니다.
+백엔드는 운영이 종료됐습니다. 리팩토링은 로컬 목 서버 `mock_server.py`를 API 명세로 삼아 진행했고, 일부 경로·필드는 원 서버와 다릅니다. `mock_server.py`는 앱의 API 계약에 맞춰 데모 픽스처 14장을 내려주는 인메모리 서버입니다(`python3 mock_server.py`). DEBUG 빌드는 기본으로 앱 안의 메모리 구현을 쓰고, 실행 인자 `-useServer`를 주면 mock_server에 붙습니다. 연결 절차(BASE_URL · 실행 인자)는 파일 상단 주석에 있습니다.
 
 ## 의존성
 

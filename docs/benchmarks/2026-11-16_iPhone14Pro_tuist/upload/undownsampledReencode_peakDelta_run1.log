@@ -1,0 +1,8 @@
+🧪 [입력] 587306D8-02F9-43B5-84D7-723F65134400.jpg 4032x3024 5733KB [출처: RephotoPerformanceTests.xctest]
+🧪 [다운샘플 없는 대조군: 전체 디코드+재인코딩]
+run1: peakDelta +21.7MB, 0.148s
+run2: peakDelta +9.9MB, 0.146s
+run3: peakDelta +9.8MB, 0.145s
+run4: peakDelta +9.8MB, 0.144s
+run5: peakDelta +9.8MB, 0.145s
+** TEST EXECUTE SUCCEEDED **
