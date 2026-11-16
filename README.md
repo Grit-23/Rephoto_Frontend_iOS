@@ -3,7 +3,7 @@
 고령층을 위한 AI 사진 관리 앱 — 사진을 올리면 AI가 자동으로 설명과 태그를 달아주고, 일상적인 문장으로 사진을 찾을 수 있습니다.
 
 ![Platform](https://img.shields.io/badge/platform-iOS%2026.0%2B-blue)
-![Swift](https://img.shields.io/badge/Swift-5%20%7C%206-orange)
+![Swift](https://img.shields.io/badge/Swift-6-orange)
 ![Tuist](https://img.shields.io/badge/Tuist-4.155-blueviolet)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -26,14 +26,14 @@
 
 - iOS 26.0+
 - Xcode 26.0+
-- Swift 5 (기존 프로젝트) · Swift 6 (Tuist 워크스페이스)
+- Swift 6
 - Tuist 워크스페이스: [mise](https://mise.jdx.dev) — Tuist · mockolo 버전을 `Rephoto/mise.toml`로 고정
 
 ## 아키텍처
 
 ### Tuist 멀티모듈
 
-단일 앱 타깃을 Tuist 워크스페이스(`Rephoto/`)의 4계층 모듈로 옮겼습니다. 기존 프로젝트(`Rephoto_iOS.xcodeproj`)는 제거 전까지 함께 남아 있습니다.
+단일 앱 타깃을 Tuist 워크스페이스(`Rephoto/`)의 4계층 모듈로 옮겼습니다.
 
 | 계층 | 모듈 | 역할 |
 |------|------|------|
@@ -58,29 +58,39 @@ make test       # 단위 · 계약 테스트
 
 전환 후 증분 빌드는 −38%, 클린 빌드는 +10%입니다([측정 기록](docs/benchmarks/2026-10-29_build_time.md)). 단계별 범위와 결정 기록은 [docs/REFACTORING_HISTORY.md](docs/REFACTORING_HISTORY.md)의 Step 4에 있습니다.
 
-### 기존 프로젝트 구조
-
-아래는 전환 전 단일 타깃(`Rephoto_iOS/`)의 구조입니다. 기능(Feature) 단위로 폴더를 나누고, 각 기능을 Data / Domain / Presentation 3계층으로 분리했습니다.
+### 폴더 구조
 
 ```
-Rephoto_iOS/
-├── App/              # 앱 진입점 (@main, ContentView)
-├── Core/             # 공통 인프라
-│   ├── Config/           # 환경 설정 (BASE_URL)
-│   ├── DIContainer/      # Factory 기반 DI 컨테이너
-│   ├── Error/            # AppError · Loadable · ErrorHandler — 계층별 에러 정규화와 표시 경로
-│   ├── NetworkAdapter/   # URLSession 기반 자체 네트워크 레이어
-│   └── UIComponents/     # PhotoNavGrid · PhotoGridTile · ThumbnailTier · ErrorStateView
-├── Features/
-│   ├── Home/         # 사진 그리드 · 업로드 · 상세(태그/설명)
-│   │   ├── Data/         # DTO · Repository 구현 · API Target
-│   │   ├── Domain/       # UseCase · Model · Repository 인터페이스
-│   │   └── Presentation/ # View · ViewModel
-│   ├── Search/       # 자연어 검색 · 태그 앨범
-│   └── User/         # 로그인 · 세션 · 설정
-├── Resources/        # 에셋 · 공용 컴포넌트
-└── Utilities/        # Keychain, Extensions
+Rephoto/
+├── Workspace.swift               # 워크스페이스 · 스킴 · 테스트 플랜 연결
+├── Tuist/Package.swift           # SPM 의존성 (Factory · Nuke)
+├── Plugins/DependencyPlugin/     # 모듈 enum · 의존성 헬퍼 · Project 공장
+├── Config/                       # xcconfig (Shared는 커밋, Secrets는 로컬)
+├── Scripts/                      # 모듈 · Mock 생성
+├── Makefile · mise.toml          # 명령 진입점 · 도구 버전 고정
+└── Projects/
+    ├── App/                      # 앱 타깃 — 유일한 조립 지점
+    │   ├── Sources/                  # AppContainer(DI) · 루트 · 탭
+    │   ├── Resources/                # 앱 아이콘
+    │   └── PerformanceTests/         # 성능 벤치마크 (앱 호스트)
+    ├── Feature/                  # 화면 · ViewModel
+    │   ├── Home/                     # Interface · Sources · Tests · Example
+    │   ├── Search/                   # Sources · Tests · Example
+    │   └── User/                     # Sources · Tests · Example
+    ├── Domain/                   # 모델 · UseCase · Repository
+    │   ├── Photo/                    # Interface · Sources · Testing · Tests
+    │   ├── Tag/                      # 〃
+    │   ├── Album/                    # 〃
+    │   ├── User/                     # 〃
+    │   └── PreviewSupport/           # 메모리 Repository · 샘플 사진
+    ├── Core/
+    │   └── NetworkAdapter/       # 네트워크 · 인증 — Sources · Testing · Tests
+    └── Shared/
+        ├── Foundation/           # 에러 · 설정 · 확장
+        └── DesignSystem/         # 색상 · 공용 UI
 ```
+
+`Interface`는 프로토콜과 모델, `Sources`는 구현, `Testing`은 생성된 Mock, `Example`은 그 화면만 띄우는 앱입니다.
 
 ### 설계 패턴
 
@@ -99,7 +109,7 @@ Rephoto_iOS/
 
 - 단위·계약 테스트 **200개**(Swift Testing) — `Rephoto/Rephoto.xctestplan`, 모듈 10개의 테스트 타깃. 네트워크 코어(동시 401 → 갱신 1회, 세션 전환, Keychain, 어댑터 조립), 클라이언트 엔드포인트 명세, ViewModel 상태 전이를 고정합니다.
 - 성능 벤치 **18개** — `Rephoto/Rephoto_Performance.xctestplan`, 수동 실행(`make perf`). 측정 결과와 조건은 [BASELINE_RESULTS.md](docs/BASELINE_RESULTS.md), 가이드는 [TESTING.md](docs/TESTING.md).
-- CI — PR마다 `tuist.yml`이 구현 모듈 import 검사 → `tuist inspect dependencies` → 빌드 → 테스트 → `xccov` 커버리지 요약을 돌립니다. 기존 프로젝트는 제거 전까지 `iOS.yml`이 따로 빌드 · 테스트합니다.
+- CI — PR마다 `tuist.yml`이 구현 모듈 import 검사 → `tuist inspect dependencies` → 빌드 → 테스트 → `xccov` 커버리지 요약을 돌립니다.
 
 ## 로컬 목 서버
 

@@ -9,8 +9,6 @@ Tuist 워크스페이스(`Rephoto/`) 기준이다. 성능 측정값은 [BASELINE
 | 단위 · 계약 테스트 | 200 | Swift Testing | PR마다 (`tuist.yml`) | `make test` |
 | 성능 벤치마크 | 18 | XCTest | 수동 | `make perf` |
 
-기존 프로젝트(`Rephoto_iOSTests`, 95개)는 제거할 때까지 `iOS.yml`에서 따로 돈다.
-
 ## 무엇을 테스트하나
 
 | 모듈 | 개수 | 지키는 것 |

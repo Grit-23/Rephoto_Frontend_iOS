@@ -6,14 +6,9 @@ AI 코딩 에이전트용 프로젝트 지침. `CLAUDE.md`는 이 파일을 impo
 
 사진 위치 기반 관리 앱. SwiftUI + Clean Architecture + MVVM. iPhone 전용, iOS 26.0+.
 
-**빌드 축이 두 개다.** Tuist 전환(마일스톤 "Tuist 멀티모듈 전환")이 끝날 때까지 함께 유지한다.
+빌드 축은 Tuist 워크스페이스(`Rephoto/`) 하나다. CI는 `tuist.yml`.
 
-| 축 | 위치 | 용도 |
-| --- | --- | --- |
-| 현행 앱 | `Rephoto_iOS.xcodeproj` | 기존 코드. 버그 수정만. CI `iOS.yml` |
-| Tuist 워크스페이스 | `Rephoto/` | 모든 신규·이관 작업. CI `tuist.yml` |
-
-- SwiftUI. Tuist 워크스페이스는 **전 모듈 Swift 6 언어 모드**(`rephotoBaseSettings`), 예외 없음. 기존 `Rephoto_iOS.xcodeproj`는 Swift 5 유지
+- SwiftUI. **전 모듈 Swift 6 언어 모드**(`rephotoBaseSettings`), 예외 없음
 - 네트워크: 자체 레이어. `APITargetType`(엔드포인트) → `NetworkAdapter`(URLRequest 조립) → `NetworkClient`(actor, URLSession 실행·Bearer 주입·401 갱신)
 - DI: Factory (`AppContainer`). App만 import한다. DEBUG에서는 Repository만 PreviewSupport의 메모리 구현으로 교체. 실행 인자 `-useServer`를 주면 DEBUG에서도 서버에 붙는다
 - 이미지: Nuke. 패키지: SPM (`Rephoto/Tuist/Package.swift`, Factory 2.5.3 · Nuke 12.8.0 exact)
@@ -38,7 +33,7 @@ make clean                            # 생성물 삭제 후 처음부터
 
 `make generate`를 다시 돌려야 하는 경우: Project.swift · 플러그인 · xcconfig 수정, 모듈 추가, Finder로 파일 생성, Interface의 `/// @mockable` 변경, `Tuist/Package.swift` 변경, 매니페스트가 바뀐 브랜치로 체크아웃.
 
-**Done criteria**: `tuist.yml`과 `iOS.yml` 둘 다 통과. Feature 모듈 변경은 해당 `<Name>FeatureExample` 앱으로 동작 확인. 성능에 닿는 변경은 `Rephoto_Performance` 플랜으로 메인 스레드 확인.
+**Done criteria**: `tuist.yml` 통과. Feature 모듈 변경은 해당 `<Name>FeatureExample` 앱으로 동작 확인. 성능에 닿는 변경은 `Rephoto_Performance` 플랜으로 메인 스레드 확인.
 
 ## Tuist 전환 순서
 
@@ -46,7 +41,7 @@ make clean                            # 생성물 삭제 후 처음부터
 
 - Domain 전체를 먼저 옮기지 않는다. PreviewSupport · Mock도 해당 화면에 필요한 만큼만 추가한다
 - Home은 프로필 버튼 액션을 주입받고, 계정 시트 표시는 App이 소유한다. User Interface나 공용 라우터를 미리 만들지 않는다
-- 최종 통합 검증(#108)까지 끝났다. 기존 빌드 축(`Rephoto_iOS.xcodeproj` · `iOS.yml`) 제거는 별도 이슈에서 한다
+- 전환은 끝났다. 단일 타깃 프로젝트(`Rephoto_iOS.xcodeproj`)와 `iOS.yml`은 #110에서 삭제했다
 
 ## Architecture
 
@@ -113,7 +108,7 @@ View → ViewModel → UseCase(Protocol) → Repository(Protocol) ← Repository
 ## Testing
 
 - Swift Testing 기본(`@Test("한글 설명")`). 성능 측정만 XCTest
-- 테스트 플랜: `Rephoto/Rephoto.xctestplan`(Tuist 모듈 테스트 전부, `make test`와 `tuist.yml`이 사용) / `Rephoto/Rephoto_Performance.xctestplan`(측정 전용, 수동 `make perf`). 기존 프로젝트의 `Rephoto_iOS`(`iOS.yml`) · 루트 `Rephoto_Performance`는 프로젝트를 제거할 때 함께 없앤다
+- 테스트 플랜: `Rephoto/Rephoto.xctestplan`(Tuist 모듈 테스트 전부, `make test`와 `tuist.yml`이 사용) / `Rephoto/Rephoto_Performance.xctestplan`(측정 전용, 수동 `make perf`)
 - 성능 벤치마크는 `Projects/App/PerformanceTests/`(`RephotoPerformanceTests`)에 있다. 실기기는 호스트 앱이 있는 테스트만 돌릴 수 있어 앱에 붙였다. 입력 사진(`Fixtures/`)은 개인 사진이라 gitignore — 커밋하지 않는다
 - 네트워크 스텁은 `StubURLProtocol`(Tuist 쪽은 `NetworkAdapterTesting`). 스위트는 직렬화
 - Tuist Testing 타깃의 Mock은 Interface 프로토콜에 `/// @mockable`을 붙이면 `make generate`가 만든다
