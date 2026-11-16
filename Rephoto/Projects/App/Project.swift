@@ -9,9 +9,6 @@ import ProjectDescription
 import DependencyPlugin
 
 /// 앱 타깃. 모든 구현 모듈을 조립 · 주입하는 유일한 곳이다.
-///
-/// Info.plist와 번들 ID는 기존 `Rephoto_iOS.xcodeproj` 값을 옮겼다.
-/// 두 프로젝트의 번들 ID가 같으므로 시뮬레이터에는 마지막에 설치한 쪽 하나만 남는다.
 let sharedConfig: Path = .relativeToRoot("Config/Shared.xcconfig")
 
 let project = Project(

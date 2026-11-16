@@ -3,7 +3,7 @@
 고령층을 위한 AI 사진 관리 앱 — 사진을 올리면 AI가 자동으로 설명과 태그를 달아주고, 일상적인 문장으로 사진을 찾을 수 있습니다.
 
 ![Platform](https://img.shields.io/badge/platform-iOS%2026.0%2B-blue)
-![Swift](https://img.shields.io/badge/Swift-5%20%7C%206-orange)
+![Swift](https://img.shields.io/badge/Swift-6-orange)
 ![Tuist](https://img.shields.io/badge/Tuist-4.155-blueviolet)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -26,14 +26,14 @@
 
 - iOS 26.0+
 - Xcode 26.0+
-- Swift 5 (기존 프로젝트) · Swift 6 (Tuist 워크스페이스)
+- Swift 6
 - Tuist 워크스페이스: [mise](https://mise.jdx.dev) — Tuist · mockolo 버전을 `Rephoto/mise.toml`로 고정
 
 ## 아키텍처
 
 ### Tuist 멀티모듈
 
-단일 앱 타깃을 Tuist 워크스페이스(`Rephoto/`)의 4계층 모듈로 옮겼습니다. 기존 프로젝트(`Rephoto_iOS.xcodeproj`)는 제거 전까지 함께 남아 있습니다.
+단일 앱 타깃을 Tuist 워크스페이스(`Rephoto/`)의 4계층 모듈로 옮겼습니다.
 
 | 계층 | 모듈 | 역할 |
 |------|------|------|
@@ -58,30 +58,6 @@ make test       # 단위 · 계약 테스트
 
 전환 후 증분 빌드는 −38%, 클린 빌드는 +10%입니다([측정 기록](docs/benchmarks/2026-10-29_build_time.md)). 단계별 범위와 결정 기록은 [docs/REFACTORING_HISTORY.md](docs/REFACTORING_HISTORY.md)의 Step 4에 있습니다.
 
-### 기존 프로젝트 구조
-
-아래는 전환 전 단일 타깃(`Rephoto_iOS/`)의 구조입니다. 기능(Feature) 단위로 폴더를 나누고, 각 기능을 Data / Domain / Presentation 3계층으로 분리했습니다.
-
-```
-Rephoto_iOS/
-├── App/              # 앱 진입점 (@main, ContentView)
-├── Core/             # 공통 인프라
-│   ├── Config/           # 환경 설정 (BASE_URL)
-│   ├── DIContainer/      # Factory 기반 DI 컨테이너
-│   ├── Error/            # AppError · Loadable · ErrorHandler — 계층별 에러 정규화와 표시 경로
-│   ├── NetworkAdapter/   # URLSession 기반 자체 네트워크 레이어
-│   └── UIComponents/     # PhotoNavGrid · PhotoGridTile · ThumbnailTier · ErrorStateView
-├── Features/
-│   ├── Home/         # 사진 그리드 · 업로드 · 상세(태그/설명)
-│   │   ├── Data/         # DTO · Repository 구현 · API Target
-│   │   ├── Domain/       # UseCase · Model · Repository 인터페이스
-│   │   └── Presentation/ # View · ViewModel
-│   ├── Search/       # 자연어 검색 · 태그 앨범
-│   └── User/         # 로그인 · 세션 · 설정
-├── Resources/        # 에셋 · 공용 컴포넌트
-└── Utilities/        # Keychain, Extensions
-```
-
 ### 설계 패턴
 
 - **Clean Architecture + MVVM** — View → ViewModel → UseCase → Repository 단방향 의존. Presentation은 Domain Model만 사용하고, DTO 매핑은 Data 계층에 격리됩니다.
@@ -99,7 +75,7 @@ Rephoto_iOS/
 
 - 단위·계약 테스트 **200개**(Swift Testing) — `Rephoto/Rephoto.xctestplan`, 모듈 10개의 테스트 타깃. 네트워크 코어(동시 401 → 갱신 1회, 세션 전환, Keychain, 어댑터 조립), 클라이언트 엔드포인트 명세, ViewModel 상태 전이를 고정합니다.
 - 성능 벤치 **18개** — `Rephoto/Rephoto_Performance.xctestplan`, 수동 실행(`make perf`). 측정 결과와 조건은 [BASELINE_RESULTS.md](docs/BASELINE_RESULTS.md), 가이드는 [TESTING.md](docs/TESTING.md).
-- CI — PR마다 `tuist.yml`이 구현 모듈 import 검사 → `tuist inspect dependencies` → 빌드 → 테스트 → `xccov` 커버리지 요약을 돌립니다. 기존 프로젝트는 제거 전까지 `iOS.yml`이 따로 빌드 · 테스트합니다.
+- CI — PR마다 `tuist.yml`이 구현 모듈 import 검사 → `tuist inspect dependencies` → 빌드 → 테스트 → `xccov` 커버리지 요약을 돌립니다.
 
 ## 로컬 목 서버
 
