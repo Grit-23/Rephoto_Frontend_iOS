@@ -58,6 +58,40 @@ make test       # 단위 · 계약 테스트
 
 전환 후 증분 빌드는 −38%, 클린 빌드는 +10%입니다([측정 기록](docs/benchmarks/2026-10-29_build_time.md)). 단계별 범위와 결정 기록은 [docs/REFACTORING_HISTORY.md](docs/REFACTORING_HISTORY.md)의 Step 4에 있습니다.
 
+### 폴더 구조
+
+```
+Rephoto/
+├── Workspace.swift               # 워크스페이스 · 스킴 · 테스트 플랜 연결
+├── Tuist/Package.swift           # SPM 의존성 (Factory · Nuke)
+├── Plugins/DependencyPlugin/     # 모듈 enum · 의존성 헬퍼 · Project 공장
+├── Config/                       # xcconfig (Shared는 커밋, Secrets는 로컬)
+├── Scripts/                      # 모듈 · Mock 생성
+├── Makefile · mise.toml          # 명령 진입점 · 도구 버전 고정
+└── Projects/
+    ├── App/                      # 앱 타깃 — 유일한 조립 지점
+    │   ├── Sources/                  # AppContainer(DI) · 루트 · 탭
+    │   ├── Resources/                # 앱 아이콘
+    │   └── PerformanceTests/         # 성능 벤치마크 (앱 호스트)
+    ├── Feature/                  # 화면 · ViewModel
+    │   ├── Home/                     # Interface · Sources · Tests · Example
+    │   ├── Search/                   # Sources · Tests · Example
+    │   └── User/                     # Sources · Tests · Example
+    ├── Domain/                   # 모델 · UseCase · Repository
+    │   ├── Photo/                    # Interface · Sources · Testing · Tests
+    │   ├── Tag/                      # 〃
+    │   ├── Album/                    # 〃
+    │   ├── User/                     # 〃
+    │   └── PreviewSupport/           # 메모리 Repository · 샘플 사진
+    ├── Core/
+    │   └── NetworkAdapter/       # 네트워크 · 인증 — Sources · Testing · Tests
+    └── Shared/
+        ├── Foundation/           # 에러 · 설정 · 확장
+        └── DesignSystem/         # 색상 · 공용 UI
+```
+
+`Interface`는 프로토콜과 모델, `Sources`는 구현, `Testing`은 생성된 Mock, `Example`은 그 화면만 띄우는 앱입니다.
+
 ### 설계 패턴
 
 - **Clean Architecture + MVVM** — View → ViewModel → UseCase → Repository 단방향 의존. Presentation은 Domain Model만 사용하고, DTO 매핑은 Data 계층에 격리됩니다.
